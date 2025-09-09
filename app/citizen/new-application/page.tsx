@@ -1,4 +1,4 @@
- 'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -1399,12 +1399,12 @@ export default function NewApplication() {
                         type="text"
                         pattern="[0-9]{14,16}"
                         maxLength={16}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                         placeholder={language === 'ru' ? '14-16 цифр' : '14-16 сан'}
                         title={language === 'ru' ? 'ПИН должен содержать 14-16 цифр' : 'ПИН 14-16 сандан турушу керек'}
                       />
-                  </div>
-
+                    </div>
+                    
                     {/* ФИО заявителя */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1415,8 +1415,8 @@ export default function NewApplication() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                       placeholder={language === 'ru' ? 'Введите полное имя' : 'Толук атын киргизиңиз'}
                       />
-                  </div>
-                    
+                    </div>
+
                     {/* Пол */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1441,7 +1441,7 @@ export default function NewApplication() {
                       type="date"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                       />
-                </div>
+                  </div>
 
                     {/* Гражданство */}
                     <div>
@@ -1544,34 +1544,34 @@ export default function NewApplication() {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           {language === 'ru' ? 'Серия документа' : 'Документтин сериясы'}
-                        </label>
-                        <input
+                      </label>
+                      <input
                           type="text"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                           placeholder={language === 'ru' ? 'Введите серию' : 'Серияны киргизиңиз'}
-                        />
-                      </div>
-                      
+                      />
+                    </div>
+                    
                       {/* Номер документа */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
                           {language === 'ru' ? 'Номер документа' : 'Документтин номуру'} <span className="text-red-500">*</span>
-                        </label>
-                        <input
+                      </label>
+                      <input
                           type="text"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                           placeholder={language === 'ru' ? 'Введите номер документа' : 'Документтин номурун киргизиңиз'}
-                        />
-                      </div>
+                      />
+                    </div>
 
                       {/* Дата выдачи */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
                           {language === 'ru' ? 'Дата выдачи' : 'Берилген күнү'} <span className="text-red-500">*</span>
-                        </label>
+                      </label>
                       <input
                         type="date"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                         />
                     </div>
 
@@ -4044,7 +4044,7 @@ export default function NewApplication() {
                             </span>
                           <span className="font-medium">
                             {formatCurrencyCalc(householdMetrics.totalIncomeMonth)}
-                          </span>
+                            </span>
                         </div>
                         
                         <div className="flex justify-between">
