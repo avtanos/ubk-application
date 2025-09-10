@@ -23,12 +23,12 @@ import {
   ApiResponse,
   PaginatedResponse,
   ApplicationFilters
-} from '../types';
+} from '../types-updated';
 
 // Базовый URL API
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
-class ApplicationService {
+class ApplicationServiceUpdated {
   // 1. Заявители
   async createApplicant(applicant: Omit<Applicant, 'id'>): Promise<ApiResponse<Applicant>> {
     try {
@@ -524,4 +524,4 @@ class ApplicationService {
   }
 }
 
-export const applicationService = new ApplicationService();
+export const applicationServiceUpdated = new ApplicationServiceUpdated();

@@ -133,8 +133,22 @@ export default function UniversalFilters({
         const option = filter.options?.find(opt => opt.value === value);
         return option ? option.label : value;
       case 'daterange':
-        const from = value.from ? new Date(value.from).toLocaleDateString('ru-RU') : '';
-        const to = value.to ? new Date(value.to).toLocaleDateString('ru-RU') : '';
+        const from = value.from ? (() => {
+          try {
+            const date = new Date(value.from);
+            return isNaN(date.getTime()) ? '' : date.toLocaleDateString('ru-RU');
+          } catch {
+            return '';
+          }
+        })() : '';
+        const to = value.to ? (() => {
+          try {
+            const date = new Date(value.to);
+            return isNaN(date.getTime()) ? '' : date.toLocaleDateString('ru-RU');
+          } catch {
+            return '';
+          }
+        })() : '';
         return from && to ? `${from} - ${to}` : from || to;
       default:
         return value;

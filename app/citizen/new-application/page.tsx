@@ -18,6 +18,7 @@ import {
   municipalAuthorities,
   familyRelationTypes,
   childCategoryList,
+  getDirectory,
   incomeTypeList,
   propertyTypeList,
   landPlotTypeList,
@@ -65,109 +66,225 @@ import {
   decisionProtocolManager, 
   auditUtils 
 } from '@/lib/audit';
+import { applicationService } from '@/lib/api/applicationService';
 
 export default function NewApplication() {
   const [language, setLanguage] = useState('ru');
   const [isClient, setIsClient] = useState(false);
   const [useNewForm, setUseNewForm] = useState(false);
-  const [familyMembers, setFamilyMembers] = useState([
-    {
-      id: 1,
-      type: 'adult', // 'adult' или 'child'
+  
+  // API сервис уже импортирован
+  
+  // Заявитель (отдельно от семьи)
+  const [applicant, setApplicant] = useState({
+    pin: '',
     fullName: '',
+    gender: '',
     birthDate: '',
-      age: 0,
-      gender: '',
-      relation: '',
-      citizenship: '',
-      documentType: '',
-      documentNumber: '',
-      childCategory: '',
-      birthCertificate: {
-        number: '',
-        issueDate: '',
-        issuingAuthority: ''
-      },
-      income: {
-        salary: 0,
-        pension: 0,
-        benefit: 0,
-        businessIncome: 0,
-        propertyIncome: 0,
-        agriculturalIncome: 0,
-        otherIncome: 0
-      }
-    }
-  ]);
-
-  // Состояние для подсобного хозяйства
-  const [subsidiaryFarming, setSubsidiaryFarming] = useState({
-    landPlots: [
-      {
-        id: 1,
-        type: '',
-        area: 0,
-        unit: 'соток'
-      }
-    ],
-    livestock: [
-      {
-        id: 1,
-        type: '',
-        count: 0
-      }
-    ],
-    vehicles: [
-      {
-        id: 1,
-        type: '',
-        year: new Date().getFullYear(),
-        model: ''
-      }
-    ]
+    citizenship: '',
+    nationality: '',
+    education: '',
+    maritalStatus: '',
+    applicantCategory: '',
+    socialProtectionAuthority: '',
+    // Документные данные
+    documentType: '',
+    documentSeries: '',
+    documentNumber: '',
+    documentIssueDate: '',
+    passportIssuingAuthority: '',
+    documentExpiryDate: ''
   });
 
-  // Состояние для доходов
-  const [familyIncome, setFamilyIncome] = useState({
-    // Основной доход (зарплата, пенсия, соц.выплаты)
-    mainIncome: {
-      salary: 0,
-      pension: 0,
-      socialBenefits: 0,
-      otherMainIncome: 0
-    },
-    // Доход от образования (стипендии, обучение)
-    educationIncome: {
-      scholarships: 0,
-      trainingIncome: 0,
-      otherEducationIncome: 0
-    },
-    // Прочие доходы (алименты, аренда, помощь)
-    otherIncome: {
-      alimony: 0,
-      rent: 0,
-      assistance: 0,
-      otherMiscIncome: 0
-    },
-    // Предпринимательская деятельность
-    businessIncome: {
-      businessRevenue: 0,
-      taxData: {
-        taxNumber: '',
-        taxPeriod: '',
-        declaredIncome: 0
-      }
-    },
-    // Финансовые инструменты
-    financialAssets: [
-      {
-        id: 1,
-        type: '',
-        amount: 0,
-        monthlyIncome: 0
-      }
-    ]
+  // Члены семьи (без заявителя)
+  const [familyMembers, setFamilyMembers] = useState<Array<{
+    id: number;
+    type: 'adult' | 'child';
+    fullName: string;
+    pin: string;
+    birthDate: string;
+    age: number;
+    gender: string;
+    relation: string;
+    citizenship: string;
+    documentType: string;
+    documentNumber: string;
+    childCategory: string;
+    birthCertificate: {
+      number: string;
+      issueDate: string;
+      issuingAuthority: string;
+    };
+    disabilityFlag: boolean;
+  }>>([]);
+
+  // Земельные участки
+  const [landPlots, setLandPlots] = useState<Array<{
+    id: number;
+    typeCode: string;
+    areaHectare: number;
+    ownershipType?: string;
+    location?: string;
+    estimatedValue?: number;
+    isOwned: boolean;
+  }>>([{
+    id: 1,
+    typeCode: '',
+    areaHectare: 0,
+    ownershipType: 'OWNED',
+    location: '',
+    estimatedValue: 0,
+    isOwned: true
+  }]);
+
+  // Единица измерения для земельных участков
+  const [landMeasurementUnit, setLandMeasurementUnit] = useState<'соток' | 'га' | 'м²'>('га');
+
+  // Скот
+  const [livestock, setLivestock] = useState<Array<{
+    id: number;
+    typeCode: string;
+    qty: number;
+    convUnits: number;
+    estimatedValue?: number;
+    isOwned: boolean;
+  }>>([{
+    id: 1,
+    typeCode: '',
+    qty: 0,
+    convUnits: 0,
+    estimatedValue: 0,
+    isOwned: true
+  }]);
+
+  // Транспортные средства
+  const [vehicles, setVehicles] = useState<Array<{
+    id: number;
+    typeCode: string;
+    makeModel?: string;
+    year: number;
+    isLightCar: boolean;
+    regNo?: string;
+    estimatedValue?: number;
+    isOwned: boolean;
+  }>>([{
+    id: 1,
+    typeCode: '',
+    makeModel: '',
+    year: new Date().getFullYear(),
+    isLightCar: false,
+    regNo: '',
+    estimatedValue: 0,
+    isOwned: true
+  }]);
+
+  // Доходы (массив для каждого члена семьи)
+  const [incomes, setIncomes] = useState<Array<{
+    id: number;
+    memberId?: number; // ссылка на члена семьи
+    incomeTypeCode: string;
+    amount: number;
+    periodicity: 'M' | 'Y';
+    periodFrom: string;
+    periodTo?: string;
+    sourceRef?: string;
+  }>>([]);
+
+  // Адреса
+  const [addresses, setAddresses] = useState<Array<{
+    id: number;
+    type: 'REG' | 'FACT';
+    regionCode: string;
+    raionCode: string;
+    localityCode: string;
+    street: string;
+    house: string;
+    flat: string;
+    postalCode: string;
+    isPrimary: boolean;
+  }>>([{
+    id: 1,
+    type: 'REG',
+    regionCode: '',
+    raionCode: '',
+    localityCode: '',
+    street: '',
+    house: '',
+    flat: '',
+    postalCode: '',
+    isPrimary: true
+  }]);
+
+  // Контакты
+  const [contacts, setContacts] = useState<Array<{
+    id: number;
+    type: string;
+    value: string;
+    isPrimary: boolean;
+  }>>([{
+    id: 1,
+    type: 'mobile',
+    value: '',
+    isPrimary: true
+  }]);
+
+  // Дополнительные удостоверения
+  const [additionalIds, setAdditionalIds] = useState<Array<{
+    id: number;
+    type: string;
+    series: string;
+    number: string;
+    issuingAuthority: string;
+    issueDate: string;
+    expiryDate: string;
+  }>>([]);
+
+  // Орган соцзащиты и категории
+  const [socialAuthority, setSocialAuthority] = useState({
+    municipalAuthority: '',
+    applicantType: '',
+    category: '',
+    disabilityCategory: '',
+    msekRefNumber: '',
+    msekIssueDate: '',
+    dsuRefNumber: '',
+    dsuIssueDate: ''
   });
+
+  // Категории (чекбоксы)
+  const [categories, setCategories] = useState({
+    forChild: false,
+    forFamilyWithChild: false,
+    forMinor: false,
+    forIncapacitated: false
+  });
+
+  // Платежные реквизиты
+  const [paymentRequisites, setPaymentRequisites] = useState({
+    personalAccount: '',
+    bankAccount: '',
+    cardAccount: '',
+    bankCode: '',
+    paymentType: ''
+  });
+
+  // Специальные компенсации
+  const [specialCompensations, setSpecialCompensations] = useState<Array<{
+    id: number;
+    reason: string;
+    type: string;
+    amount: number;
+    periodFrom: string;
+    periodTo: string;
+  }>>([]);
+
+  // Возвраты
+  const [refunds, setRefunds] = useState<Array<{
+    id: number;
+    reason: string;
+    returnDate: string;
+    amount: number;
+  }>>([]);
 
   // Состояние для документов
   const [documents, setDocuments] = useState({
@@ -284,6 +401,14 @@ export default function NewApplication() {
     statusMessage: ''
   });
 
+  // Состояние для отправки заявки
+  const [submitState, setSubmitState] = useState({
+    isSubmitting: false,
+    isSubmitted: false,
+    submitError: null as string | null,
+    applicationId: null as number | null
+  });
+
   // Новое состояние для ТУ полей
   const [tuData, setTuData] = useState({
     // Дополнительные удостоверения
@@ -370,6 +495,7 @@ export default function NewApplication() {
       id: Date.now(),
       type,
       fullName: '',
+      pin: '',
       birthDate: '',
       age: 0,
       gender: '',
@@ -383,15 +509,7 @@ export default function NewApplication() {
         issueDate: '',
         issuingAuthority: ''
       },
-      income: {
-        salary: 0,
-        pension: 0,
-        benefit: 0,
-        businessIncome: 0,
-        propertyIncome: 0,
-        agriculturalIncome: 0,
-        otherIncome: 0
-      }
+      disabilityFlag: false
     };
     setFamilyMembers([...familyMembers, newMember]);
   };
@@ -401,6 +519,11 @@ export default function NewApplication() {
     if (familyMembers.length > 1) {
       setFamilyMembers(familyMembers.filter(member => member.id !== id));
     }
+  };
+
+  // Функция для обновления данных заявителя
+  const updateApplicant = (field: string, value: any) => {
+    setApplicant(prev => ({ ...prev, [field]: value }));
   };
 
   // Функция для обновления данных члена семьи
@@ -449,220 +572,67 @@ export default function NewApplication() {
     return childRelations.includes(relation) ? 'child' : 'adult';
   };
 
-  // Функции для управления подсобным хозяйством
-  const addLandPlot = () => {
-    const newPlot = {
-      id: Date.now(),
-      type: '',
-      area: 0,
-      unit: 'соток'
-    };
-    setSubsidiaryFarming(prev => ({
-      ...prev,
-      landPlots: [...prev.landPlots, newPlot]
-    }));
-  };
+  // Функции для управления подсобным хозяйством (удалены - перенесены ниже)
 
-  const removeLandPlot = (id: number) => {
-    if (subsidiaryFarming.landPlots.length > 1) {
-      setSubsidiaryFarming(prev => ({
-        ...prev,
-        landPlots: prev.landPlots.filter(plot => plot.id !== id)
-      }));
+  // Старые функции удалены
+
+  // Старые функции для скота удалены
+
+  // Старые функции для транспортных средств удалены
+
+  // Функции удалены - используются новые структуры данных
+
+  // Функция для конвертации площади в гектары
+  const convertToHectares = (area: number, unit: 'соток' | 'га' | 'м²') => {
+    switch (unit) {
+      case 'соток':
+        return area * 0.01; // 1 соток = 0.01 га
+      case 'га':
+        return area;
+      case 'м²':
+        return area / 10000; // 1 га = 10000 м²
+      default:
+        return area;
     }
   };
 
-  const updateLandPlot = (id: number, field: string, value: any) => {
-    setSubsidiaryFarming(prev => ({
-      ...prev,
-      landPlots: prev.landPlots.map(plot => 
-        plot.id === id ? { ...plot, [field]: value } : plot
-      )
-    }));
-  };
-
-  const addLivestock = () => {
-    const newLivestock = {
-      id: Date.now(),
-      type: '',
-      count: 0
-    };
-    setSubsidiaryFarming(prev => ({
-      ...prev,
-      livestock: [...prev.livestock, newLivestock]
-    }));
-  };
-
-  const removeLivestock = (id: number) => {
-    if (subsidiaryFarming.livestock.length > 1) {
-      setSubsidiaryFarming(prev => ({
-        ...prev,
-        livestock: prev.livestock.filter(item => item.id !== id)
-      }));
-    }
-  };
-
-  const updateLivestock = (id: number, field: string, value: any) => {
-    setSubsidiaryFarming(prev => ({
-      ...prev,
-      livestock: prev.livestock.map(item => 
-        item.id === id ? { ...item, [field]: value } : item
-      )
-    }));
-  };
-
-  const addVehicle = () => {
-    const newVehicle = {
-      id: Date.now(),
-      type: '',
-      year: new Date().getFullYear(),
-      model: ''
-    };
-    setSubsidiaryFarming(prev => ({
-      ...prev,
-      vehicles: [...prev.vehicles, newVehicle]
-    }));
-  };
-
-  const removeVehicle = (id: number) => {
-    if (subsidiaryFarming.vehicles.length > 1) {
-      setSubsidiaryFarming(prev => ({
-        ...prev,
-        vehicles: prev.vehicles.filter(vehicle => vehicle.id !== id)
-      }));
-    }
-  };
-
-  const updateVehicle = (id: number, field: string, value: any) => {
-    setSubsidiaryFarming(prev => ({
-      ...prev,
-      vehicles: prev.vehicles.map(vehicle => 
-        vehicle.id === id ? { ...vehicle, [field]: value } : vehicle
-      )
-    }));
-  };
-
-  // Функция для расчета условных голов скота
-  const calculateConventionalUnits = () => {
-    const { livestock } = subsidiaryFarming;
-    const conversionRates = {
-      cow: 1.0,
-      horse: 1.0,
-      sheep: 0.1,
-      goat: 0.1,
-      pig: 0.2,
-      chicken: 0.01,
-      duck: 0.01,
-      goose: 0.01
-    };
-
-    return livestock.reduce((total, item) => {
-      const rate = conversionRates[item.type as keyof typeof conversionRates] || 0;
-      return total + (item.count * rate);
-    }, 0);
-  };
-
-  // Функция для проверки возраста автомобиля
-  const isCarAgeValid = (year: number) => {
-    const currentYear = new Date().getFullYear();
-    return (currentYear - year) < 20;
-  };
-
-  // Функция для расчета общего имущества в МПЦ
+  // Функция для расчета общей стоимости имущества в МПЦ
   const calculateTotalPropertyValue = () => {
-    const conventionalUnits = calculateConventionalUnits();
-    const totalLandArea = subsidiaryFarming.landPlots.reduce((sum, plot) => sum + plot.area, 0);
-    const vehicleCount = subsidiaryFarming.vehicles.length;
-    
-    // Примерные коэффициенты для расчета в МПЦ
-    const landValue = totalLandArea * 0.1; // 0.1 МПЦ за сотку
-    const livestockValue = conventionalUnits * 0.5; // 0.5 МПЦ за условную голову
-    const vehicleValue = vehicleCount * 2.0; // 2 МПЦ за транспортное средство
-    
-    return landValue + livestockValue + vehicleValue;
-  };
+    // Расчет стоимости земли (в гектарах)
+    const landValue = landPlots.reduce((sum, plot) => {
+      const areaInHectares = convertToHectares(plot.areaHectare, landMeasurementUnit);
+      // Примерная стоимость 1 га земли (можно настроить)
+      const landPricePerHectare = 100000; // 100,000 сом за гектар
+      return sum + (areaInHectares * landPricePerHectare);
+    }, 0);
 
-  // Функции для управления доходами
-  const updateMainIncome = (field: string, value: number) => {
-    setFamilyIncome(prev => ({
-      ...prev,
-      mainIncome: { ...prev.mainIncome, [field]: value }
-    }));
-  };
+    // Расчет стоимости скота
+    const livestockValue = livestock.reduce((sum, item) => {
+      // Примерная стоимость за условную голову скота
+      const pricePerUnit = 50000; // 50,000 сом за условную голову
+      return sum + (item.convUnits * pricePerUnit);
+    }, 0);
 
-  const updateEducationIncome = (field: string, value: number) => {
-    setFamilyIncome(prev => ({
-      ...prev,
-      educationIncome: { ...prev.educationIncome, [field]: value }
-    }));
-  };
+    // Расчет стоимости транспортных средств
+    const vehicleValue = vehicles.reduce((sum, vehicle) => {
+      return sum + (vehicle.estimatedValue || 0);
+    }, 0);
 
-  const updateOtherIncome = (field: string, value: number) => {
-    setFamilyIncome(prev => ({
-        ...prev,
-      otherIncome: { ...prev.otherIncome, [field]: value }
-    }));
-  };
-
-  const updateBusinessIncome = (field: string, value: any) => {
-    setFamilyIncome(prev => ({
-      ...prev,
-      businessIncome: { ...prev.businessIncome, [field]: value }
-    }));
-  };
-
-  const updateTaxData = (field: string, value: any) => {
-    setFamilyIncome(prev => ({
-      ...prev,
-      businessIncome: {
-        ...prev.businessIncome,
-        taxData: { ...prev.businessIncome.taxData, [field]: value }
-      }
-    }));
-  };
-
-  const addFinancialAsset = () => {
-    const newAsset = {
-      id: Date.now(),
-      type: '',
-      amount: 0,
-      monthlyIncome: 0
-    };
-    setFamilyIncome(prev => ({
-      ...prev,
-      financialAssets: [...prev.financialAssets, newAsset]
-    }));
-  };
-
-  const removeFinancialAsset = (id: number) => {
-    if (familyIncome.financialAssets.length > 1) {
-      setFamilyIncome(prev => ({
-        ...prev,
-        financialAssets: prev.financialAssets.filter(asset => asset.id !== id)
-      }));
-    }
-  };
-
-  const updateFinancialAsset = (id: number, field: string, value: any) => {
-    setFamilyIncome(prev => ({
-      ...prev,
-      financialAssets: prev.financialAssets.map(asset => 
-        asset.id === id ? { ...asset, [field]: value } : asset
-      )
-    }));
+    // Конвертация в МПЦ (1 МПЦ = 1,000,000 сом)
+    const totalValueInSoms = landValue + livestockValue + vehicleValue;
+    return totalValueInSoms / 1000000; // Конвертация в МПЦ
   };
 
   // Функция для расчета суммарного дохода семьи
   const calculateTotalFamilyIncome = () => {
-    const { mainIncome, educationIncome, otherIncome, businessIncome, financialAssets } = familyIncome;
-    
-    const mainTotal = Object.values(mainIncome).reduce((sum, value) => sum + value, 0);
-    const educationTotal = Object.values(educationIncome).reduce((sum, value) => sum + value, 0);
-    const otherTotal = Object.values(otherIncome).reduce((sum, value) => sum + value, 0);
-    const businessTotal = businessIncome.businessRevenue;
-    const financialTotal = financialAssets.reduce((sum, asset) => sum + asset.monthlyIncome, 0);
-    
-    return mainTotal + educationTotal + otherTotal + businessTotal + financialTotal;
+    return incomes.reduce((total, income) => {
+      if (income.periodicity === 'M') {
+        return total + income.amount;
+      } else if (income.periodicity === 'Y') {
+        return total + (income.amount / 12);
+      }
+      return total;
+    }, 0);
   };
 
   // Функция для расчета среднедушевого дохода (ССДС)
@@ -994,6 +964,7 @@ export default function NewApplication() {
     return `UB-${year}${month}${day}-${random}`;
   };
 
+
   // Функция для проверки готовности к отправке
   const isReadyToSubmit = () => {
     return (
@@ -1010,32 +981,344 @@ export default function NewApplication() {
     );
   };
 
+  // Функция для преобразования данных формы в формат API
+  const prepareApplicationData = () => {
+    const applicationNumber = generateApplicationNumber();
+    const currentDate = new Date().toISOString();
+    
+    // Подготовка данных заявителя
+    const applicantData = {
+      pin: applicant.pin,
+      fullName: applicant.fullName,
+      genderCode: applicant.gender as 'M' | 'F',
+      birthDate: applicant.birthDate,
+      age: calculateAge(applicant.birthDate),
+      citizenshipCode: applicant.citizenship,
+      nationalityCode: applicant.nationality,
+      educationCode: applicant.education,
+      maritalStatus: applicant.maritalStatus,
+      language: language as 'ru' | 'ky',
+      isActive: true,
+      createdAt: currentDate,
+      updatedAt: currentDate
+    };
+
+    // Подготовка основного документа
+    const identityDocument = {
+      docType: applicant.documentType || '',
+      series: applicant.documentSeries || '',
+      number: applicant.documentNumber || '',
+      issueDate: applicant.documentIssueDate || '',
+      issuerCode: applicant.passportIssuingAuthority || '',
+      issuingAuthority: applicant.passportIssuingAuthority || '',
+      expiryDate: applicant.documentExpiryDate || '',
+      isPrimary: true,
+      isActive: true,
+      createdAt: currentDate,
+      updatedAt: currentDate
+    };
+
+    // Подготовка дополнительных удостоверений
+    const additionalIdentities = tuData.additionalIds.map(id => ({
+      idType: id.type as 'military' | 'special',
+      series: id.series,
+      number: id.number,
+      issuingAuthority: id.issuingAuthority,
+      issueDate: id.issueDate,
+      expiryDate: id.expiryDate,
+      isActive: true,
+      createdAt: currentDate,
+      updatedAt: currentDate
+    }));
+
+    // Подготовка адресов
+    const addresses = tuData.addresses.map(addr => ({
+      regionCode: addr.regionCode,
+      raionCode: addr.raionCode,
+      localityCode: addr.localityCode,
+      street: addr.street,
+      house: addr.house,
+      flat: addr.flat,
+      addrType: addr.type,
+      postalCode: addr.postalCode,
+      isPrimary: addr.isPrimary,
+      isActive: true,
+      createdAt: currentDate,
+      updatedAt: currentDate
+    }));
+
+    // Подготовка контактов
+    const contacts = tuData.contacts.map(contact => ({
+      contactTypeCode: contact.type,
+      value: contact.value,
+      isPrimary: contact.isPrimary,
+      isVerified: false,
+      createdAt: currentDate,
+      updatedAt: currentDate
+    }));
+
+    // Подготовка членов семьи
+    const familyMembersData = familyMembers.map(member => ({
+      fullName: member.fullName,
+      pin: member.pin,
+      birthDate: member.birthDate,
+      age: member.age,
+      genderCode: member.gender as 'M' | 'F',
+      relationCode: member.relation,
+      citizenshipCode: member.citizenship,
+      documentType: member.documentType,
+      documentNumber: member.documentNumber,
+      childCategoryCode: member.childCategory,
+      disabilityFlag: member.disabilityFlag,
+      isActive: true,
+      createdAt: currentDate,
+      updatedAt: currentDate
+    }));
+
+    // Подготовка доходов
+    const incomesData = incomes.map(income => ({
+      incomeTypeCode: income.incomeTypeCode,
+      amount: income.amount,
+      periodicity: income.periodicity,
+      periodFrom: income.periodFrom,
+      periodTo: income.periodTo,
+      sourceRef: income.sourceRef,
+      createdAt: currentDate,
+      updatedAt: currentDate
+    }));
+
+    // Подготовка земельных участков
+    const landPlotsData = landPlots.map(plot => ({
+      typeCode: plot.typeCode,
+      areaHectare: plot.areaHectare,
+      ownershipType: plot.ownershipType,
+      location: plot.location,
+      estimatedValue: plot.estimatedValue,
+      isOwned: plot.isOwned,
+      createdAt: currentDate,
+      updatedAt: currentDate
+    }));
+
+    // Подготовка скота
+    const livestockData = livestock.map(animal => ({
+      typeCode: animal.typeCode,
+      qty: animal.qty,
+      convUnits: animal.convUnits,
+      estimatedValue: animal.estimatedValue,
+      isOwned: animal.isOwned,
+      createdAt: currentDate,
+      updatedAt: currentDate
+    }));
+
+    // Подготовка транспортных средств
+    const vehiclesData = vehicles.map(vehicle => ({
+      typeCode: vehicle.typeCode,
+      makeModel: vehicle.makeModel,
+      year: vehicle.year,
+      isLightCar: vehicle.isLightCar,
+      regNo: vehicle.regNo,
+      estimatedValue: vehicle.estimatedValue,
+      isOwned: vehicle.isOwned,
+      createdAt: currentDate,
+      updatedAt: currentDate
+    }));
+
+    // Подготовка согласий
+    const consentData = {
+      pdnSelf: completionData.personalDataConsent,
+      pdnChildren: completionData.childrenDataConsent,
+      truthConfirm: completionData.dataAccuracyConfirmation,
+      termsAck: completionData.terminationConditionsAcknowledgment,
+      givenAt: currentDate,
+      ipAddress: '', // Будет заполнено на сервере
+      userAgent: navigator.userAgent,
+      createdAt: currentDate
+    };
+
+    // Подготовка связи с органами соцзащиты
+    const socialAuthorityLink = {
+      municipalAuthorityCode: tuData.socialAuthority.municipalAuthority,
+      applicantTypeCode: tuData.socialAuthority.applicantType,
+      categoryCode: tuData.socialAuthority.category,
+      disabilityCategoryCode: tuData.socialAuthority.disabilityCategory,
+      msekRefNumber: tuData.socialAuthority.msekRefNumber,
+      msekIssueDate: tuData.socialAuthority.msekIssueDate,
+      dsuRefNumber: tuData.socialAuthority.dsuRefNumber,
+      dsuIssueDate: tuData.socialAuthority.dsuIssueDate,
+      isActive: true,
+      createdAt: currentDate,
+      updatedAt: currentDate
+    };
+
+    // Подготовка категорий заявителя
+    const applicantCategories = Object.entries(tuData.categories)
+      .filter(([_, value]) => value)
+      .map(([key, _]) => ({
+        categoryCode: key,
+        isException: false,
+        assignedDate: currentDate,
+        validFrom: currentDate,
+        isActive: true,
+        createdAt: currentDate,
+        updatedAt: currentDate
+      }));
+
+    // Подготовка платежных реквизитов
+    const paymentRequisites = [
+      {
+        requisiteType: 'PERSONAL' as const,
+        personalAccount: tuData.paymentRequisites.personalAccount,
+        isActive: true,
+        createdAt: currentDate,
+        updatedAt: currentDate
+      },
+      {
+        requisiteType: 'BANK' as const,
+        bankCode: tuData.paymentRequisites.bankCode,
+        bankAccount: tuData.paymentRequisites.bankAccount,
+        isActive: true,
+        createdAt: currentDate,
+        updatedAt: currentDate
+      },
+      {
+        requisiteType: 'CARD' as const,
+        cardAccount: tuData.paymentRequisites.cardAccount,
+        isActive: true,
+        createdAt: currentDate,
+        updatedAt: currentDate
+      }
+    ].filter(req => req.personalAccount || req.bankAccount || req.cardAccount);
+
+    // Подготовка заявления
+    const applicationData = {
+      applicationNumber,
+      applicantId: 0, // Будет установлен сервером
+      status: 'SUBMITTED' as const,
+      submissionDate: currentDate,
+      submittedAt: currentDate,
+      language: language as 'ru' | 'ky',
+      priority: 'NORMAL' as const,
+      riskScore: 0,
+      inspectionRequired: false,
+      isActive: true,
+      createdAt: currentDate,
+      updatedAt: currentDate,
+      // Связанные данные
+      applicant: applicantData,
+      identityDocument,
+      additionalIdentities,
+      addresses,
+      contacts,
+      familyMembers: familyMembersData,
+      incomes: incomesData,
+      landPlots: landPlotsData,
+      livestock: livestockData,
+      vehicles: vehiclesData,
+      consent: consentData,
+      socialAuthorityLink,
+      applicantCategories,
+      paymentRequisites
+    };
+
+    return applicationData;
+  };
+
   // Функция для отправки заявления
-  const submitApplication = () => {
+  const submitApplication = async () => {
     if (!isReadyToSubmit()) {
-      alert(language === 'ru' ? 'Пожалуйста, заполните все обязательные поля' : 'Сураныч, бардык милдеттүү талааларды толтуруңуз');
+      setSubmitState(prev => ({
+        ...prev,
+        submitError: language === 'ru' ? 'Пожалуйста, заполните все обязательные поля' : 'Сураныч, бардык милдеттүү талааларды толтуруңуз'
+      }));
       return;
     }
 
-    const applicationNumber = generateApplicationNumber();
-    updateCompletionData('applicationNumber', applicationNumber);
+    setSubmitState(prev => ({
+      ...prev,
+      isSubmitting: true,
+      submitError: null
+    }));
 
-    // Здесь будет логика отправки данных на сервер
-    console.log('Заявление отправлено:', {
-      applicationNumber,
-      familyMembers,
-      familyIncome,
-      subsidiaryFarming,
-      documents,
-      completionData,
-      tuData,
-      benefitCalculation: calculateDetailedBenefit()
-    });
+    try {
+      // Подготовка данных заявления
+      const applicationNumber = generateApplicationNumber();
+      const currentDate = new Date().toISOString();
+      const applicationId = Date.now(); // Используем timestamp как ID
+      
+      const applicationData = {
+        id: applicationId,
+        applicationNumber,
+        status: 'SUBMITTED' as const,
+        submissionDate: currentDate,
+        submittedAt: currentDate,
+        language: language as 'ru' | 'ky',
+        priority: 'NORMAL' as const,
+        riskScore: 0,
+        inspectionRequired: false,
+        isActive: true,
+        createdAt: currentDate,
+        updatedAt: currentDate,
+        // Данные заявителя
+        applicantName: applicant.fullName,
+        applicantPin: applicant.pin,
+        applicantPhone: tuData.contacts.find(c => c.isPrimary)?.value || '',
+        requestedAmount: calculateDetailedBenefit().finalAmount,
+        // Полные данные формы
+        formData: {
+          applicant,
+          familyMembers,
+          tuData,
+          completionData,
+          landPlots,
+          livestock,
+          vehicles,
+          incomes
+        }
+      };
 
-    alert(language === 'ru' 
-      ? `Заявление №${applicationNumber} успешно отправлено!`
-      : `№${applicationNumber} арыз ийгиликтүү жөнөтүлдү!`
-    );
+      // Сохранение в localStorage для демонстрации
+      const existingApplications = JSON.parse(localStorage.getItem('applications') || '[]');
+      existingApplications.push(applicationData);
+      localStorage.setItem('applications', JSON.stringify(existingApplications));
+      
+      // Имитация задержки сети
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      updateCompletionData('applicationNumber', applicationNumber);
+      
+      setSubmitState(prev => ({
+        ...prev,
+        isSubmitting: false,
+        isSubmitted: true,
+        applicationId: applicationId
+      }));
+
+      // Логирование успешной отправки
+      console.log('Заявление успешно отправлено:', applicationData);
+
+      // Отправляем событие для обновления очереди заявок
+      window.dispatchEvent(new CustomEvent('applicationSubmitted', {
+        detail: { applicationId, applicationNumber }
+      }));
+
+      alert(language === 'ru' 
+        ? `Заявление №${applicationNumber} успешно отправлено!\n\nЗаявка добавлена в очередь на рассмотрение. Вы можете отслеживать её статус в разделе "Очередь заявок" в личном кабинете.`
+        : `№${applicationNumber} арыз ийгиликтүү жөнөтүлдү!\n\nАрыз каралууга кезекке кошулду. Анын абалын жеке кабинеттин "Арыздардын кезеги" бөлүмүндөн көзөмөлдөй аласыз.`
+      );
+    } catch (error) {
+      console.error('Ошибка отправки заявления:', error);
+      
+      setSubmitState(prev => ({
+        ...prev,
+        isSubmitting: false,
+        submitError: error instanceof Error ? error.message : 'Неизвестная ошибка'
+      }));
+
+      alert(language === 'ru' 
+        ? `Ошибка отправки заявления: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`
+        : `Арыз жөнөтүүдө ката: ${error instanceof Error ? error.message : 'Белгисиз ката'}`
+      );
+    }
   };
 
   // Функции для управления ТУ данными
@@ -1056,31 +1339,24 @@ export default function NewApplication() {
     }));
   };
 
-  // Дополнительные удостоверения
-  const addAdditionalId = () => {
-    const newId = {
-      id: Date.now(),
-      type: '',
-      series: '',
-      number: '',
-      issuingAuthority: '',
-      issueDate: '',
-      expiryDate: ''
-    };
+  // Функции для работы с дополнительными удостоверениями в tuData
+  const addTuAdditionalId = () => {
+    const newId = Math.max(...tuData.additionalIds.map(a => a.id), 0) + 1;
     setTuData(prev => ({
       ...prev,
-      additionalIds: [...prev.additionalIds, newId]
+      additionalIds: [...prev.additionalIds, {
+        id: newId,
+        type: 'military',
+        series: '',
+        number: '',
+        issuingAuthority: '',
+        issueDate: '',
+        expiryDate: ''
+      }]
     }));
   };
 
-  const removeAdditionalId = (id: number) => {
-    setTuData(prev => ({
-      ...prev,
-      additionalIds: prev.additionalIds.filter(item => item.id !== id)
-    }));
-  };
-
-  const updateAdditionalId = (id: number, field: string, value: any) => {
+  const updateTuAdditionalId = (id: number, field: string, value: any) => {
     setTuData(prev => ({
       ...prev,
       additionalIds: prev.additionalIds.map(item => 
@@ -1089,103 +1365,122 @@ export default function NewApplication() {
     }));
   };
 
-  // Адреса
-  const addAddress = (type: 'REG' | 'FACT') => {
-    const newAddress = {
-      id: Date.now(),
-      type,
-      regionCode: '',
-      raionCode: '',
-      localityCode: '',
-      street: '',
-      house: '',
-      flat: '',
-      postalCode: '',
-      isPrimary: false
-    };
+  const removeTuAdditionalId = (id: number) => {
     setTuData(prev => ({
       ...prev,
-      addresses: [...prev.addresses, newAddress]
+      additionalIds: prev.additionalIds.filter(item => item.id !== id)
     }));
   };
 
-  const removeAddress = (id: number) => {
+  // Функции для работы с адресами в tuData
+  const addTuAddress = (type: 'REG' | 'FACT' = 'FACT') => {
+    const newId = Math.max(...tuData.addresses.map(a => a.id), 0) + 1;
     setTuData(prev => ({
       ...prev,
-      addresses: prev.addresses.filter(item => item.id !== id)
+      addresses: [...prev.addresses, {
+        id: newId,
+        type,
+        regionCode: '',
+        raionCode: '',
+        localityCode: '',
+        street: '',
+        house: '',
+        flat: '',
+        postalCode: '',
+        isPrimary: false
+      }]
     }));
   };
 
-  const updateAddress = (id: number, field: string, value: any) => {
+  const updateTuAddress = (id: number, field: string, value: any) => {
     setTuData(prev => ({
       ...prev,
-      addresses: prev.addresses.map(item => 
-        item.id === id ? { ...item, [field]: value } : item
+      addresses: prev.addresses.map(addr => 
+        addr.id === id ? { ...addr, [field]: value } : addr
       )
     }));
   };
 
-  // Контакты
-  const addContact = () => {
-    const newContact = {
-      id: Date.now(),
-      type: '',
-      value: '',
-      isPrimary: false
-    };
+  const removeTuAddress = (id: number) => {
+    if (tuData.addresses.length > 1) {
+      setTuData(prev => ({
+        ...prev,
+        addresses: prev.addresses.filter(addr => addr.id !== id)
+      }));
+    }
+  };
+
+  // Функции для работы с контактами в tuData
+  const addTuContact = () => {
+    const newId = Math.max(...tuData.contacts.map(c => c.id), 0) + 1;
     setTuData(prev => ({
       ...prev,
-      contacts: [...prev.contacts, newContact]
+      contacts: [...prev.contacts, {
+        id: newId,
+        type: 'mobile',
+        value: '',
+        isPrimary: false
+      }]
     }));
   };
 
-  const removeContact = (id: number) => {
+  const updateTuContact = (id: number, field: string, value: any) => {
     setTuData(prev => ({
       ...prev,
-      contacts: prev.contacts.filter(item => item.id !== id)
-    }));
-  };
-
-  const updateContact = (id: number, field: string, value: any) => {
-    setTuData(prev => ({
-      ...prev,
-      contacts: prev.contacts.map(item => 
-        item.id === id ? { ...item, [field]: value } : item
+      contacts: prev.contacts.map(contact => 
+        contact.id === id ? { ...contact, [field]: value } : contact
       )
     }));
   };
 
-  // Специальные компенсации
-  const addSpecialCompensation = () => {
-    const newCompensation = {
-      id: Date.now(),
-      reason: '',
-      type: '',
-      amount: 0,
-      periodFrom: '',
-      periodTo: ''
-    };
+  const removeTuContact = (id: number) => {
+    if (tuData.contacts.length > 1) {
+      setTuData(prev => ({
+        ...prev,
+        contacts: prev.contacts.filter(contact => contact.id !== id)
+      }));
+    }
+  };
+
+  // Функции для работы со специальными компенсациями в tuData
+  const addTuSpecialCompensation = () => {
+    const newId = Math.max(...tuData.specialCompensations.map(s => s.id), 0) + 1;
     setTuData(prev => ({
       ...prev,
-      specialCompensations: [...prev.specialCompensations, newCompensation]
+      specialCompensations: [...prev.specialCompensations, {
+        id: newId,
+        reason: '',
+        type: '',
+        amount: 0,
+        periodFrom: new Date().toISOString().split('T')[0],
+        periodTo: ''
+      }]
     }));
   };
 
-  const removeSpecialCompensation = (id: number) => {
+  const updateTuSpecialCompensation = (id: number, field: string, value: any) => {
     setTuData(prev => ({
       ...prev,
-      specialCompensations: prev.specialCompensations.filter(item => item.id !== id)
-    }));
-  };
-
-  const updateSpecialCompensation = (id: number, field: string, value: any) => {
-    setTuData(prev => ({
-      ...prev,
-      specialCompensations: prev.specialCompensations.map(item => 
-        item.id === id ? { ...item, [field]: value } : item
+      specialCompensations: prev.specialCompensations.map(comp => 
+        comp.id === id ? { ...comp, [field]: value } : comp
       )
     }));
   };
+
+  const removeTuSpecialCompensation = (id: number) => {
+    setTuData(prev => ({
+      ...prev,
+      specialCompensations: prev.specialCompensations.filter(comp => comp.id !== id)
+    }));
+  };
+
+  // Старые функции для дополнительных удостоверений удалены
+
+  // Старые функции для адресов удалены
+
+  // Старые функции для контактов удалены
+
+  // Старые функции для специальных компенсаций удалены
 
   // Интеграции (заглушки)
   const getMsekRef = () => {
@@ -1262,28 +1557,26 @@ export default function NewApplication() {
   // Функция авторасчета показателей домохозяйства
   const calculateHouseholdMetricsData = () => {
     // Подготовка данных для расчета
-    const incomes = [
-      { amount: familyIncome.mainIncome.salary, periodicity: 'M' as 'M' | 'Y' },
-      { amount: familyIncome.mainIncome.pension, periodicity: 'M' as 'M' | 'Y' },
-      { amount: familyIncome.mainIncome.socialBenefits, periodicity: 'M' as 'M' | 'Y' },
-      { amount: familyIncome.mainIncome.otherMainIncome, periodicity: 'M' as 'M' | 'Y' }
-    ].filter(income => income.amount > 0);
-
-    const livestock = subsidiaryFarming.livestock.map(item => ({
-      type: item.type,
-      count: item.count
+    const livestockData = livestock.map(item => ({
+      type: item.typeCode,
+      count: item.qty,
+      convUnits: item.convUnits || 0
     }));
 
-    const vehicles = subsidiaryFarming.vehicles.map(vehicle => ({
-      type: vehicle.type,
+    const vehiclesData = vehicles.map(vehicle => ({
+      type: vehicle.typeCode,
       year: vehicle.year,
-      isLightCar: vehicle.type === 'car' // Простая логика для определения легкового авто
+      isLightCar: vehicle.isLightCar
     }));
 
-    const familySize = familyMembers.length + 1; // +1 для заявителя
+    const landPlotsData = landPlots.map(item => ({
+      type: item.typeCode,
+      area: item.areaHectare,
+      ownershipType: item.ownershipType || 'OWNED'
+    }));
 
     // Расчет метрик
-    const metrics = calculateHouseholdMetrics(incomes, livestock, vehicles, familySize);
+    const metrics = calculateHouseholdMetrics(familyMembers, incomes, landPlotsData, livestockData, vehiclesData);
     
     // Проверка готовности к назначению
     const isEligible = checkBenefitEligibility(metrics);
@@ -1300,13 +1593,266 @@ export default function NewApplication() {
     });
 
     // Логирование расчета
-    auditLogger.logCalculation('BENEFIT', 0, 0, 'SPECIALIST', { incomes, livestock, vehicles, familySize }, metrics);
+    auditLogger.logCalculation('BENEFIT', 0, 0, 'SPECIALIST', { incomes, livestockData, vehiclesData, landPlotsData }, metrics);
+  };
+
+  // Функции для работы с новыми структурами данных
+  
+  // Функции для работы с доходами
+  const addIncome = () => {
+    const newId = Math.max(...incomes.map(i => i.id), 0) + 1;
+    setIncomes(prev => [...prev, {
+      id: newId,
+      memberId: undefined,
+      incomeTypeCode: '',
+      amount: 0,
+      periodicity: 'M',
+      periodFrom: new Date().toISOString().split('T')[0],
+      periodTo: undefined,
+      sourceRef: ''
+    }]);
+  };
+
+  const updateIncome = (id: number, field: string, value: any) => {
+    setIncomes(prev => prev.map(income => 
+      income.id === id ? { ...income, [field]: value } : income
+    ));
+  };
+
+  const removeIncome = (id: number) => {
+    setIncomes(prev => prev.filter(income => income.id !== id));
+  };
+
+  // Функции для работы с земельными участками
+  const addLandPlot = () => {
+    const newId = Math.max(...landPlots.map(l => l.id), 0) + 1;
+    setLandPlots(prev => [...prev, {
+      id: newId,
+      typeCode: '',
+      areaHectare: 0,
+      ownershipType: 'OWNED',
+      location: '',
+      estimatedValue: 0,
+      isOwned: true
+    }]);
+  };
+
+  const updateLandPlot = (id: number, field: string, value: any) => {
+    setLandPlots(prev => prev.map(plot => 
+      plot.id === id ? { ...plot, [field]: value } : plot
+    ));
+  };
+
+  const removeLandPlot = (id: number) => {
+    if (landPlots.length > 1) {
+      setLandPlots(prev => prev.filter(plot => plot.id !== id));
+    }
+  };
+
+  // Функции для работы со скотом
+  const addLivestock = () => {
+    const newId = Math.max(...livestock.map(l => l.id), 0) + 1;
+    setLivestock(prev => [...prev, {
+      id: newId,
+      typeCode: '',
+      qty: 0,
+      convUnits: 0,
+      estimatedValue: 0,
+      isOwned: true
+    }]);
+  };
+
+  // Функция для расчета условных голов скота
+  const calculateConvUnits = (typeCode: string, qty: number) => {
+    // Коэффициенты пересчета в условные головы для разных типов скота
+    const conversionRates: { [key: string]: number } = {
+      'cattle': 1.0,      // Крупный рогатый скот
+      'sheep': 0.15,      // Овцы
+      'goats': 0.15,      // Козы
+      'horses': 1.0,      // Лошади
+      'pigs': 0.3,        // Свиньи
+      'poultry': 0.01,    // Птица
+      'camels': 1.2,      // Верблюды
+      'donkeys': 0.5,     // Ослы
+    };
+    
+    const rate = conversionRates[typeCode] || 0.1; // По умолчанию 0.1
+    return qty * rate;
+  };
+
+  const updateLivestock = (id: number, field: string, value: any) => {
+    setLivestock(prev => prev.map(item => {
+      if (item.id === id) {
+        const updatedItem = { ...item, [field]: value };
+        
+        // Автоматический пересчет условных голов при изменении типа или количества
+        if (field === 'typeCode' || field === 'qty') {
+          updatedItem.convUnits = calculateConvUnits(updatedItem.typeCode, updatedItem.qty);
+        }
+        
+        return updatedItem;
+      }
+      return item;
+    }));
+  };
+
+  const removeLivestock = (id: number) => {
+    if (livestock.length > 1) {
+      setLivestock(prev => prev.filter(item => item.id !== id));
+    }
+  };
+
+  // Функции для работы с транспортными средствами
+  const addVehicle = () => {
+    const newId = Math.max(...vehicles.map(v => v.id), 0) + 1;
+    setVehicles(prev => [...prev, {
+      id: newId,
+      typeCode: '',
+      makeModel: '',
+      year: new Date().getFullYear(),
+      isLightCar: false,
+      regNo: '',
+      estimatedValue: 0,
+      isOwned: true
+    }]);
+  };
+
+  const updateVehicle = (id: number, field: string, value: any) => {
+    setVehicles(prev => prev.map(vehicle => 
+      vehicle.id === id ? { ...vehicle, [field]: value } : vehicle
+    ));
+  };
+
+  const removeVehicle = (id: number) => {
+    if (vehicles.length > 1) {
+      setVehicles(prev => prev.filter(vehicle => vehicle.id !== id));
+    }
+  };
+
+  // Функции для работы с адресами
+  const addAddress = () => {
+    const newId = Math.max(...addresses.map(a => a.id), 0) + 1;
+    setAddresses(prev => [...prev, {
+      id: newId,
+      type: 'FACT',
+      regionCode: '',
+      raionCode: '',
+      localityCode: '',
+      street: '',
+      house: '',
+      flat: '',
+      postalCode: '',
+      isPrimary: false
+    }]);
+  };
+
+  const updateAddress = (id: number, field: string, value: any) => {
+    setAddresses(prev => prev.map(addr => 
+      addr.id === id ? { ...addr, [field]: value } : addr
+    ));
+  };
+
+  const removeAddress = (id: number) => {
+    if (addresses.length > 1) {
+      setAddresses(prev => prev.filter(addr => addr.id !== id));
+    }
+  };
+
+  // Функции для работы с контактами
+  const addContact = () => {
+    const newId = Math.max(...contacts.map(c => c.id), 0) + 1;
+    setContacts(prev => [...prev, {
+      id: newId,
+      type: 'mobile',
+      value: '',
+      isPrimary: false
+    }]);
+  };
+
+  const updateContact = (id: number, field: string, value: any) => {
+    setContacts(prev => prev.map(contact => 
+      contact.id === id ? { ...contact, [field]: value } : contact
+    ));
+  };
+
+  const removeContact = (id: number) => {
+    if (contacts.length > 1) {
+      setContacts(prev => prev.filter(contact => contact.id !== id));
+    }
+  };
+
+  // Функции для работы с дополнительными удостоверениями
+  const addAdditionalId = () => {
+    const newId = Math.max(...additionalIds.map(a => a.id), 0) + 1;
+    setAdditionalIds(prev => [...prev, {
+      id: newId,
+      type: 'military',
+      series: '',
+      number: '',
+      issuingAuthority: '',
+      issueDate: '',
+      expiryDate: ''
+    }]);
+  };
+
+  const updateAdditionalId = (id: number, field: string, value: any) => {
+    setAdditionalIds(prev => prev.map(item => 
+      item.id === id ? { ...item, [field]: value } : item
+    ));
+  };
+
+  const removeAdditionalId = (id: number) => {
+    setAdditionalIds(prev => prev.filter(item => item.id !== id));
+  };
+
+  // Функции для работы с специальными компенсациями
+  const addSpecialCompensation = () => {
+    const newId = Math.max(...specialCompensations.map(s => s.id), 0) + 1;
+    setSpecialCompensations(prev => [...prev, {
+      id: newId,
+      reason: '',
+      type: '',
+      amount: 0,
+      periodFrom: new Date().toISOString().split('T')[0],
+      periodTo: ''
+    }]);
+  };
+
+  const updateSpecialCompensation = (id: number, field: string, value: any) => {
+    setSpecialCompensations(prev => prev.map(comp => 
+      comp.id === id ? { ...comp, [field]: value } : comp
+    ));
+  };
+
+  const removeSpecialCompensation = (id: number) => {
+    setSpecialCompensations(prev => prev.filter(comp => comp.id !== id));
+  };
+
+  // Функции для работы с возвратами
+  const addRefund = () => {
+    const newId = Math.max(...refunds.map(r => r.id), 0) + 1;
+    setRefunds(prev => [...prev, {
+      id: newId,
+      reason: '',
+      returnDate: new Date().toISOString().split('T')[0],
+      amount: 0
+    }]);
+  };
+
+  const updateRefund = (id: number, field: string, value: any) => {
+    setRefunds(prev => prev.map(refund => 
+      refund.id === id ? { ...refund, [field]: value } : refund
+    ));
+  };
+
+  const removeRefund = (id: number) => {
+    setRefunds(prev => prev.filter(refund => refund.id !== id));
   };
 
   // Обновление валидации при изменении данных
   useEffect(() => {
     calculateHouseholdMetricsData();
-  }, [familyMembers, familyIncome, subsidiaryFarming]);
+  }, [familyMembers, incomes, landPlots, livestock, vehicles]);
 
   // Функция для обновления валидации
   const updateValidation = (field: string, value: any, additionalData?: any) => {
@@ -1488,35 +2034,6 @@ export default function NewApplication() {
                       </select>
                     </div>
 
-                    {/* Категория заявителя */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {language === 'ru' ? 'Категория заявителя' : 'Арыз берүүчүнүн категориясы'} <span className="text-red-500">*</span>
-                      </label>
-                      <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
-                        <option value="">{language === 'ru' ? 'Выберите категорию' : 'Категорияны тандаңыз'}</option>
-                        {applicantTypes.map(type => (
-                          <option key={type.id} value={type.id}>
-                            {type.name}
-                          </option>
-                        ))}
-                      </select>
-                  </div>
-
-                    {/* Орган соцзащиты */}
-                  <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {language === 'ru' ? 'Орган соцзащиты' : 'Социалдык коргоо органы'} <span className="text-red-500">*</span>
-                          </label>
-                      <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
-                        <option value="">{language === 'ru' ? 'Выберите орган соцзащиты' : 'Социалдык коргоо органдын тандаңыз'}</option>
-                        {municipalAuthorities.map(authority => (
-                          <option key={authority.id} value={authority.id}>
-                            {authority.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
                   </div>
 
                   {/* Основной документ */}
@@ -1685,7 +2202,7 @@ export default function NewApplication() {
                         </h4>
                           <button
                             type="button"
-                            onClick={() => removeAdditionalId(id.id)}
+                            onClick={() => removeTuAdditionalId(id.id)}
                             className="text-red-600 hover:text-red-800 text-sm"
                           >
                             {language === 'ru' ? 'Удалить' : 'Өчүрүү'}
@@ -1699,7 +2216,7 @@ export default function NewApplication() {
                             </label>
                             <select
                               value={id.type}
-                              onChange={(e) => updateAdditionalId(id.id, 'type', e.target.value)}
+                              onChange={(e) => updateTuAdditionalId(id.id, 'type', e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                             >
                               <option value="">{language === 'ru' ? 'Выберите тип' : 'Түрүн тандаңыз'}</option>
@@ -1723,7 +2240,7 @@ export default function NewApplication() {
                         <input
                             type="text"
                               value={id.series}
-                              onChange={(e) => updateAdditionalId(id.id, 'series', e.target.value)}
+                              onChange={(e) => updateTuAdditionalId(id.id, 'series', e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                               placeholder={language === 'ru' ? 'Введите серию' : 'Серияны киргизиңиз'}
                           />
@@ -1736,7 +2253,7 @@ export default function NewApplication() {
                         <input
                               type="text"
                               value={id.number}
-                              onChange={(e) => updateAdditionalId(id.id, 'number', e.target.value)}
+                              onChange={(e) => updateTuAdditionalId(id.id, 'number', e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                               placeholder={language === 'ru' ? 'Введите номер' : 'Номурун киргизиңиз'}
                           />
@@ -1749,7 +2266,7 @@ export default function NewApplication() {
                             <input
                               type="text"
                               value={id.issuingAuthority}
-                              onChange={(e) => updateAdditionalId(id.id, 'issuingAuthority', e.target.value)}
+                              onChange={(e) => updateTuAdditionalId(id.id, 'issuingAuthority', e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                               placeholder={language === 'ru' ? 'Введите орган выдачи' : 'Чыгаруу органын киргизиңиз'}
                             />
@@ -1762,7 +2279,7 @@ export default function NewApplication() {
                         <input
                               type="date"
                               value={id.issueDate}
-                              onChange={(e) => updateAdditionalId(id.id, 'issueDate', e.target.value)}
+                              onChange={(e) => updateTuAdditionalId(id.id, 'issueDate', e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                             />
                           </div>
@@ -1774,7 +2291,7 @@ export default function NewApplication() {
                             <input
                               type="date"
                               value={id.expiryDate}
-                              onChange={(e) => updateAdditionalId(id.id, 'expiryDate', e.target.value)}
+                              onChange={(e) => updateTuAdditionalId(id.id, 'expiryDate', e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                         />
                       </div>
@@ -1784,7 +2301,7 @@ export default function NewApplication() {
                     
                     <button
                       type="button"
-                      onClick={addAdditionalId}
+                      onClick={addTuAdditionalId}
                       className="w-full py-2 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-red-500 hover:text-red-500 transition-colors"
                     >
                       {language === 'ru' ? '+ Добавить удостоверение' : '+ Кимдик документ кошуу'}
@@ -2062,7 +2579,7 @@ export default function NewApplication() {
                             <input
                                 type="checkbox"
                                 checked={address.isPrimary}
-                                onChange={(e) => updateAddress(address.id, 'isPrimary', e.target.checked)}
+                                onChange={(e) => updateTuAddress(address.id, 'isPrimary', e.target.checked)}
                                 className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
                               />
                               <span className="text-sm text-gray-700">
@@ -2071,7 +2588,7 @@ export default function NewApplication() {
                             </label>
                             <button
                               type="button"
-                              onClick={() => removeAddress(address.id)}
+                              onClick={() => removeTuAddress(address.id)}
                               className="text-red-600 hover:text-red-800 text-sm"
                             >
                               {language === 'ru' ? 'Удалить' : 'Өчүрүү'}
@@ -2086,7 +2603,7 @@ export default function NewApplication() {
                             </label>
                             <select
                               value={address.regionCode}
-                              onChange={(e) => updateAddress(address.id, 'regionCode', e.target.value)}
+                              onChange={(e) => updateTuAddress(address.id, 'regionCode', e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                             >
                               <option value="">{language === 'ru' ? 'Выберите область' : 'Областы тандаңыз'}</option>
@@ -2103,7 +2620,7 @@ export default function NewApplication() {
                             <input
                               type="text"
                               value={address.raionCode}
-                              onChange={(e) => updateAddress(address.id, 'raionCode', e.target.value)}
+                              onChange={(e) => updateTuAddress(address.id, 'raionCode', e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                               placeholder={language === 'ru' ? 'Введите район' : 'Районду киргизиңиз'}
                             />
@@ -2115,7 +2632,7 @@ export default function NewApplication() {
                             </label>
                             <select
                               value={address.localityCode}
-                              onChange={(e) => updateAddress(address.id, 'localityCode', e.target.value)}
+                              onChange={(e) => updateTuAddress(address.id, 'localityCode', e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                             >
                               <option value="">{language === 'ru' ? 'Выберите населённый пункт' : 'Турак жайды тандаңыз'}</option>
@@ -2132,7 +2649,7 @@ export default function NewApplication() {
                             <input
                               type="text"
                               value={address.street}
-                              onChange={(e) => updateAddress(address.id, 'street', e.target.value)}
+                              onChange={(e) => updateTuAddress(address.id, 'street', e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                               placeholder={language === 'ru' ? 'Введите улицу' : 'Көчөнү киргизиңиз'}
                             />
@@ -2145,7 +2662,7 @@ export default function NewApplication() {
                             <input
                               type="text"
                               value={address.house}
-                              onChange={(e) => updateAddress(address.id, 'house', e.target.value)}
+                              onChange={(e) => updateTuAddress(address.id, 'house', e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                               placeholder={language === 'ru' ? 'Введите номер дома' : 'Үй номурун киргизиңиз'}
                             />
@@ -2158,7 +2675,7 @@ export default function NewApplication() {
                             <input
                               type="text"
                               value={address.flat}
-                              onChange={(e) => updateAddress(address.id, 'flat', e.target.value)}
+                              onChange={(e) => updateTuAddress(address.id, 'flat', e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                               placeholder={language === 'ru' ? 'Введите номер квартиры' : 'Квартира номурун киргизиңиз'}
                             />
@@ -2171,7 +2688,7 @@ export default function NewApplication() {
                             <input
                               type="text"
                               value={address.postalCode}
-                              onChange={(e) => updateAddress(address.id, 'postalCode', e.target.value)}
+                              onChange={(e) => updateTuAddress(address.id, 'postalCode', e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                               placeholder={language === 'ru' ? 'Введите индекс' : 'Индекси киргизиңиз'}
                             />
@@ -2183,14 +2700,14 @@ export default function NewApplication() {
                     <div className="flex space-x-2">
                       <button
                         type="button"
-                        onClick={() => addAddress('REG')}
+                        onClick={() => addTuAddress('REG')}
                         className="px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-red-500 hover:text-red-500 transition-colors"
                       >
                         {language === 'ru' ? '+ Адрес регистрации' : '+ Каттоо дареги'}
                       </button>
                       <button
                         type="button"
-                        onClick={() => addAddress('FACT')}
+                        onClick={() => addTuAddress('FACT')}
                         className="px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-red-500 hover:text-red-500 transition-colors"
                       >
                         {language === 'ru' ? '+ Фактический адрес' : '+ Фактик дареги'}
@@ -2217,7 +2734,7 @@ export default function NewApplication() {
                               <input
                                 type="checkbox"
                                 checked={contact.isPrimary}
-                                onChange={(e) => updateContact(contact.id, 'isPrimary', e.target.checked)}
+                                onChange={(e) => updateTuContact(contact.id, 'isPrimary', e.target.checked)}
                                 className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
                               />
                               <span className="text-sm text-gray-700">
@@ -2226,7 +2743,7 @@ export default function NewApplication() {
                           </label>
                             <button
                               type="button"
-                              onClick={() => removeContact(contact.id)}
+                              onClick={() => removeTuContact(contact.id)}
                               className="text-red-600 hover:text-red-800 text-sm"
                             >
                               {language === 'ru' ? 'Удалить' : 'Өчүрүү'}
@@ -2241,7 +2758,7 @@ export default function NewApplication() {
                             </label>
                             <select
                               value={contact.type}
-                              onChange={(e) => updateContact(contact.id, 'type', e.target.value)}
+                              onChange={(e) => updateTuContact(contact.id, 'type', e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                             >
                               <option value="">{language === 'ru' ? 'Выберите тип' : 'Түрүн тандаңыз'}</option>
@@ -2258,7 +2775,7 @@ export default function NewApplication() {
                             <input
                               type="text"
                               value={contact.value}
-                              onChange={(e) => updateContact(contact.id, 'value', e.target.value)}
+                              onChange={(e) => updateTuContact(contact.id, 'value', e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                               placeholder={language === 'ru' ? 'Введите контакт' : 'Байланышты киргизиңиз'}
                             />
@@ -2269,7 +2786,7 @@ export default function NewApplication() {
                     
                     <button
                       type="button"
-                      onClick={addContact}
+                      onClick={addTuContact}
                       className="w-full py-2 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-red-500 hover:text-red-500 transition-colors"
                     >
                       {language === 'ru' ? '+ Добавить контакт' : '+ Байланыш кошуу'}
@@ -2323,6 +2840,21 @@ export default function NewApplication() {
                               onChange={(e) => updateFamilyMember(member.id, 'fullName', e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                               placeholder={language === 'ru' ? 'Введите полное имя' : 'Толук атын киргизиңиз'}
+                          />
+                  </div>
+
+                          {/* ПИН */}
+                          <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'ПИН' : 'ПИН'} <span className="text-red-500">*</span>
+                          </label>
+                        <input
+                            type="text"
+                              value={member.pin}
+                              onChange={(e) => updateFamilyMember(member.id, 'pin', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                              placeholder={language === 'ru' ? 'Введите ПИН' : 'ПИН киргизиңиз'}
+                              maxLength={14}
                           />
                   </div>
 
@@ -2546,8 +3078,8 @@ export default function NewApplication() {
                           <div className="relative">
                             <input
                               type="number"
-                                      value={member.income[incomeType.id as keyof typeof member.income] || 0}
-                                      onChange={(e) => updateFamilyMember(member.id, `income.${incomeType.id}`, parseFloat(e.target.value) || 0)}
+                                      value={0}
+                                      onChange={(e) => {}}
                                       className="w-full pl-8 pr-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                               placeholder="0"
                               min="0"
@@ -2565,7 +3097,7 @@ export default function NewApplication() {
                                   {language === 'ru' ? 'Общий доход:' : 'Жалпы киреше:'}
                     </span>
                                 <span className="font-bold text-green-900 text-lg">
-                                  {Object.values(member.income).reduce((sum, income) => sum + (income || 0), 0)} ₽
+                                  0 ₽
                         </span>
                   </div>
                 </div>
@@ -2608,13 +3140,13 @@ export default function NewApplication() {
                   </h4>
                       
                       <div className="space-y-4">
-                        {subsidiaryFarming.landPlots.map((plot, index) => (
+                        {landPlots.map((plot, index) => (
                           <div key={plot.id} className="border border-gray-200 rounded-lg p-4">
                             <div className="flex justify-between items-center mb-3">
                               <h5 className="font-medium text-gray-800">
                                 {language === 'ru' ? `Участок ${index + 1}` : `Учак ${index + 1}`}
                               </h5>
-                              {subsidiaryFarming.landPlots.length > 1 && (
+                              {landPlots.length > 1 && (
                                 <button
                                   onClick={() => removeLandPlot(plot.id)}
                                   className="text-red-600 hover:text-red-800 p-1"
@@ -2630,8 +3162,8 @@ export default function NewApplication() {
                                   {language === 'ru' ? 'Тип участка' : 'Учактын түрү'} <span className="text-red-500">*</span>
                           </label>
                         <select
-                          value={plot.type}
-                                  onChange={(e) => updateLandPlot(plot.id, 'type', e.target.value)}
+                                  value={plot.typeCode}
+                                  onChange={(e) => updateLandPlot(plot.id, 'typeCode', e.target.value)}
                                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                                 >
                                   <option value="">{language === 'ru' ? 'Выберите тип' : 'Түрүн тандаңыз'}</option>
@@ -2650,14 +3182,14 @@ export default function NewApplication() {
                                 <div className="flex">
                         <input
                           type="number"
-                          value={plot.area}
-                                    onChange={(e) => updateLandPlot(plot.id, 'area', parseFloat(e.target.value) || 0)}
+                                  value={plot.areaHectare}
+                                    onChange={(e) => updateLandPlot(plot.id, 'areaHectare', parseFloat(e.target.value) || 0)}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent rounded-r-none"
                           placeholder="0"
                               min="0"
                         />
                                   <span className="px-3 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-lg text-sm text-gray-600">
-                                    {plot.unit}
+                                    {language === 'ru' ? 'га' : 'га'}
                         </span>
                                 </div>
                               </div>
@@ -2667,8 +3199,8 @@ export default function NewApplication() {
                                   {language === 'ru' ? 'Единица измерения' : 'Өлчөм бирдиги'}
                                 </label>
                                 <select 
-                                  value={plot.unit}
-                                  onChange={(e) => updateLandPlot(plot.id, 'unit', e.target.value)}
+                                  value={landMeasurementUnit}
+                                  onChange={(e) => setLandMeasurementUnit(e.target.value as 'соток' | 'га' | 'м²')}
                                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                                 >
                                   <option value="соток">{language === 'ru' ? 'Соток' : 'Соток'}</option>
@@ -2697,13 +3229,13 @@ export default function NewApplication() {
                     </h4>
                       
                       <div className="space-y-4">
-                        {subsidiaryFarming.livestock.map((item, index) => (
+                        {livestock.map((item, index) => (
                           <div key={item.id} className="border border-gray-200 rounded-lg p-4">
                             <div className="flex justify-between items-center mb-3">
                               <h5 className="font-medium text-gray-800">
                                 {language === 'ru' ? `Скот ${index + 1}` : `Мал ${index + 1}`}
                               </h5>
-                              {subsidiaryFarming.livestock.length > 1 && (
+                              {livestock.length > 1 && (
                                 <button
                                   onClick={() => removeLivestock(item.id)}
                                   className="text-red-600 hover:text-red-800 p-1"
@@ -2719,8 +3251,8 @@ export default function NewApplication() {
                                   {language === 'ru' ? 'Тип скота' : 'Малдын түрү'} <span className="text-red-500">*</span>
                           </label>
                                 <select 
-                                  value={item.type}
-                                  onChange={(e) => updateLivestock(item.id, 'type', e.target.value)}
+                                  value={item.typeCode}
+                                  onChange={(e) => updateLivestock(item.id, 'typeCode', e.target.value)}
                                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                                 >
                                   <option value="">{language === 'ru' ? 'Выберите тип скота' : 'Малдын түрүн тандаңыз'}</option>
@@ -2738,12 +3270,30 @@ export default function NewApplication() {
                                 </label>
                             <input
                               type="number"
-                                  value={item.count}
-                                  onChange={(e) => updateLivestock(item.id, 'count', parseFloat(e.target.value) || 0)}
+                                  value={item.qty}
+                                  onChange={(e) => updateLivestock(item.id, 'qty', parseFloat(e.target.value) || 0)}
                                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                               placeholder="0"
                               min="0"
                             />
+                            </div>
+                            
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                {language === 'ru' ? 'Условные головы (авто)' : 'Шарттуу баштар (авто)'}
+                              </label>
+                              <input
+                                type="number"
+                                value={item.convUnits}
+                                readOnly
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                                placeholder="0"
+                                min="0"
+                                step="0.01"
+                              />
+                              <p className="text-xs text-gray-500 mt-1">
+                                {language === 'ru' ? 'Рассчитывается автоматически' : 'Автоматтык эсептелет'}
+                              </p>
                             </div>
                           </div>
                         </div>
@@ -2765,7 +3315,7 @@ export default function NewApplication() {
                             {language === 'ru' ? 'Условные головы:' : 'Шарттуу баштар:'}
                           </span>
                           <span className="font-bold text-yellow-900 text-lg">
-                            {calculateConventionalUnits().toFixed(2)}
+                            {livestock.reduce((sum, item) => sum + item.convUnits, 0).toFixed(2)}
                           </span>
                         </div>
                         <p className="text-xs text-yellow-700 mt-1">
@@ -2784,13 +3334,13 @@ export default function NewApplication() {
                     </h4>
                       
                       <div className="space-y-4">
-                        {subsidiaryFarming.vehicles.map((vehicle, index) => (
+                        {vehicles.map((vehicle, index) => (
                           <div key={vehicle.id} className="border border-gray-200 rounded-lg p-4">
                             <div className="flex justify-between items-center mb-3">
                               <h5 className="font-medium text-gray-800">
                                 {language === 'ru' ? `Транспорт ${index + 1}` : `Транспорт ${index + 1}`}
                               </h5>
-                              {subsidiaryFarming.vehicles.length > 1 && (
+                              {vehicles.length > 1 && (
                                 <button
                                   onClick={() => removeVehicle(vehicle.id)}
                                   className="text-red-600 hover:text-red-800 p-1"
@@ -2806,8 +3356,8 @@ export default function NewApplication() {
                                   {language === 'ru' ? 'Тип транспорта' : 'Транспорттун түрү'} <span className="text-red-500">*</span>
                           </label>
                                 <select 
-                                  value={vehicle.type}
-                                  onChange={(e) => updateVehicle(vehicle.id, 'type', e.target.value)}
+                                  value={vehicle.typeCode}
+                                  onChange={(e) => updateVehicle(vehicle.id, 'typeCode', e.target.value)}
                                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                                 >
                                   <option value="">{language === 'ru' ? 'Выберите тип' : 'Түрүн тандаңыз'}</option>
@@ -2828,14 +3378,14 @@ export default function NewApplication() {
                                   value={vehicle.year}
                                   onChange={(e) => updateVehicle(vehicle.id, 'year', parseInt(e.target.value) || new Date().getFullYear())}
                                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:border-transparent ${
-                                    vehicle.type === 'passenger_car' && !isCarAgeValid(vehicle.year)
+                                    vehicle.typeCode === 'passenger_car' && (new Date().getFullYear() - vehicle.year) >= 20
                                       ? 'border-red-500 focus:ring-red-500'
                                       : 'border-gray-300 focus:ring-red-500'
                                   }`}
                                   min="1900"
                                   max={new Date().getFullYear()}
                                 />
-                                {vehicle.type === 'passenger_car' && !isCarAgeValid(vehicle.year) && (
+                                {vehicle.typeCode === 'passenger_car' && (new Date().getFullYear() - vehicle.year) >= 20 && (
                                   <p className="text-xs text-red-600 mt-1">
                                     {language === 'ru' ? 'Возраст автомобиля должен быть менее 20 лет' : 'Автомобильдин жашы 20 жылдан аз болушу керек'}
                                   </p>
@@ -2848,8 +3398,8 @@ export default function NewApplication() {
                                 </label>
                                 <input
                                   type="text"
-                                  value={vehicle.model}
-                                  onChange={(e) => updateVehicle(vehicle.id, 'model', e.target.value)}
+                                  value={vehicle.makeModel || ''}
+                                  onChange={(e) => updateVehicle(vehicle.id, 'makeModel', e.target.value)}
                                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                                   placeholder={language === 'ru' ? 'Введите модель' : 'Моделди киргизиңиз'}
                                 />
@@ -2877,16 +3427,19 @@ export default function NewApplication() {
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                         <div className="text-center p-3 bg-white rounded-lg">
                           <div className="text-2xl font-bold text-blue-600">
-                            {subsidiaryFarming.landPlots.reduce((sum, plot) => sum + plot.area, 0)}
+                            {landPlots.reduce((sum, plot) => sum + plot.areaHectare, 0).toFixed(2)}
                             </div>
                           <div className="text-sm text-gray-600">
-                            {language === 'ru' ? 'Соток земли' : 'Жер соток'}
+                            {language === 'ru' 
+                              ? `Земля (${landMeasurementUnit === 'га' ? 'гектары' : landMeasurementUnit === 'соток' ? 'сотки' : 'м²'})`
+                              : `Жер (${landMeasurementUnit === 'га' ? 'гектар' : landMeasurementUnit === 'соток' ? 'соток' : 'м²'})`
+                            }
                           </div>
                         </div>
                         
                         <div className="text-center p-3 bg-white rounded-lg">
                           <div className="text-2xl font-bold text-green-600">
-                            {calculateConventionalUnits().toFixed(1)}
+                            {livestock.reduce((sum, item) => sum + item.convUnits, 0).toFixed(1)}
                     </div>
                           <div className="text-sm text-gray-600">
                             {language === 'ru' ? 'Условных голов' : 'Шарттуу баштар'}
@@ -2895,7 +3448,7 @@ export default function NewApplication() {
 
                         <div className="text-center p-3 bg-white rounded-lg">
                           <div className="text-2xl font-bold text-purple-600">
-                            {subsidiaryFarming.vehicles.length}
+                            {vehicles.length}
                           </div>
                           <div className="text-sm text-gray-600">
                             {language === 'ru' ? 'Транспортных средств' : 'Транспорт каражаттары'}
@@ -2943,411 +3496,115 @@ export default function NewApplication() {
                 <div className="border border-gray-200 rounded-lg p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
                     {language === 'ru' ? '4. Доходы' : '4. Киреше'}
-                </h3>
-                
-                  <div className="space-y-6">
-                    {/* Основной доход (зарплата, пенсия, соц.выплаты) */}
-                    <div className="border border-gray-200 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-900 mb-4">
-                        {language === 'ru' ? 'Основной доход (зарплата, пенсия, соц.выплаты)' : 'Негизги киреше (эмгек акы, пенсия, социалдык төлөмдөр)'}
-                  </h4>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                            {language === 'ru' ? 'Зарплата' : 'Эмгек акы'} <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="number"
-                            value={familyIncome.mainIncome.salary}
-                            onChange={(e) => updateMainIncome('salary', parseFloat(e.target.value) || 0)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                            placeholder="0"
-                        min="0"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                            {language === 'ru' ? 'Пенсия' : 'Пенсия'}
-                      </label>
-                      <input
-                        type="number"
-                            value={familyIncome.mainIncome.pension}
-                            onChange={(e) => updateMainIncome('pension', parseFloat(e.target.value) || 0)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                            placeholder="0"
-                        min="0"
-                      />
-                    </div>
-                        
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                            {language === 'ru' ? 'Социальные выплаты' : 'Социалдык төлөмдөр'}
-                      </label>
-                      <input
-                        type="number"
-                            value={familyIncome.mainIncome.socialBenefits}
-                            onChange={(e) => updateMainIncome('socialBenefits', parseFloat(e.target.value) || 0)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                          placeholder="0"
-                        min="0"
-                      />
-                    </div>
-                        
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                            {language === 'ru' ? 'Прочий основной доход' : 'Башка негизги киреше'}
-                      </label>
-                      <input
-                        type="number"
-                            value={familyIncome.mainIncome.otherMainIncome}
-                            onChange={(e) => updateMainIncome('otherMainIncome', parseFloat(e.target.value) || 0)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                            placeholder="0"
-                        min="0"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                    {/* Доход от образования (стипендии, обучение) */}
-                    <div className="border border-gray-200 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-900 mb-4">
-                        {language === 'ru' ? 'Доход от образования (стипендии, обучение)' : 'Билим берүүдөн киреше (стипендия, окутуу)'}
-                  </h4>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                            {language === 'ru' ? 'Стипендии' : 'Стипендия'}
-                      </label>
-                      <input
-                        type="number"
-                            value={familyIncome.educationIncome.scholarships}
-                            onChange={(e) => updateEducationIncome('scholarships', parseFloat(e.target.value) || 0)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                            placeholder="0"
-                        min="0"
-                      />
-                    </div>
-                        
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                            {language === 'ru' ? 'Доход от обучения' : 'Окутуудан киреше'}
-                      </label>
-                      <input
-                        type="number"
-                            value={familyIncome.educationIncome.trainingIncome}
-                            onChange={(e) => updateEducationIncome('trainingIncome', parseFloat(e.target.value) || 0)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                            placeholder="0"
-                        min="0"
-                      />
-                    </div>
-                        
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                            {language === 'ru' ? 'Прочий доход от образования' : 'Билим берүүдөн башка киреше'}
-                      </label>
-                      <input
-                        type="number"
-                            value={familyIncome.educationIncome.otherEducationIncome}
-                            onChange={(e) => updateEducationIncome('otherEducationIncome', parseFloat(e.target.value) || 0)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                            placeholder="0"
-                        min="0"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                    {/* Прочие доходы (алименты, аренда, помощь) */}
-                    <div className="border border-gray-200 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-900 mb-4">
-                        {language === 'ru' ? 'Прочие доходы (алименты, аренда, помощь)' : 'Башка кирешелер (алимент, аренда, жардам)'}
-                  </h4>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                            {language === 'ru' ? 'Алименты' : 'Алимент'}
-                      </label>
-                      <input
-                        type="number"
-                            value={familyIncome.otherIncome.alimony}
-                            onChange={(e) => updateOtherIncome('alimony', parseFloat(e.target.value) || 0)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                            placeholder="0"
-                        min="0"
-                      />
-                    </div>
-                        
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                            {language === 'ru' ? 'Аренда' : 'Аренда'}
-                      </label>
-                        <input
-                          type="number"
-                            value={familyIncome.otherIncome.rent}
-                            onChange={(e) => updateOtherIncome('rent', parseFloat(e.target.value) || 0)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                            placeholder="0"
-                          min="0"
-                      />
-                    </div>
-                        
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                            {language === 'ru' ? 'Помощь' : 'Жардам'}
-                      </label>
-                      <input
-                        type="number"
-                            value={familyIncome.otherIncome.assistance}
-                            onChange={(e) => updateOtherIncome('assistance', parseFloat(e.target.value) || 0)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                          placeholder="0"
-                        min="0"
-                          />
-                    </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            {language === 'ru' ? 'Прочие доходы' : 'Башка кирешелер'}
-                          </label>
-                      <input
-                            type="number"
-                            value={familyIncome.otherIncome.otherMiscIncome}
-                            onChange={(e) => updateOtherIncome('otherMiscIncome', parseFloat(e.target.value) || 0)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                            placeholder="0"
-                            min="0"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                    {/* Предпринимательская деятельность */}
-                    <div className="border border-gray-200 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-900 mb-4">
-                        {language === 'ru' ? 'Предпринимательская деятельность' : 'Кесипкердик ишмердик'}
-                  </h4>
-                      
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            {language === 'ru' ? 'Доход от предпринимательской деятельности' : 'Кесипкердик ишмердиктен киреше'} <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                            type="number"
-                            value={familyIncome.businessIncome.businessRevenue}
-                            onChange={(e) => updateBusinessIncome('businessRevenue', parseFloat(e.target.value) || 0)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                            placeholder="0"
-                            min="0"
-                          />
-                    </div>
-                        
-                        {/* Налоговые данные */}
-                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                          <h5 className="font-medium text-blue-900 mb-3">
-                            {language === 'ru' ? 'Налоговые данные' : 'Салык маалыматтары'}
+                  </h3>
+                  
+                  <div className="space-y-4">
+                    {incomes.map((income, index) => (
+                      <div key={income.id} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex justify-between items-center mb-3">
+                          <h5 className="font-medium text-gray-800">
+                            {language === 'ru' ? `Доход ${index + 1}` : `Киреше ${index + 1}`}
                           </h5>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                {language === 'ru' ? 'Налоговый номер' : 'Салык номуру'}
-                      </label>
-                      <input
-                                type="text"
-                                value={familyIncome.businessIncome.taxData.taxNumber}
-                                onChange={(e) => updateTaxData('taxNumber', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                                placeholder={language === 'ru' ? 'Введите налоговый номер' : 'Салык номурун киргизиңиз'}
-                              />
-                            </div>
-                            
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                {language === 'ru' ? 'Налоговый период' : 'Салык мезгили'}
-                      </label>
-                              <input
-                                type="text"
-                                value={familyIncome.businessIncome.taxData.taxPeriod}
-                                onChange={(e) => updateTaxData('taxPeriod', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                                placeholder={language === 'ru' ? 'Например: 2024' : 'Мисалы: 2024'}
-                              />
-                    </div>
-                            
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                {language === 'ru' ? 'Заявленный доход' : 'Билдирилген киреше'}
-                              </label>
-                        <input
-                          type="number"
-                                value={familyIncome.businessIncome.taxData.declaredIncome}
-                                onChange={(e) => updateTaxData('declaredIncome', parseFloat(e.target.value) || 0)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                          placeholder="0"
-                                min="0"
-                              />
-                  </div>
-                </div>
-              </div>
-                      </div>
-                    </div>
-
-                    {/* Финансовые инструменты */}
-                    <div className="border border-gray-200 rounded-lg p-4">
-                      <h4 className="font-medium text-gray-900 mb-4">
-                        {language === 'ru' ? 'Финансовые инструменты (вклады, ценные бумаги и другие)' : 'Каржы каражаттары (депозит, баалуу кагаздар жана башкалар)'}
-                      </h4>
-
-                <div className="space-y-4">
-                        {familyIncome.financialAssets.map((asset, index) => (
-                          <div key={asset.id} className="border border-gray-200 rounded-lg p-4">
-                            <div className="flex justify-between items-center mb-3">
-                              <h5 className="font-medium text-gray-800">
-                                {language === 'ru' ? `Финансовый инструмент ${index + 1}` : `Каржы каражаты ${index + 1}`}
-                              </h5>
-                              {familyIncome.financialAssets.length > 1 && (
-                                <button
-                                  onClick={() => removeFinancialAsset(asset.id)}
-                                  className="text-red-600 hover:text-red-800 p-1"
-                                >
-                                  <i className="ri-delete-bin-line"></i>
-                              </button>
-                      )}
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  {language === 'ru' ? 'Тип инструмента' : 'Каражаттын түрү'} <span className="text-red-500">*</span>
-                                </label>
-                                <select 
-                                  value={asset.type}
-                                  onChange={(e) => updateFinancialAsset(asset.id, 'type', e.target.value)}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                                >
-                                  <option value="">{language === 'ru' ? 'Выберите тип' : 'Түрүн тандаңыз'}</option>
-                                  {financialAssetsList.map(type => (
-                                    <option key={type.id} value={type.id}>
-                                      {type.name}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                              
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  {language === 'ru' ? 'Сумма' : 'Сумма'}
-                                </label>
-                      <input
-                                  type="number"
-                                  value={asset.amount}
-                                  onChange={(e) => updateFinancialAsset(asset.id, 'amount', parseFloat(e.target.value) || 0)}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                                  placeholder="0"
-                                  min="0"
-                                />
-                              </div>
-                              
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  {language === 'ru' ? 'Ежемесячный доход' : 'Айлык киреше'}
-                      </label>
-                                <input
-                                  type="number"
-                                  value={asset.monthlyIncome}
-                                  onChange={(e) => updateFinancialAsset(asset.id, 'monthlyIncome', parseFloat(e.target.value) || 0)}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                                  placeholder="0"
-                                  min="0"
-                                />
-                    </div>
-                            </div>
-                          </div>
-                        ))}
-                        
-                        <button
-                          onClick={addFinancialAsset}
-                          className="w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 inline-flex items-center justify-center"
-                        >
-                          <i className="ri-add-line mr-2"></i>
-                          {language === 'ru' ? 'Добавить финансовый инструмент' : 'Каржы каражатын кошуу'}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Автоматические расчеты */}
-                    <div className="border border-gray-200 rounded-lg p-4 bg-green-50">
-                      <h4 className="font-medium text-green-900 mb-4">
-                        {language === 'ru' ? 'Автоматические расчеты' : 'Автоматтык эсептөөлөр'}
-                    </h4>
+                          {incomes.length > 1 && (
+                            <button
+                              onClick={() => removeIncome(income.id)}
+                              className="text-red-500 hover:text-red-700 text-sm"
+                            >
+                              {language === 'ru' ? 'Удалить' : 'Өчүрүү'}
+                            </button>
+                          )}
+                        </div>
                       
-                      <div className="space-y-4">
-                        {/* Суммарный доход семьи */}
-                        <div className="flex justify-between items-center p-3 bg-white border border-green-200 rounded-lg">
-                          <span className="font-medium text-gray-800">
-                            {language === 'ru' ? 'Суммарный доход семьи:' : 'Үй-бүлөнүн жалпы кирешеси:'}
-                          </span>
-                          <span className="font-bold text-green-900 text-lg">
-                            {calculateTotalFamilyIncome().toLocaleString()} {language === 'ru' ? 'сом' : 'сом'}
-                          </span>
-                  </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Тип дохода' : 'Киреше түрү'} <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              value={income.incomeTypeCode}
+                              onChange={(e) => updateIncome(income.id, 'incomeTypeCode', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                            >
+                              <option value="">{language === 'ru' ? 'Выберите тип' : 'Түрүн тандаңыз'}</option>
+                              {getDirectory('incomeTypeList').map((item) => (
+                                <option key={item.code} value={item.code}>
+                                  {item.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Сумма' : 'Сумма'} <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="number"
+                              value={income.amount}
+                              onChange={(e) => updateIncome(income.id, 'amount', parseFloat(e.target.value) || 0)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                              placeholder="0"
+                              min="0"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Периодичность' : 'Мезгилдүүлүк'} <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              value={income.periodicity}
+                              onChange={(e) => updateIncome(income.id, 'periodicity', e.target.value as 'M' | 'Y')}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                            >
+                              <option value="">{language === 'ru' ? 'Выберите периодичность' : 'Мезгилдүүлүктү тандаңыз'}</option>
+                              {getDirectory('incomePeriodicityList').map((item) => (
+                                <option key={item.code} value={item.code}>
+                                  {item.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
                         
-                        {/* Среднедушевой доход (ССДС) */}
-                        <div className="flex justify-between items-center p-3 bg-white border border-green-200 rounded-lg">
-                          <span className="font-medium text-gray-800">
-                            {language === 'ru' ? 'Среднедушевой доход (ССДС):' : 'Адам башына киреше (АБК):'}
-                          </span>
-                          <span className="font-bold text-green-900 text-lg">
-                            {calculatePerCapitaIncome().toLocaleString()} {language === 'ru' ? 'сом' : 'сом'}
-                          </span>
-                </div>
-                        
-                        {/* Сравнение с ГМД */}
-                        <div className="flex justify-between items-center p-3 bg-white border border-green-200 rounded-lg">
-                          <span className="font-medium text-gray-800">
-                            {language === 'ru' ? 'Гарантированный минимальный доход (ГМД):' : 'Кепилденген минималдык киреше (КМК):'}
-                          </span>
-                          <span className="font-bold text-blue-900 text-lg">
-                            {GUARANTEED_MINIMUM_INCOME.toLocaleString()} {language === 'ru' ? 'сом' : 'сом'}
-                          </span>
-              </div>
-                        
-                        {/* Статус соответствия критерию */}
-                        <div className={`p-4 rounded-lg border-2 ${isIncomeEligible() ? 'bg-green-100 border-green-300' : 'bg-red-100 border-red-300'}`}>
-                          <div className="flex items-center">
-                            <i className={`ri-${isIncomeEligible() ? 'check-line' : 'close-line'} text-2xl ${isIncomeEligible() ? 'text-green-600' : 'text-red-600'} mr-3`}></i>
-                            <div>
-                              <h5 className={`font-bold ${isIncomeEligible() ? 'text-green-800' : 'text-red-800'}`}>
-                                {isIncomeEligible() 
-                                  ? (language === 'ru' ? 'Соответствует критерию дохода' : 'Киреше критерийине туура келет')
-                                  : (language === 'ru' ? 'Не соответствует критерию дохода' : 'Киреше критерийине туура келбейт')
-                                }
-                              </h5>
-                              <p className={`text-sm ${isIncomeEligible() ? 'text-green-700' : 'text-red-700'}`}>
-                                {isIncomeEligible()
-                                  ? (language === 'ru' 
-                                      ? `ССДС (${calculatePerCapitaIncome().toLocaleString()} сом) ≤ ГМД (${GUARANTEED_MINIMUM_INCOME.toLocaleString()} сом)`
-                                      : `АБК (${calculatePerCapitaIncome().toLocaleString()} сом) ≤ КМК (${GUARANTEED_MINIMUM_INCOME.toLocaleString()} сом)`
-                                    )
-                                  : (language === 'ru' 
-                                      ? `ССДС (${calculatePerCapitaIncome().toLocaleString()} сом) > ГМД (${GUARANTEED_MINIMUM_INCOME.toLocaleString()} сом)`
-                                      : `АБК (${calculatePerCapitaIncome().toLocaleString()} сом) > КМК (${GUARANTEED_MINIMUM_INCOME.toLocaleString()} сом)`
-                                    )
-                                }
-                              </p>
-                            </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Период с' : 'Мезгил башталышы'}
+                            </label>
+                            <input
+                              type="date"
+                              value={income.periodFrom}
+                              onChange={(e) => updateIncome(income.id, 'periodFrom', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Период по' : 'Мезгил аягы'}
+                            </label>
+                            <input
+                              type="date"
+                              value={income.periodTo || ''}
+                              onChange={(e) => updateIncome(income.id, 'periodTo', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                            />
                           </div>
                         </div>
                       </div>
-                    </div>
+                    ))}
+                    
+                    <button
+                      onClick={addIncome}
+                      className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                    >
+                      {language === 'ru' ? '+ Добавить доход' : '+ Киреше кошуу'}
+                    </button>
                   </div>
                 </div>
+
+                {/* Раздел 5: Документы */}
 
                 {/* Раздел 5: Документы */}
                 <div className="border border-gray-200 rounded-lg p-6">
@@ -3818,7 +4075,7 @@ export default function NewApplication() {
                           </h4>
                           <button
                             type="button"
-                            onClick={() => removeSpecialCompensation(compensation.id)}
+                            onClick={() => removeTuSpecialCompensation(compensation.id)}
                             className="text-red-600 hover:text-red-800 text-sm"
                           >
                             {language === 'ru' ? 'Удалить' : 'Өчүрүү'}
@@ -3832,7 +4089,7 @@ export default function NewApplication() {
                             </label>
                             <select
                               value={compensation.reason}
-                              onChange={(e) => updateSpecialCompensation(compensation.id, 'reason', e.target.value)}
+                              onChange={(e) => updateTuSpecialCompensation(compensation.id, 'reason', e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                             >
                               <option value="">{language === 'ru' ? 'Выберите причину' : 'Себебин тандаңыз'}</option>
@@ -3848,7 +4105,7 @@ export default function NewApplication() {
                             </label>
                             <select
                               value={compensation.type}
-                              onChange={(e) => updateSpecialCompensation(compensation.id, 'type', e.target.value)}
+                              onChange={(e) => updateTuSpecialCompensation(compensation.id, 'type', e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                             >
                               <option value="">{language === 'ru' ? 'Выберите тип' : 'Түрүн тандаңыз'}</option>
@@ -3865,7 +4122,7 @@ export default function NewApplication() {
                             <input
                               type="number"
                               value={compensation.amount}
-                              onChange={(e) => updateSpecialCompensation(compensation.id, 'amount', parseFloat(e.target.value) || 0)}
+                              onChange={(e) => updateTuSpecialCompensation(compensation.id, 'amount', parseFloat(e.target.value) || 0)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                               placeholder={language === 'ru' ? 'Введите сумму' : 'Сумманы киргизиңиз'}
                               min="0"
@@ -3880,7 +4137,7 @@ export default function NewApplication() {
                             <input
                               type="date"
                               value={compensation.periodFrom}
-                              onChange={(e) => updateSpecialCompensation(compensation.id, 'periodFrom', e.target.value)}
+                              onChange={(e) => updateTuSpecialCompensation(compensation.id, 'periodFrom', e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                             />
                           </div>
@@ -3892,7 +4149,7 @@ export default function NewApplication() {
                             <input
                               type="date"
                               value={compensation.periodTo}
-                              onChange={(e) => updateSpecialCompensation(compensation.id, 'periodTo', e.target.value)}
+                              onChange={(e) => updateTuSpecialCompensation(compensation.id, 'periodTo', e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                             />
                           </div>
@@ -3902,7 +4159,7 @@ export default function NewApplication() {
                     
                     <button
                       type="button"
-                      onClick={addSpecialCompensation}
+                      onClick={addTuSpecialCompensation}
                       className="w-full py-2 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-red-500 hover:text-red-500 transition-colors"
                     >
                       {language === 'ru' ? '+ Добавить компенсацию' : '+ Компенсация кошуу'}
@@ -4408,21 +4665,62 @@ export default function NewApplication() {
 
                 {/* Кнопки отправки */}
                 <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200 mt-8">
-                  <button className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                  <button 
+                    className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                    disabled={submitState.isSubmitting}
+                  >
                     {language === 'ru' ? 'Отмена' : 'Жокко чыгаруу'}
                   </button>
-                <button
-                  onClick={submitApplication}
-                    disabled={!isReadyToSubmit()}
-                    className={`px-6 py-3 rounded-lg transition-colors ${
-                      isReadyToSubmit() 
-                        ? 'bg-red-600 text-white hover:bg-red-700' 
-                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    }`}
-                  >
-                    {language === 'ru' ? 'Сохранить и продолжить' : 'Сактоо жана улантуу'}
-                </button>
-              </div>
+                  
+                  {submitState.isSubmitted ? (
+                    <div className="flex items-center space-x-2 px-6 py-3 bg-green-100 text-green-800 rounded-lg">
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <span>
+                        {language === 'ru' 
+                          ? `Заявление №${completionData.applicationNumber} отправлено!` 
+                          : `№${completionData.applicationNumber} арыз жөнөтүлдү!`
+                        }
+                      </span>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={submitApplication}
+                      disabled={!isReadyToSubmit() || submitState.isSubmitting}
+                      className={`px-6 py-3 rounded-lg transition-colors flex items-center space-x-2 ${
+                        isReadyToSubmit() && !submitState.isSubmitting
+                          ? 'bg-red-600 text-white hover:bg-red-700' 
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      {submitState.isSubmitting && (
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      )}
+                      <span>
+                        {submitState.isSubmitting 
+                          ? (language === 'ru' ? 'Отправка...' : 'Жөнөтүлүүдө...')
+                          : (language === 'ru' ? 'Отправить заявление' : 'Арызды жөнөтүү')
+                        }
+                      </span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Отображение ошибок */}
+                {submitState.submitError && (
+                  <div className="mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+                    <div className="flex items-center">
+                      <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                      <span>{submitState.submitError}</span>
+                    </div>
+                  </div>
+                )}
             </div>
           </div>
           </div>

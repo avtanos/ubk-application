@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import MobileOptimizedModal from './MobileOptimizedModal';
 import StatusBadge from './StatusBadge';
+import IncomeAnalysisModal from './IncomeAnalysisModal';
 import { Application, FamilyMember, Income, Document, InspectionResult } from '@/lib/types';
 
 interface ApplicationDetailsModalProps {
@@ -12,38 +13,69 @@ interface ApplicationDetailsModalProps {
 }
 
 export default function ApplicationDetailsModal({ application, isOpen, onClose }: ApplicationDetailsModalProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'family' | 'income' | 'documents' | 'inspection' | 'history'>('overview');
+  const [activeTab, setActiveTab] = useState<'applicant' | 'family' | 'identity' | 'addresses' | 'income' | 'property' | 'compensations' | 'inspection' | 'history'>('applicant');
+  const [isIncomeAnalysisOpen, setIsIncomeAnalysisOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  // Закрытие выпадающего меню при клике вне его
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isDropdownOpen) {
+        const target = event.target as HTMLElement;
+        if (!target.closest('.dropdown-container')) {
+          setIsDropdownOpen(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
 
   if (!application) return null;
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('ru-RU', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  const formatDate = (date: string | Date | null | undefined) => {
+    if (!date) return '-';
+    try {
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      if (isNaN(dateObj.getTime())) return '-';
+      return dateObj.toLocaleDateString('ru-RU', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      console.error('Ошибка форматирования даты:', error);
+      return '-';
+    }
   };
 
   const getStatusText = (status: string) => {
     const statusMap: { [key: string]: string } = {
-      'submitted': 'Подана',
-      'under_review': 'На рассмотрении',
-      'approved': 'Одобрена',
-      'rejected': 'Отклонена',
-      'payment_processing': 'Обработка платежа',
-      'paid': 'Оплачена'
+      'DRAFT': 'Черновик',
+      'SUBMITTED': 'Подана',
+      'UNDER_REVIEW': 'На рассмотрении',
+      'PENDING_APPROVAL': 'На утверждении',
+      'APPROVED': 'Одобрена',
+      'REJECTED': 'Отклонена',
+      'PAYMENT_PROCESSING': 'Обработка платежа',
+      'PAID': 'Выплачено',
+      'CANCELLED': 'Отменено',
+      'TERMINATED': 'Прекращено'
     };
     return statusMap[status] || status;
   };
 
   const getPriorityText = (priority: string) => {
     const priorityMap: { [key: string]: string } = {
-      'low': 'Низкий',
-      'medium': 'Средний',
-      'high': 'Высокий',
-      'urgent': 'Срочный'
+      'LOW': 'Низкий',
+      'MEDIUM': 'Средний',
+      'HIGH': 'Высокий',
+      'URGENT': 'Срочный'
     };
     return priorityMap[priority] || priority;
   };
@@ -98,11 +130,178 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
     return statusMap[status] || status;
   };
 
+  // Вспомогательные функции для безопасного доступа к данным
+  const getApplicantData = () => {
+    if ((application as any).formData?.applicant) {
+      return (application as any).formData.applicant;
+    }
+    return {
+      fullName: (application as any).applicantName || 'Не указано',
+      pin: (application as any).applicantPin || 'Не указан',
+      gender: 'Не указан',
+      birthDate: '',
+      citizenship: 'Не указано',
+      nationality: 'Не указана',
+      education: 'Не указано',
+      maritalStatus: 'Не указано',
+      documentType: 'Не указан',
+      documentSeries: 'Не указана',
+      documentNumber: 'Не указан',
+      documentIssueDate: '',
+      passportIssuingAuthority: 'Не указан',
+      documentExpiryDate: ''
+    };
+  };
+
+  const getTuData = () => {
+    return (application as any).formData?.tuData || {
+      additionalIds: [],
+      addresses: [],
+      contacts: [],
+      specialCompensations: [],
+      socialAuthority: {
+        municipalAuthority: '',
+        applicantType: '',
+        category: '',
+        disabilityCategory: '',
+        msekRefNumber: '',
+        msekIssueDate: '',
+        dsuRefNumber: '',
+        dsuIssueDate: ''
+      },
+      categories: {
+        forChild: false,
+        forFamilyWithChild: false,
+        forMinor: false,
+        forIncapacitated: false
+      },
+      paymentRequisites: {
+        personalAccount: '',
+        bankAccount: '',
+        cardAccount: '',
+        bankCode: '',
+        paymentType: ''
+      }
+    };
+  };
+
+  const getFamilyMembers = () => {
+    return (application as any).formData?.familyMembers || [];
+  };
+
+  const getIncomes = () => {
+    return (application as any).formData?.incomes || [];
+  };
+
+  const getLandPlots = () => {
+    return (application as any).formData?.landPlots || [];
+  };
+
+  const getLivestock = () => {
+    return (application as any).formData?.livestock || [];
+  };
+
+  const getVehicles = () => {
+    return (application as any).formData?.vehicles || [];
+  };
+
+  const getPaymentRequisites = () => {
+    return (application as any).formData?.paymentRequisites || {
+      personalAccount: '',
+      bankAccount: '',
+      cardAccount: '',
+      bankCode: '',
+      paymentType: ''
+    };
+  };
+
+  const getCategories = () => {
+    return (application as any).formData?.categories || {
+      forChild: false,
+      forMinor: false,
+      forIncapacitated: false
+    };
+  };
+
+  // Функция экспорта анализа доходов
+  const exportIncomeAnalysis = () => {
+    try {
+      // Импортируем функцию анализа доходов
+      const { analyzeApplicationIncome } = require('@/lib/incomeAnalysis');
+      
+      // Получаем данные анализа
+      const analysisResult = analyzeApplicationIncome(application);
+      
+      // Формируем данные для экспорта
+      const exportData = {
+        applicationId: application.id,
+        applicantName: (application as any).applicantName || (application as any).formData?.applicant?.fullName || 'Не указан',
+        analysisDate: new Date().toLocaleDateString('ru-RU'),
+        totalIncome: analysisResult.totalIncome,
+        familySize: analysisResult.analysis.familySize,
+        perCapitaIncome: analysisResult.analysis.perCapitaIncome,
+        stability: analysisResult.analysis.stability,
+        diversification: analysisResult.analysis.diversification,
+        gmdThreshold: 4500,
+        categories: analysisResult.categories.map((cat: any) => ({
+          name: cat.name,
+          amount: cat.amount,
+          percentage: cat.percentage,
+          subcategories: cat.subcategories
+        })),
+        recommendations: analysisResult.analysis.recommendations
+      };
+
+      // Создаем CSV контент
+      let csvContent = '8-категорийный анализ доходов\n\n';
+      csvContent += `Заявка: ${exportData.applicationId}\n`;
+      csvContent += `Заявитель: ${exportData.applicantName}\n`;
+      csvContent += `Дата анализа: ${exportData.analysisDate}\n\n`;
+      
+      csvContent += 'ОБЩИЕ ПОКАЗАТЕЛИ\n';
+      csvContent += `Общий доход семьи,сом,${exportData.totalIncome}\n`;
+      csvContent += `Размер семьи,человек,${exportData.familySize}\n`;
+      csvContent += `ССДС,сом,${exportData.perCapitaIncome}\n`;
+      csvContent += `Стабильность,${exportData.stability}\n`;
+      csvContent += `Диверсификация,${exportData.diversification}\n`;
+      csvContent += `Порог ГМД,сом,${exportData.gmdThreshold}\n\n`;
+      
+      csvContent += 'КАТЕГОРИИ ДОХОДОВ\n';
+      csvContent += 'Категория,Сумма (сом),Процент,Подкатегории\n';
+      exportData.categories.forEach((cat: any) => {
+        csvContent += `"${cat.name}","${cat.amount}","${cat.percentage}%","${cat.subcategories.join('; ')}"\n`;
+      });
+      
+      csvContent += '\nРЕКОМЕНДАЦИИ\n';
+      exportData.recommendations.forEach((rec: any, index: number) => {
+        csvContent += `${index + 1}.,${rec}\n`;
+      });
+
+      // Создаем и скачиваем файл
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `income_analysis_${application.id}_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Показываем уведомление об успехе
+      alert('Анализ доходов успешно экспортирован в CSV файл');
+    } catch (error) {
+      console.error('Ошибка при экспорте анализа:', error);
+      alert('Ошибка при экспорте анализа. Попробуйте еще раз.');
+    }
+  };
+
   const tabs = [
-    { id: 'overview', label: 'Обзор', icon: 'ri-eye-line' },
+    { id: 'applicant', label: 'Заявитель', icon: 'ri-user-line' },
     { id: 'family', label: 'Семья', icon: 'ri-group-line' },
-    { id: 'income', label: 'Доходы', icon: 'ri-money-dollar-circle-line' },
-    { id: 'documents', label: 'Документы', icon: 'ri-file-text-line' },
+    { id: 'identity', label: 'Документы', icon: 'ri-id-card-line' },
+    { id: 'addresses', label: 'Адреса и контакты', icon: 'ri-map-pin-line' },
+    { id: 'income', label: 'Все доходы', icon: 'ri-money-dollar-circle-line' },
     { id: 'inspection', label: 'Проверка', icon: 'ri-search-eye-line' },
     { id: 'history', label: 'История', icon: 'ri-history-line' }
   ];
@@ -112,7 +311,7 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
       isOpen={isOpen} 
       onClose={onClose} 
       title={`Заявка ${application.id}`} 
-      size="xl" 
+      size="full" 
       mobileFullscreen={true}
     >
       <div className="space-y-4 md:space-y-6">
@@ -122,11 +321,10 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
             <div>
               <h3 className="font-semibold text-neutral-900 mb-2 text-sm md:text-base">Основная информация</h3>
               <div className="space-y-1 text-xs md:text-sm">
-                <p className="break-words"><span className="font-medium">Заявитель:</span> {application.applicantName}</p>
-                <p className="break-all"><span className="font-medium">ИИН:</span> {application.applicantId}</p>
-                <p><span className="font-medium">Телефон:</span> {application.phone}</p>
-                {application.email && (
-                  <p className="break-words"><span className="font-medium">Email:</span> {application.email}</p>
+                <p className="break-words"><span className="font-medium">Заявитель:</span> {(application as any).applicantName || (application as any).formData?.applicant?.fullName || 'Не указан'}</p>
+                <p className="break-all"><span className="font-medium">ПИН:</span> {(application as any).applicantPin || (application as any).formData?.applicant?.pin || 'Не указан'}</p>
+                {((application as any).applicantPhone || ((application as any).formData?.tuData?.contacts && (application as any).formData.tuData.contacts.length > 0)) && (
+                  <p><span className="font-medium">Контакты:</span> {(application as any).applicantPhone || (application as any).formData?.tuData?.contacts?.map((c: any) => c.value).join(', ') || 'Не указаны'}</p>
                 )}
               </div>
             </div>
@@ -141,7 +339,7 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
                 </div>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                   <span className="font-medium">Приоритет:</span>
-                  <StatusBadge status={application.priority === 'high' ? 'high-risk' : application.priority === 'medium' ? 'medium-risk' : 'low-risk'}>
+                  <StatusBadge status={application.priority === 'HIGH' ? 'high-risk' : application.priority === 'MEDIUM' ? 'medium-risk' : 'low-risk'}>
                     {getPriorityText(application.priority)}
                   </StatusBadge>
                 </div>
@@ -149,8 +347,18 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
               </div>
             </div>
             <div>
-              <h3 className="font-semibold text-neutral-900 mb-2 text-sm md:text-base">Даты</h3>
+              <h3 className="font-semibold text-neutral-900 mb-2 text-sm md:text-base">Адрес и даты</h3>
               <div className="space-y-1 text-xs md:text-sm">
+                {((application as any).formData?.tuData?.addresses && (application as any).formData.tuData.addresses.length > 0) && (
+                  <div>
+                    <span className="font-medium">Адрес:</span>
+                    {((application as any).formData?.tuData?.addresses || []).map((addr: any, index: number) => (
+                      <div key={index} className="ml-2">
+                        {addr.type === 'REG' ? 'Регистрация' : 'Фактический'}: {addr.street}, {addr.house}{addr.flat && `, кв. ${addr.flat}`}
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <p><span className="font-medium">Подана:</span> {formatDate(application.submittedAt)}</p>
                 {application.reviewedAt && (
                   <p><span className="font-medium">Рассмотрена:</span> {formatDate(application.reviewedAt)}</p>
@@ -193,31 +401,104 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
 
         {/* Tab Content */}
         <div className="min-h-[400px]" role="tabpanel" aria-labelledby={`tab-${activeTab}`}>
-          {activeTab === 'overview' && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="card">
-                  <h4 className="font-semibold text-neutral-900 mb-3">Адрес</h4>
-                  <p className="text-sm text-neutral-600">{application.address}</p>
-                </div>
-                <div className="card">
-                  <h4 className="font-semibold text-neutral-900 mb-3">Платеж</h4>
-                  <div className="space-y-2 text-sm">
-                    {application.paymentAmount && (
-                      <p><span className="font-medium">Сумма:</span> {application.paymentAmount.toLocaleString()} сом</p>
-                    )}
-                    {application.paymentStatus && (
-                      <p><span className="font-medium">Статус:</span> {application.paymentStatus}</p>
-                    )}
-                  </div>
-                </div>
+
+          {activeTab === 'applicant' && (
+            <div className="space-y-6">
+              {/* Основная информация заявителя */}
+              <div className="bg-white border border-neutral-200 rounded-lg p-4 md:p-6">
+                <h4 className="text-base md:text-lg font-semibold text-neutral-900 mb-4 md:mb-6">Основная информация заявителя</h4>
+                {(() => {
+                  const applicantData = getApplicantData();
+                  return (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-sm font-medium text-neutral-700">ФИО</label>
+                          <p className="text-sm text-neutral-900">{applicantData.fullName}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-neutral-700">ПИН</label>
+                          <p className="text-sm text-neutral-900 font-mono">{applicantData.pin}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-neutral-700">Пол</label>
+                          <p className="text-sm text-neutral-900">{applicantData.gender}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-neutral-700">Дата рождения</label>
+                          <p className="text-sm text-neutral-900">{applicantData.birthDate ? formatDate(applicantData.birthDate) : 'Не указана'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-neutral-700">Гражданство</label>
+                          <p className="text-sm text-neutral-900">{applicantData.citizenship}</p>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-sm font-medium text-neutral-700">Национальность</label>
+                          <p className="text-sm text-neutral-900">{applicantData.nationality}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-neutral-700">Образование</label>
+                          <p className="text-sm text-neutral-900">{applicantData.education}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-neutral-700">Семейное положение</label>
+                          <p className="text-sm text-neutral-900">{applicantData.maritalStatus}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-neutral-700">Категория заявителя</label>
+                          <p className="text-sm text-neutral-900">{applicantData.applicantCategory || 'Не указана'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-neutral-700">Орган соцзащиты</label>
+                          <p className="text-sm text-neutral-900">{applicantData.socialProtectionAuthority || 'Не указан'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
-              {application.notes && (
-                <div className="card">
-                  <h4 className="font-semibold text-neutral-900 mb-3">Примечания</h4>
-                  <p className="text-sm text-neutral-600">{application.notes}</p>
-                </div>
-              )}
+
+              {/* Документ удостоверения личности */}
+              <div className="bg-white border border-neutral-200 rounded-lg p-4 md:p-6">
+                <h4 className="text-base md:text-lg font-semibold text-neutral-900 mb-4 md:mb-6">Документ удостоверения личности</h4>
+                {(() => {
+                  const applicantData = getApplicantData();
+                  return (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-sm font-medium text-neutral-700">Тип документа</label>
+                          <p className="text-sm text-neutral-900">{applicantData.documentType}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-neutral-700">Серия</label>
+                          <p className="text-sm text-neutral-900 font-mono">{applicantData.documentSeries}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-neutral-700">Номер</label>
+                          <p className="text-sm text-neutral-900 font-mono">{applicantData.documentNumber}</p>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-sm font-medium text-neutral-700">Дата выдачи</label>
+                          <p className="text-sm text-neutral-900">{applicantData.documentIssueDate ? formatDate(applicantData.documentIssueDate) : 'Не указана'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-neutral-700">Орган выдачи</label>
+                          <p className="text-sm text-neutral-900">{applicantData.passportIssuingAuthority}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-neutral-700">Дата истечения</label>
+                          <p className="text-sm text-neutral-900">{applicantData.documentExpiryDate ? formatDate(applicantData.documentExpiryDate) : 'Не указана'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
             </div>
           )}
 
@@ -234,14 +515,14 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
                     
                     {/* Name */}
                     <h3 className="text-base md:text-lg font-semibold text-neutral-900 mb-3 md:mb-4">
-                      {application.applicantName}
+                      {(application as any).applicantName || (application as any).formData?.applicant?.fullName || 'Заявитель'}
                     </h3>
                     
                     {/* Details */}
                     <div className="space-y-2 md:space-y-3 text-xs md:text-sm">
                       <div className="flex items-center justify-center space-x-2">
                         <i className="ri-id-card-line text-neutral-500 text-sm"></i>
-                        <span className="text-neutral-700 break-all">ПИН: {application.applicantId}</span>
+                        <span className="text-neutral-700 break-all">ПИН: {(application as any).applicantId}</span>
                       </div>
                       
                       <div className="flex items-center justify-center space-x-2">
@@ -251,7 +532,7 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
                       
                       <div className="flex items-center justify-center space-x-2">
                         <i className="ri-calendar-line text-neutral-500 text-sm"></i>
-                        <span className="text-neutral-700">Подана: {application.submittedAt.toLocaleDateString('ru-RU')}</span>
+                        <span className="text-neutral-700">Подана: {formatDate((application as any).submittedAt)}</span>
                       </div>
                       
                       <div className="flex items-center justify-center space-x-2">
@@ -271,14 +552,15 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
                   </h4>
                   
                               <div className="space-y-3 md:space-y-4">
-                    {application.familyMembers.map((member) => {
-                      const age = new Date().getFullYear() - member.birthDate.getFullYear();
+                    {getFamilyMembers().map((member: any, index: number) => {
+                      const birthDate = member.birthDate ? new Date(member.birthDate) : new Date();
+                      const age = member.age || (new Date().getFullYear() - birthDate.getFullYear());
                       const isChild = age < 16;
-                      const relationshipText = getRelationshipText(member.relationship);
+                      const relationshipText = getRelationshipText(member.relation || member.type || 'other');
                       
                       return (
                         <div 
-                          key={member.id} 
+                          key={member.id || index} 
                           className={`border border-neutral-200 rounded-lg p-3 md:p-4 ${
                             isChild ? 'bg-yellow-50' : 'bg-white'
                           }`}
@@ -299,15 +581,20 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
                             <div className="flex-1 min-w-0">
                               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                                 <div className="min-w-0">
-                                  <h5 className="font-semibold text-neutral-900 text-sm md:text-base truncate">{member.name}</h5>
+                                  <h5 className="font-semibold text-neutral-900 text-sm md:text-base truncate">{member.fullName || 'Не указано'}</h5>
                                   <p className="text-xs md:text-sm text-neutral-600">
                                     {relationshipText} {age} лет
                                   </p>
+                                  {member.pin && (
+                                    <p className="text-xs text-neutral-500 mt-1">
+                                      ПИН: {member.pin}
+                                    </p>
+                                  )}
                                 </div>
                                 
                                 <div className="text-left sm:text-right">
                                   <p className="text-xs md:text-sm font-medium text-neutral-900">
-                                    {member.income ? `${member.income.toLocaleString()} сом` : '0 сом'}
+                                    {member.monthlyIncome ? `${member.monthlyIncome.toLocaleString()} сом` : '0 сом'}
                                   </p>
                                   <p className="text-xs text-neutral-500">месячный доход</p>
                                 </div>
@@ -326,17 +613,240 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
                         </div>
                       );
                     })}
+                    {getFamilyMembers().length === 0 && (
+                      <div className="text-center text-neutral-500 py-8">
+                        <i className="ri-group-line text-4xl mb-2"></i>
+                        <p>Нет данных о членах семьи</p>
+                      </div>
+                    )}
                             </div>
                 </div>
               </div>
             </div>
           )}
 
+          {activeTab === 'identity' && (
+            <div className="space-y-6">
+              {/* Дополнительные удостоверения */}
+              <div className="bg-white border border-neutral-200 rounded-lg p-4 md:p-6">
+                <h4 className="text-base md:text-lg font-semibold text-neutral-900 mb-4 md:mb-6">Дополнительные удостоверения</h4>
+                {(() => {
+                  const tuData = getTuData();
+                  const additionalIds = tuData.additionalIds || [];
+                  
+                  if (additionalIds.length > 0) {
+                    return (
+                      <div className="space-y-4">
+                        {additionalIds.map((id: any, index: number) => (
+                          <div key={index} className="border border-neutral-200 rounded-lg p-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <div>
+                                  <label className="text-sm font-medium text-neutral-700">Тип удостоверения</label>
+                                  <p className="text-sm text-neutral-900">{id.type || 'Не указан'}</p>
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium text-neutral-700">Серия</label>
+                                  <p className="text-sm text-neutral-900 font-mono">{id.series || 'Не указана'}</p>
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium text-neutral-700">Номер</label>
+                                  <p className="text-sm text-neutral-900 font-mono">{id.number || 'Не указан'}</p>
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                <div>
+                                  <label className="text-sm font-medium text-neutral-700">Орган выдачи</label>
+                                  <p className="text-sm text-neutral-900">{id.issuingAuthority || 'Не указан'}</p>
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium text-neutral-700">Дата выдачи</label>
+                                  <p className="text-sm text-neutral-900">{id.issueDate ? formatDate(id.issueDate) : 'Не указана'}</p>
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium text-neutral-700">Дата истечения</label>
+                                  <p className="text-sm text-neutral-900">{id.expiryDate ? formatDate(id.expiryDate) : 'Не указана'}</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div className="text-center text-neutral-500 py-8">
+                        <i className="ri-id-card-line text-4xl mb-2"></i>
+                        <p>Нет дополнительных удостоверений</p>
+                      </div>
+                    );
+                  }
+                })()}
+              </div>
+
+            </div>
+          )}
+
+          {activeTab === 'addresses' && (
+            <div className="space-y-6">
+              {/* Адреса регистрации и проживания */}
+              <div className="bg-white border border-neutral-200 rounded-lg p-4 md:p-6">
+                <h4 className="text-base md:text-lg font-semibold text-neutral-900 mb-4 md:mb-6">Адреса регистрации и проживания</h4>
+                {(() => {
+                  const tuData = getTuData();
+                  const addresses = tuData.addresses || [];
+                  
+                  if (addresses.length > 0) {
+                    return (
+                      <div className="space-y-4">
+                        {addresses.map((addr: any, index: number) => (
+                          <div key={index} className="border border-neutral-200 rounded-lg p-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <h5 className="font-medium text-neutral-900">
+                                {addr.type === 'REG' ? 'Адрес регистрации' : 'Фактический адрес'}
+                              </h5>
+                              {addr.isPrimary && (
+                                <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">Основной</span>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <div>
+                                  <label className="text-sm font-medium text-neutral-700">Улица</label>
+                                  <p className="text-sm text-neutral-900">{addr.street || 'Не указана'}</p>
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium text-neutral-700">Дом</label>
+                                  <p className="text-sm text-neutral-900">{addr.house || 'Не указан'}</p>
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium text-neutral-700">Квартира</label>
+                                  <p className="text-sm text-neutral-900">{addr.flat || 'Не указана'}</p>
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                <div>
+                                  <label className="text-sm font-medium text-neutral-700">Регион</label>
+                                  <p className="text-sm text-neutral-900">{addr.regionCode || 'Не указан'}</p>
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium text-neutral-700">Район</label>
+                                  <p className="text-sm text-neutral-900">{addr.raionCode || 'Не указан'}</p>
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium text-neutral-700">Населенный пункт</label>
+                                  <p className="text-sm text-neutral-900">{addr.localityCode || 'Не указан'}</p>
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium text-neutral-700">Почтовый индекс</label>
+                                  <p className="text-sm text-neutral-900">{addr.postalCode || 'Не указан'}</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div className="text-center text-neutral-500 py-8">
+                        <i className="ri-map-pin-line text-4xl mb-2"></i>
+                        <p>Нет адресов</p>
+                      </div>
+                    );
+                  }
+                })()}
+              </div>
+
+              {/* Контактная информация */}
+              <div className="bg-white border border-neutral-200 rounded-lg p-4 md:p-6">
+                <h4 className="text-base md:text-lg font-semibold text-neutral-900 mb-4 md:mb-6">Контактная информация</h4>
+                {(() => {
+                  const tuData = getTuData();
+                  const contacts = tuData.contacts || [];
+                  
+                  if (contacts.length > 0) {
+                    return (
+                      <div className="space-y-4">
+                        {contacts.map((contact: any, index: number) => (
+                          <div key={index} className="border border-neutral-200 rounded-lg p-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <h5 className="font-medium text-neutral-900">
+                                {contact.type === 'mobile' ? 'Мобильный телефон' : 
+                                 contact.type === 'home' ? 'Домашний телефон' :
+                                 contact.type === 'email' ? 'Email' : 'Другой контакт'}
+                              </h5>
+                              {contact.isPrimary && (
+                                <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">Основной</span>
+                              )}
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium text-neutral-700">Значение</label>
+                              <p className="text-sm text-neutral-900 font-mono">{contact.value || 'Не указано'}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div className="text-center text-neutral-500 py-8">
+                        <i className="ri-phone-line text-4xl mb-2"></i>
+                        <p>Нет контактной информации</p>
+                      </div>
+                    );
+                  }
+                })()}
+              </div>
+            </div>
+          )}
+
+
           {activeTab === 'income' && (
             <div className="space-y-4 md:space-y-6">
               {/* Источники дохода */}
               <div className="bg-white border border-neutral-200 rounded-lg p-4 md:p-6">
-                <h4 className="text-base md:text-lg font-semibold text-neutral-900 mb-3 md:mb-4">Источники дохода</h4>
+                <div className="flex items-center justify-between mb-3 md:mb-4">
+                  <h4 className="text-base md:text-lg font-semibold text-neutral-900">Источники дохода</h4>
+                  <div className="relative dropdown-container">
+                    <button
+                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                      className="flex items-center space-x-2 px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      <i className="ri-bar-chart-line"></i>
+                      <span>8-категорийный анализ</span>
+                      <i className="ri-arrow-down-s-line ml-1"></i>
+                    </button>
+                    
+                    {/* Выпадающее меню */}
+                    {isDropdownOpen && (
+                      <div className="absolute right-0 mt-2 w-48 bg-white border border-neutral-200 rounded-lg shadow-lg z-10">
+                        <div className="py-1">
+                          <button
+                            onClick={() => {
+                              setIsIncomeAnalysisOpen(true);
+                              setIsDropdownOpen(false);
+                            }}
+                            className="flex items-center w-full px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-100"
+                          >
+                            <i className="ri-bar-chart-line mr-3"></i>
+                            Показать анализ
+                          </button>
+                          <button
+                            onClick={() => {
+                              exportIncomeAnalysis();
+                              setIsDropdownOpen(false);
+                            }}
+                            className="flex items-center w-full px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-100"
+                          >
+                            <i className="ri-download-line mr-3"></i>
+                            Экспорт анализа
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs md:text-sm">
                     <thead>
@@ -349,206 +859,379 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
                       </tr>
                     </thead>
                     <tbody>
-                      <tr className="border-b border-neutral-100">
-                        <td className="py-2 md:py-3">Заработная плата</td>
-                        <td className="py-2 md:py-3 font-medium">25 000 сом</td>
-                        <td className="py-2 md:py-3 hidden sm:table-cell">ООО &ldquo;Торговый дом&rdquo;</td>
-                        <td className="py-2 md:py-3 hidden md:table-cell">2025-01</td>
-                        <td className="py-2 md:py-3">
-                          <span className="px-2 py-1 text-xs rounded bg-green-100 text-green-800">
-                            Да
+                      {getIncomes().map((income: any, index: number) => (
+                        <tr key={income.id || index} className="border-b border-neutral-100">
+                          <td className="py-2 md:py-3">{income.type || income.incomeTypeCode || 'Не указан'}</td>
+                          <td className="py-2 md:py-3 font-medium">{income.amount ? income.amount.toLocaleString() : '0'} сом</td>
+                          <td className="py-2 md:py-3 hidden sm:table-cell">{income.source || income.sourceRef || '-'}</td>
+                          <td className="py-2 md:py-3 hidden md:table-cell">{income.period || '-'}</td>
+                          <td className="py-2 md:py-3">
+                            <span className={`px-2 py-1 text-xs rounded ${income.periodicity === 'M' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                              {income.periodicity === 'M' ? 'Да' : 'Нет'}
                             </span>
                           </td>
                         </tr>
+                      ))}
+                      {getIncomes().length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="py-4 text-center text-neutral-500">Нет данных о доходах</td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
               </div>
 
-              {/* 8-категорийный анализ доходов */}
+
+              {/* Платежные реквизиты */}
               <div className="bg-white border border-neutral-200 rounded-lg p-4 md:p-6">
-                <h4 className="text-base md:text-lg font-semibold text-neutral-900 mb-4 md:mb-6">8-категорийный анализ доходов</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-                  {/* I. Трудовая деятельность */}
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 md:p-4">
-                    <div className="flex items-center justify-between mb-2 md:mb-3">
-                      <h5 className="font-semibold text-blue-900 text-sm md:text-base">I. Трудовая деятельность</h5>
+                <h4 className="text-base md:text-lg font-semibold text-neutral-900 mb-4 md:mb-6">Платежные реквизиты</h4>
+                {(() => {
+                  const paymentRequisites = getPaymentRequisites();
+                  
+                  return (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-sm font-medium text-neutral-700">Код банка</label>
+                          <p className="text-sm text-neutral-900 font-mono">{paymentRequisites.bankCode || 'Не указан'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-neutral-700">Лицевой счет</label>
+                          <p className="text-sm text-neutral-900 font-mono">{paymentRequisites.personalAccount || 'Не указан'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-neutral-700">Банковский счет</label>
+                          <p className="text-sm text-neutral-900 font-mono">{paymentRequisites.bankAccount || 'Не указан'}</p>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-sm font-medium text-neutral-700">Карточный счет</label>
+                          <p className="text-sm text-neutral-900 font-mono">{paymentRequisites.cardAccount || 'Не указан'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-neutral-700">Тип платежа</label>
+                          <p className="text-sm text-neutral-900">{paymentRequisites.paymentType || 'Не указан'}</p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-lg md:text-2xl font-bold text-blue-900 mb-2">18 000 сом</div>
-                    <div className="text-xs md:text-sm text-blue-700 mb-2 md:mb-3">
-                      <p>• Заработная плата наемных работников</p>
-                      <p>• Пенсии и пособия</p>
-                      <p>• Государственные выплаты</p>
-                    </div>
-                    <div className="text-xs text-blue-600 font-medium">45% от общего дохода</div>
-                  </div>
+                  );
+                })()}
+              </div>
 
-                  {/* II. Образование */}
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 md:p-4">
-                    <div className="flex items-center justify-between mb-2 md:mb-3">
-                      <h5 className="font-semibold text-green-900 text-sm md:text-base">II. Образование</h5>
+              {/* Орган соцзащиты и категории */}
+              <div className="bg-white border border-neutral-200 rounded-lg p-4 md:p-6">
+                <h4 className="text-base md:text-lg font-semibold text-neutral-900 mb-4 md:mb-6">Орган соцзащиты и категории</h4>
+                {(() => {
+                  const tuData = getTuData();
+                  const socialAuthority = tuData.socialAuthority || {};
+                  
+                  return (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-sm font-medium text-neutral-700">Муниципальный орган</label>
+                          <p className="text-sm text-neutral-900">{socialAuthority.municipalAuthority || 'Не указан'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-neutral-700">Тип заявителя</label>
+                          <p className="text-sm text-neutral-900">{socialAuthority.applicantType || 'Не указан'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-neutral-700">Категория</label>
+                          <p className="text-sm text-neutral-900">{socialAuthority.category || 'Не указана'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-neutral-700">Категория инвалидности</label>
+                          <p className="text-sm text-neutral-900">{socialAuthority.disabilityCategory || 'Не указана'}</p>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-sm font-medium text-neutral-700">Номер справки МСЭК</label>
+                          <p className="text-sm text-neutral-900 font-mono">{socialAuthority.msekRefNumber || 'Не указан'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-neutral-700">Дата выдачи справки МСЭК</label>
+                          <p className="text-sm text-neutral-900">{socialAuthority.msekIssueDate ? formatDate(socialAuthority.msekIssueDate) : 'Не указана'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-neutral-700">Номер справки ДСУ</label>
+                          <p className="text-sm text-neutral-900 font-mono">{socialAuthority.dsuRefNumber || 'Не указан'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-neutral-700">Дата выдачи справки ДСУ</label>
+                          <p className="text-sm text-neutral-900">{socialAuthority.dsuIssueDate ? formatDate(socialAuthority.dsuIssueDate) : 'Не указана'}</p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-lg md:text-2xl font-bold text-green-900 mb-2">2 500 сом</div>
-                    <div className="text-xs md:text-sm text-green-700 mb-2 md:mb-3">
-                      <p>• Стипендии</p>
-                      <p>• Образовательные гранты</p>
-                      <p>• Доходы от обучения</p>
-                    </div>
-                    <div className="text-xs text-green-600 font-medium">6% от общего дохода</div>
-                  </div>
+                  );
+                })()}
+              </div>
 
-                  {/* III. Предпринимательская деятельность */}
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h5 className="font-semibold text-purple-900">III. Предпринимательская деятельность</h5>
+              {/* Категории заявителей */}
+              <div className="bg-white border border-neutral-200 rounded-lg p-4 md:p-6">
+                <h4 className="text-base md:text-lg font-semibold text-neutral-900 mb-4 md:mb-6">Категории заявителей</h4>
+                {(() => {
+                  const categories = getCategories();
+                  
+                  return (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-3">
+                        <div className="flex items-center space-x-2">
+                          <input type="checkbox" checked={categories.forChild || false} readOnly className="rounded" />
+                          <label className="text-sm text-neutral-700">Для ребенка</label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <input type="checkbox" checked={categories.forFamilyWithChild || false} readOnly className="rounded" />
+                          <label className="text-sm text-neutral-700">Для семьи с ребенком</label>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <div className="flex items-center space-x-2">
+                          <input type="checkbox" checked={categories.forMinor || false} readOnly className="rounded" />
+                          <label className="text-sm text-neutral-700">Для несовершеннолетнего</label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <input type="checkbox" checked={categories.forIncapacitated || false} readOnly className="rounded" />
+                          <label className="text-sm text-neutral-700">Для недееспособного</label>
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-2xl font-bold text-purple-900 mb-2">8 000 сом</div>
-                    <div className="text-sm text-purple-700 mb-3">
-                      <p>• Доходы ИП</p>
-                      <p>• Патентные доходы</p>
-                      <p>• Лицензионные платежи</p>
-                    </div>
-                    <div className="text-xs text-purple-600 font-medium">20% от общего дохода</div>
-                  </div>
+                  );
+                })()}
+              </div>
 
-                  {/* IV. Сельское хозяйство */}
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h5 className="font-semibold text-yellow-900">IV. Сельское хозяйство</h5>
-                    </div>
-                    <div className="text-2xl font-bold text-yellow-900 mb-2">4 500 сом</div>
-                    <div className="text-sm text-yellow-700 mb-3">
-                      <p>• Орошаемое земледелие</p>
-                      <p>• Богарное земледелие</p>
-                      <p>• Продажа урожая</p>
-                    </div>
-                    <div className="text-xs text-yellow-600 font-medium">11% от общего дохода</div>
-                  </div>
+              {/* Имущество */}
+              <div className="space-y-6">
+                {/* Земельные участки */}
+                <div className="bg-white border border-neutral-200 rounded-lg p-4 md:p-6">
+                  <h4 className="text-base md:text-lg font-semibold text-neutral-900 mb-4 md:mb-6">Земельные участки</h4>
+                  {(() => {
+                    const landPlots = getLandPlots();
+                    
+                    if (landPlots.length > 0) {
+                      return (
+                        <div className="space-y-4">
+                          {landPlots.map((plot: any, index: number) => (
+                            <div key={index} className="border border-neutral-200 rounded-lg p-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <div>
+                                    <label className="text-sm font-medium text-neutral-700">Тип участка</label>
+                                    <p className="text-sm text-neutral-900">{plot.typeCode || 'Не указан'}</p>
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium text-neutral-700">Площадь (га)</label>
+                                    <p className="text-sm text-neutral-900">{plot.areaHectare || 0} га</p>
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium text-neutral-700">Тип собственности</label>
+                                    <p className="text-sm text-neutral-900">{plot.ownershipType || 'Не указан'}</p>
+                                  </div>
+                                </div>
+                                <div className="space-y-2">
+                                  <div>
+                                    <label className="text-sm font-medium text-neutral-700">Местоположение</label>
+                                    <p className="text-sm text-neutral-900">{plot.location || 'Не указано'}</p>
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium text-neutral-700">Оценочная стоимость</label>
+                                    <p className="text-sm text-neutral-900">{plot.estimatedValue ? `${plot.estimatedValue.toLocaleString()} сом` : 'Не указана'}</p>
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium text-neutral-700">В собственности</label>
+                                    <p className="text-sm text-neutral-900">{plot.isOwned ? 'Да' : 'Нет'}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <div className="text-center text-neutral-500 py-8">
+                          <i className="ri-home-line text-4xl mb-2"></i>
+                          <p>Нет земельных участков</p>
+                        </div>
+                      );
+                    }
+                  })()}
+                </div>
 
-                  {/* V. Землепользование */}
-                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h5 className="font-semibold text-orange-900">V. Землепользование</h5>
-                    </div>
-                    <div className="text-2xl font-bold text-orange-900 mb-2">1 200 сом</div>
-                    <div className="text-sm text-orange-700 mb-3">
-                      <p>• Аренда земли</p>
-                      <p>• Продажа земли</p>
-                      <p>• Доходы от недвижимости</p>
-                    </div>
-                    <div className="text-xs text-orange-600 font-medium">3% от общего дохода</div>
-                  </div>
+                {/* Скот */}
+                <div className="bg-white border border-neutral-200 rounded-lg p-4 md:p-6">
+                  <h4 className="text-base md:text-lg font-semibold text-neutral-900 mb-4 md:mb-6">Скот</h4>
+                  {(() => {
+                    const livestock = getLivestock();
+                    
+                    if (livestock.length > 0) {
+                      return (
+                        <div className="space-y-4">
+                          {livestock.map((animal: any, index: number) => (
+                            <div key={index} className="border border-neutral-200 rounded-lg p-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <div>
+                                    <label className="text-sm font-medium text-neutral-700">Тип скота</label>
+                                    <p className="text-sm text-neutral-900">{animal.typeCode || 'Не указан'}</p>
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium text-neutral-700">Количество</label>
+                                    <p className="text-sm text-neutral-900">{animal.qty || 0} голов</p>
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium text-neutral-700">Условные головы</label>
+                                    <p className="text-sm text-neutral-900">{animal.convUnits || 0}</p>
+                                  </div>
+                                </div>
+                                <div className="space-y-2">
+                                  <div>
+                                    <label className="text-sm font-medium text-neutral-700">Оценочная стоимость</label>
+                                    <p className="text-sm text-neutral-900">{animal.estimatedValue ? `${animal.estimatedValue.toLocaleString()} сом` : 'Не указана'}</p>
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium text-neutral-700">В собственности</label>
+                                    <p className="text-sm text-neutral-900">{animal.isOwned ? 'Да' : 'Нет'}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <div className="text-center text-neutral-500 py-8">
+                          <i className="ri-bear-smile-line text-4xl mb-2"></i>
+                          <p>Нет скота</p>
+                        </div>
+                      );
+                    }
+                  })()}
+                </div>
 
-                  {/* VI. Животноводство */}
-                  <div className="bg-pink-50 border border-pink-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h5 className="font-semibold text-pink-900">VI. Животноводство</h5>
-                    </div>
-                    <div className="text-2xl font-bold text-pink-900 mb-2">3 800 сом</div>
-                    <div className="text-sm text-pink-700 mb-3">
-                      <p>• Продажа скота</p>
-                      <p>• Молочная продукция</p>
-                      <p>• Птицеводство</p>
-                    </div>
-                    <div className="text-xs text-pink-600 font-medium">10% от общего дохода</div>
-                  </div>
-
-                  {/* VII. Банковские услуги */}
-                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h5 className="font-semibold text-slate-900">VII. Банковские услуги</h5>
-                    </div>
-                    <div className="text-2xl font-bold text-slate-900 mb-2">800 сом</div>
-                    <div className="text-sm text-slate-700 mb-3">
-                      <p>• Депозитные проценты</p>
-                      <p>• Инвестиционные доходы</p>
-                      <p>• Дивиденды</p>
-                    </div>
-                    <div className="text-xs text-slate-600 font-medium">2% от общего дохода</div>
-                  </div>
-
-                  {/* VIII. Прочие доходы */}
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h5 className="font-semibold text-gray-900">VIII. Прочие доходы</h5>
-                    </div>
-                    <div className="text-2xl font-bold text-gray-900 mb-2">1 200 сом</div>
-                    <div className="text-sm text-gray-700 mb-3">
-                      <p>• Алименты</p>
-                      <p>• Семейная помощь</p>
-                      <p>• Разовые доходы</p>
-                    </div>
-                    <div className="text-xs text-gray-600 font-medium">3% от общего дохода</div>
-                  </div>
+                {/* Транспортные средства */}
+                <div className="bg-white border border-neutral-200 rounded-lg p-4 md:p-6">
+                  <h4 className="text-base md:text-lg font-semibold text-neutral-900 mb-4 md:mb-6">Транспортные средства</h4>
+                  {(() => {
+                    const vehicles = getVehicles();
+                    
+                    if (vehicles.length > 0) {
+                      return (
+                        <div className="space-y-4">
+                          {vehicles.map((vehicle: any, index: number) => (
+                            <div key={index} className="border border-neutral-200 rounded-lg p-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <div>
+                                    <label className="text-sm font-medium text-neutral-700">Тип транспорта</label>
+                                    <p className="text-sm text-neutral-900">{vehicle.typeCode || 'Не указан'}</p>
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium text-neutral-700">Марка и модель</label>
+                                    <p className="text-sm text-neutral-900">{vehicle.makeModel || 'Не указана'}</p>
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium text-neutral-700">Год выпуска</label>
+                                    <p className="text-sm text-neutral-900">{vehicle.year || 'Не указан'}</p>
+                                  </div>
+                                </div>
+                                <div className="space-y-2">
+                                  <div>
+                                    <label className="text-sm font-medium text-neutral-700">Регистрационный номер</label>
+                                    <p className="text-sm text-neutral-900 font-mono">{vehicle.regNo || 'Не указан'}</p>
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium text-neutral-700">Оценочная стоимость</label>
+                                    <p className="text-sm text-neutral-900">{vehicle.estimatedValue ? `${vehicle.estimatedValue.toLocaleString()} сом` : 'Не указана'}</p>
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium text-neutral-700">Легковой автомобиль</label>
+                                    <p className="text-sm text-neutral-900">{vehicle.isLightCar ? 'Да' : 'Нет'}</p>
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium text-neutral-700">В собственности</label>
+                                    <p className="text-sm text-neutral-900">{vehicle.isOwned ? 'Да' : 'Нет'}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <div className="text-center text-neutral-500 py-8">
+                          <i className="ri-car-line text-4xl mb-2"></i>
+                          <p>Нет транспортных средств</p>
+                        </div>
+                      );
+                    }
+                  })()}
                 </div>
               </div>
 
-              {/* Расчет ССДС и сравнение с ГМД */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Общий семейный доход */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                  <h5 className="font-semibold text-blue-900 mb-3">Общий семейный доход</h5>
-                  <div className="text-3xl font-bold text-blue-900 mb-2">40 000 сом</div>
-                  <p className="text-sm text-blue-700">Сумма всех 8 категорий доходов</p>
-                </div>
-
-                {/* ССДС */}
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
-                  <h5 className="font-semibold text-purple-900 mb-3">ССДС</h5>
-                  <div className="text-3xl font-bold text-purple-900 mb-2">10 000 сом</div>
-                  <p className="text-sm text-purple-700">40 000 ÷ 4 человек = доход на душу населения</p>
-                </div>
-
-                {/* Сравнение с порогом ГМД */}
-                <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-                  <h5 className="font-semibold text-red-900 mb-3">Сравнение с порогом ГМД</h5>
-                  <div className="text-sm text-red-700 mb-3">Порог ГМД: 4 500 сом</div>
-                  <div className="text-center">
-                    <div className="text-4xl font-bold text-red-600 mb-2">✗ НЕ ПОДХОДИТ</div>
-                    <div className="text-lg font-semibold text-red-700">5 500 сом выше порога</div>
-                  </div>
-                </div>
+              {/* Компенсации */}
+              <div className="bg-white border border-neutral-200 rounded-lg p-4 md:p-6">
+                <h4 className="text-base md:text-lg font-semibold text-neutral-900 mb-4 md:mb-6">Специальные компенсации</h4>
+                {(() => {
+                  const tuData = getTuData();
+                  const specialCompensations = tuData.specialCompensations || [];
+                  
+                  if (specialCompensations.length > 0) {
+                    return (
+                      <div className="space-y-4">
+                        {specialCompensations.map((comp: any, index: number) => (
+                          <div key={index} className="border border-neutral-200 rounded-lg p-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <div>
+                                  <label className="text-sm font-medium text-neutral-700">Причина</label>
+                                  <p className="text-sm text-neutral-900">{comp.reason || 'Не указана'}</p>
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium text-neutral-700">Тип компенсации</label>
+                                  <p className="text-sm text-neutral-900">{comp.type || 'Не указан'}</p>
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium text-neutral-700">Сумма</label>
+                                  <p className="text-sm text-neutral-900">{comp.amount ? `${comp.amount.toLocaleString()} сом` : 'Не указана'}</p>
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                <div>
+                                  <label className="text-sm font-medium text-neutral-700">Период с</label>
+                                  <p className="text-sm text-neutral-900">{comp.periodFrom ? formatDate(comp.periodFrom) : 'Не указан'}</p>
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium text-neutral-700">Период по</label>
+                                  <p className="text-sm text-neutral-900">{comp.periodTo ? formatDate(comp.periodTo) : 'Не указан'}</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div className="text-center text-neutral-500 py-8">
+                        <i className="ri-gift-line text-4xl mb-2"></i>
+                        <p>Нет специальных компенсаций</p>
+                      </div>
+                    );
+                  }
+                })()}
               </div>
             </div>
           )}
 
-          {activeTab === 'documents' && (
-            <div className="space-y-4">
-              <div className="card">
-                <h4 className="font-semibold text-neutral-900 mb-4">Документы</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {application.documents.map((doc) => (
-                    <div key={doc.id} className="border border-neutral-200 rounded-lg p-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <h5 className="font-medium text-neutral-900">{getDocumentTypeText(doc.type)}</h5>
-                        <StatusBadge status={doc.status === 'verified' ? 'success' : doc.status === 'rejected' ? 'danger' : 'warning'}>
-                          {getDocumentStatusText(doc.status)}
-                        </StatusBadge>
-                      </div>
-                      <p className="text-sm text-neutral-600 mb-2">{doc.name}</p>
-                      <div className="text-xs text-neutral-500 space-y-1">
-                        <p>Загружен: {formatDate(doc.uploadedAt)}</p>
-                        <p>Загрузил: {doc.uploadedBy}</p>
-                        {doc.verifiedAt && (
-                          <p>Проверен: {formatDate(doc.verifiedAt)}</p>
-                        )}
-                        {doc.verifiedBy && (
-                          <p>Проверил: {doc.verifiedBy}</p>
-                        )}
-                      </div>
-                      {doc.notes && (
-                        <p className="text-sm text-neutral-600 mt-2 italic">{doc.notes}</p>
-                      )}
-                      <button className="mt-3 text-blue-600 hover:text-blue-800 text-sm font-medium">
-                        <i className="ri-download-line mr-1"></i>
-                        Скачать
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
+
+
+
 
           {activeTab === 'inspection' && (
             <div className="space-y-6">
@@ -819,6 +1502,13 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
           )}
         </div>
       </div>
+
+      {/* Модальное окно анализа доходов */}
+      <IncomeAnalysisModal
+        isOpen={isIncomeAnalysisOpen}
+        onClose={() => setIsIncomeAnalysisOpen(false)}
+        application={application}
+      />
     </MobileOptimizedModal>
   );
 }

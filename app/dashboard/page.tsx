@@ -9,6 +9,7 @@ import ApplicationDetailsModal from '@/components/ui/ApplicationDetailsModal';
 import DecisionModal from '@/components/ui/DecisionModal';
 import UniversalFilters, { FilterConfig } from '@/components/ui/UniversalFilters';
 import UniversalBulkActions, { BulkAction } from '@/components/ui/UniversalBulkActions';
+import TestDataLoader from '@/components/ui/TestDataLoader';
 import { applicationService } from '@/lib/api/applicationService';
 import { Application, ApplicationStatus } from '@/lib/types';
 
@@ -28,6 +29,19 @@ export default function DashboardPage() {
     loadDashboardData();
   }, []);
 
+  // Слушаем события отправки новых заявок
+  useEffect(() => {
+    const handleApplicationSubmitted = () => {
+      loadDashboardData();
+    };
+
+    window.addEventListener('applicationSubmitted', handleApplicationSubmitted);
+    
+    return () => {
+      window.removeEventListener('applicationSubmitted', handleApplicationSubmitted);
+    };
+  }, []);
+
   useEffect(() => {
     applyFilters();
   }, [applications, filters]);
@@ -36,17 +50,54 @@ export default function DashboardPage() {
     try {
       setLoading(true);
       
-      // Загружаем статистику
-      const statsResponse = await applicationService.getApplicationStats();
-      if (statsResponse.success && statsResponse.data) {
-        setStats(statsResponse.data);
-      }
+      // Загружаем заявки из localStorage для демонстрации
+      const storedApplications = JSON.parse(localStorage.getItem('applications') || '[]');
+      
+      // Сортируем по дате создания (новые сверху)
+      storedApplications.sort((a: any, b: any) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      
+      setApplications(storedApplications);
+      
+      // Рассчитываем статистику из локальных данных
+      const stats = {
+        total: storedApplications.length,
+        submitted: storedApplications.filter((app: any) => app.status === 'SUBMITTED').length,
+        underReview: storedApplications.filter((app: any) => app.status === 'UNDER_REVIEW').length,
+        approved: storedApplications.filter((app: any) => app.status === 'APPROVED').length,
+        rejected: storedApplications.filter((app: any) => app.status === 'REJECTED').length,
+        pending: storedApplications.filter((app: any) => app.status === 'PENDING').length
+      };
+      
+      setStats(stats);
+      
+      // Также пытаемся загрузить с сервера (если API доступен)
+      try {
+        const statsResponse = await applicationService.getApplicationStats();
+        if (statsResponse.success && statsResponse.data) {
+          // Объединяем статистику
+          setStats({
+            total: stats.total + (statsResponse.data.total || 0),
+            submitted: stats.submitted + (statsResponse.data.submitted || 0),
+            underReview: stats.underReview + (statsResponse.data.underReview || 0),
+            approved: stats.approved + (statsResponse.data.approved || 0),
+            rejected: stats.rejected + (statsResponse.data.rejected || 0),
+            pending: stats.pending + (statsResponse.data.pending || 0)
+          });
+        }
 
-      // Загружаем заявления для таблицы
-      const applicationsResponse = await applicationService.getApplications({}, 1, 10);
-      if (applicationsResponse.success && applicationsResponse.data) {
-        setApplications(applicationsResponse.data.data);
+        const applicationsResponse = await applicationService.getApplications({}, 1, 10);
+        if (applicationsResponse.success && applicationsResponse.data) {
+          // Объединяем данные с сервера с локальными данными
+          const serverApplications = applicationsResponse.data.data;
+          const combinedApplications = [...storedApplications, ...serverApplications];
+          setApplications(combinedApplications);
+        }
+      } catch (serverError) {
+        console.log('Сервер недоступен, используем только локальные данные');
       }
+      
     } catch (error) {
       console.error('Ошибка при загрузке данных:', error);
     } finally {
@@ -232,28 +283,28 @@ export default function DashboardPage() {
     );
   }
 
-  const metrics = stats ? [
+  const metrics = stats && typeof stats === 'object' ? [
     {
       title: 'В очереди',
-      value: stats.byStatus.submitted.toString(),
+      value: (stats.submitted || 0).toString(),
       change: { value: '+2 за неделю', type: 'positive' as const },
       icon: <i className="ri-file-list-3-line text-4xl text-blue-600"></i>
     },
     {
       title: 'На рассмотрении',
-      value: stats.byStatus.under_review.toString(),
+      value: (stats.underReview || 0).toString(),
       change: { value: '+1 за неделю', type: 'positive' as const },
       icon: <i className="ri-time-line text-4xl text-yellow-600"></i>
     },
     {
       title: 'Одобрено сегодня',
-      value: stats.byStatus.approved.toString(),
+      value: (stats.approved || 0).toString(),
       change: { value: '+5 за неделю', type: 'positive' as const },
       icon: <i className="ri-check-line text-4xl text-green-600"></i>
     },
     {
       title: 'Высокий риск',
-      value: applications.filter(app => app.riskScore > 50).length.toString(),
+      value: applications.filter(app => (app as any).riskScore > 50).length.toString(),
       change: { value: '+1 за неделю', type: 'negative' as const },
       icon: <i className="ri-alert-line text-4xl text-red-600"></i>
     }
@@ -358,36 +409,56 @@ export default function DashboardPage() {
       key: 'id',
       label: '№ заявки',
       render: (value: string) => (
-        <span className="font-mono text-sm font-medium text-neutral-900">{value}</span>
+        <span className="font-mono text-sm font-medium text-blue-600">{value}</span>
       )
     },
     {
       key: 'applicantName',
       label: 'Заявитель',
-      render: (value: string) => (
-        <span className="font-medium text-neutral-900">{value}</span>
+      render: (value: string, row: Application) => (
+        <div>
+          <div className="font-medium text-neutral-900">{row.applicantName || row.formData?.applicant?.fullName || 'Не указан'}</div>
+          <div className="text-xs text-gray-500 font-mono">{row.applicantPin || row.formData?.applicant?.pin || 'ПИН не указан'}</div>
+        </div>
       )
     },
     {
       key: 'priority',
       label: 'Приоритет',
-      render: (value: string) => (
-        <StatusBadge 
-          status={value === 'high' ? 'high-risk' : value === 'medium' ? 'medium-risk' : 'low-risk'}
-        >
-          {value === 'high' ? 'Высокий' : value === 'medium' ? 'Средний' : 'Низкий'}
-        </StatusBadge>
-      )
+      render: (value: string, row: Application) => {
+        const priorityMap: { [key: string]: string } = {
+          'LOW': 'Низкий',
+          'MEDIUM': 'Средний', 
+          'HIGH': 'Высокий',
+          'URGENT': 'Срочный'
+        };
+        const priorityColor = {
+          'LOW': 'text-green-600 bg-green-100',
+          'MEDIUM': 'text-yellow-600 bg-yellow-100',
+          'HIGH': 'text-orange-600 bg-orange-100',
+          'URGENT': 'text-red-600 bg-red-100'
+        };
+        return (
+          <span className={`text-sm px-2 py-1 rounded ${priorityColor[value as keyof typeof priorityColor] || 'text-gray-600 bg-gray-100'}`}>
+            {priorityMap[value] || value}
+          </span>
+        );
+      }
     },
     {
       key: 'riskScore',
       label: 'Риск',
       render: (value: number) => (
-        <span className={`text-sm font-medium ${
-          value > 50 ? 'text-red-600' : value > 25 ? 'text-yellow-600' : 'text-green-600'
-        }`}>
-          {value}%
-        </span>
+        <div className="flex items-center space-x-2">
+          <div className={`w-3 h-3 rounded-full ${
+            value > 70 ? 'bg-red-500' : value > 40 ? 'bg-yellow-500' : 'bg-green-500'
+          }`}></div>
+          <span className={`text-sm font-medium ${
+            value > 70 ? 'text-red-600' : value > 40 ? 'text-yellow-600' : 'text-green-600'
+          }`}>
+            {value}%
+          </span>
+        </div>
       )
     },
     {
@@ -395,12 +466,16 @@ export default function DashboardPage() {
       label: 'Статус',
       render: (value: string) => {
         const statusMap: { [key: string]: string } = {
-          'submitted': 'Подана',
-          'under_review': 'На рассмотрении',
-          'approved': 'Одобрена',
-          'rejected': 'Отклонена',
-          'payment_processing': 'Обработка платежа',
-          'paid': 'Оплачена'
+          'DRAFT': 'Черновик',
+          'SUBMITTED': 'Подана',
+          'UNDER_REVIEW': 'На рассмотрении',
+          'PENDING_APPROVAL': 'На утверждении',
+          'APPROVED': 'Одобрена',
+          'REJECTED': 'Отклонена',
+          'PAYMENT_PROCESSING': 'Обработка платежа',
+          'PAID': 'Выплачено',
+          'CANCELLED': 'Отменено',
+          'TERMINATED': 'Прекращено'
         };
         return (
           <StatusBadge status={value as any}>
@@ -412,10 +487,17 @@ export default function DashboardPage() {
     {
       key: 'submittedAt',
       label: 'Дата подачи',
-      render: (value: Date) => (
-        <span className="text-sm text-neutral-600">
-          {value.toLocaleDateString('ru-RU')}
-        </span>
+      render: (value: any) => (
+        <div className="text-sm">
+          <div className="font-medium text-neutral-900">
+            {value ? new Date(value).toLocaleDateString('ru-RU') : '-'}
+          </div>
+          {value && (
+            <div className="text-xs text-gray-500">
+              {new Date(value).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+            </div>
+          )}
+        </div>
       )
     },
     {
@@ -471,6 +553,8 @@ export default function DashboardPage() {
         ))}
       </div>
 
+      {/* Test Data Loader */}
+      <TestDataLoader onDataLoaded={loadDashboardData} />
 
       {/* Applications Table */}
       <div className="card">

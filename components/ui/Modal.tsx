@@ -51,7 +51,7 @@ export default function Modal({
     'md': 'max-w-md md:max-w-lg',
     'lg': 'max-w-lg md:max-w-2xl',
     'xl': 'max-w-2xl md:max-w-4xl',
-    'full': 'max-w-full mx-2 md:mx-4',
+    'full': 'w-[90vw] h-[90vh] mx-2 md:mx-4',
   };
 
   return (
@@ -82,7 +82,7 @@ export default function Modal({
             )}
           </div>
         )}
-        <div className="overflow-y-auto max-h-[calc(100vh-8rem)]">
+        <div className="overflow-y-auto max-h-[calc(90vh-8rem)]">
           {children}
         </div>
       </div>

@@ -1,97 +1,139 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import MetricCard from '@/components/ui/MetricCard';
 import StatusBadge from '@/components/ui/StatusBadge';
 import Modal from '@/components/ui/Modal';
+import { Application, ApplicationStatus } from '@/lib/types';
+import { applicationService } from '@/lib/api/applicationService';
 
 export default function ReviewPage() {
-  const [selectedApplication, setSelectedApplication] = useState(null);
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [stats, setStats] = useState<any>(null);
+
+  // Загрузка данных
+  useEffect(() => {
+    loadApplications();
+    loadStats();
+  }, []);
+
+  const loadApplications = async () => {
+    try {
+      setLoading(true);
+      const response = await applicationService.getApplications({
+        status: ['UNDER_REVIEW', 'PENDING_APPROVAL']
+      }, 1, 50);
+      if (response.success && response.data) {
+        setApplications(response.data.data);
+      }
+    } catch (error) {
+      console.error('Ошибка при загрузке заявлений:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadStats = async () => {
+    try {
+      const response = await applicationService.getApplicationStats();
+      if (response.success && response.data) {
+        setStats(response.data);
+      }
+    } catch (error) {
+      console.error('Ошибка при загрузке статистики:', error);
+    }
+  };
 
   const metrics = [
     {
       title: 'На рассмотрении',
-      value: '45',
+      value: stats?.underReview || '0',
       change: '+8%',
       changeType: 'positive' as const,
       icon: <i className="ri-eye-line"></i>
     },
     {
       title: 'Требуют доработки',
-      value: '12',
+      value: stats?.needsRevision || '0',
       change: '-3%',
       changeType: 'negative' as const,
       icon: <i className="ri-edit-line"></i>
     },
     {
       title: 'Одобрены',
-      value: '156',
+      value: stats?.approved || '0',
       change: '+15%',
       changeType: 'positive' as const,
       icon: <i className="ri-check-line"></i>
     },
     {
       title: 'Отклонены',
-      value: '23',
+      value: stats?.rejected || '0',
       change: '+2%',
       changeType: 'positive' as const,
       icon: <i className="ri-close-line"></i>
     }
   ];
 
-  const applications = [
-    {
-      id: 'APP-001',
-      applicant: 'Айбек Кыдыров',
-      type: 'Первичная заявка',
-      submittedDate: '2024-01-15',
-      status: 'under_review',
-      documents: 8,
-      completeness: 95,
-      riskLevel: 'low'
-    },
-    {
-      id: 'APP-002',
-      applicant: 'Нургуль Асанова',
-      type: 'Дополнительные документы',
-      submittedDate: '2024-01-15',
-      status: 'needs_revision',
-      documents: 5,
-      completeness: 70,
-      riskLevel: 'medium'
-    },
-    {
-      id: 'APP-003',
-      applicant: 'Марат Беков',
-      type: 'Первичная заявка',
-      submittedDate: '2024-01-14',
-      status: 'under_review',
-      documents: 10,
-      completeness: 100,
-      riskLevel: 'low'
-    },
-    {
-      id: 'APP-004',
-      applicant: 'Айгуль Токтосунова',
-      type: 'Пересмотр решения',
-      submittedDate: '2024-01-14',
-      status: 'under_review',
-      documents: 12,
-      completeness: 90,
-      riskLevel: 'high'
-    },
-    {
-      id: 'APP-005',
-      applicant: 'Эркин Садыков',
-      type: 'Первичная заявка',
-      submittedDate: '2024-01-13',
-      status: 'approved',
-      documents: 9,
-      completeness: 100,
-      riskLevel: 'low'
+  // Обработчики
+  const handleViewDetails = (application: Application) => {
+    setSelectedApplication(application);
+    setShowModal(true);
+  };
+
+  const handleApprove = async (applicationId: number) => {
+    try {
+      const response = await applicationService.updateApplicationStatus(
+        applicationId,
+        'APPROVED',
+        1, // userId
+        'Заявка одобрена'
+      );
+      if (response.success) {
+        loadApplications();
+        loadStats();
+      }
+    } catch (error) {
+      console.error('Ошибка при одобрении заявки:', error);
     }
-  ];
+  };
+
+  const handleReject = async (applicationId: number, reason: string) => {
+    try {
+      const response = await applicationService.updateApplicationStatus(
+        applicationId,
+        'REJECTED',
+        1, // userId
+        reason
+      );
+      if (response.success) {
+        loadApplications();
+        loadStats();
+      }
+    } catch (error) {
+      console.error('Ошибка при отклонении заявки:', error);
+    }
+  };
+
+  const handleRequestRevision = async (applicationId: number, reason: string) => {
+    try {
+      const response = await applicationService.updateApplicationStatus(
+        applicationId,
+        'DRAFT',
+        1, // userId
+        reason
+      );
+      if (response.success) {
+        loadApplications();
+        loadStats();
+      }
+    } catch (error) {
+      console.error('Ошибка при запросе доработки:', error);
+    }
+  };
 
   const handleReviewApplication = (app: any) => {
     setSelectedApplication(app);

@@ -6,6 +6,7 @@ import StatusBadge from '@/components/ui/StatusBadge';
 import MetricCard from '@/components/ui/MetricCard';
 import ApplicationDetailsModal from '@/components/ui/ApplicationDetailsModal';
 import DecisionModal from '@/components/ui/DecisionModal';
+import TestDataLoader from '@/components/ui/TestDataLoader';
 import { applicationService } from '@/lib/api/applicationService';
 import { Application, ApplicationStatus, ApplicationFilters } from '@/lib/types';
 
@@ -13,26 +14,68 @@ export default function QueuePage() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<ApplicationFilters>({
-    status: ['submitted', 'under_review']
+    status: ['SUBMITTED', 'UNDER_REVIEW']
   });
   const [stats, setStats] = useState<any>(null);
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isDecisionModalOpen, setIsDecisionModalOpen] = useState(false);
-  const [currentApplicationId, setCurrentApplicationId] = useState<string>('');
+  const [currentApplicationId, setCurrentApplicationId] = useState<number>(0);
 
   useEffect(() => {
     loadApplications();
     loadStats();
   }, [filters]);
 
+  // Слушаем события отправки новых заявок
+  useEffect(() => {
+    const handleApplicationSubmitted = () => {
+      loadApplications();
+      loadStats();
+    };
+
+    window.addEventListener('applicationSubmitted', handleApplicationSubmitted);
+    
+    return () => {
+      window.removeEventListener('applicationSubmitted', handleApplicationSubmitted);
+    };
+  }, []);
+
   const loadApplications = async () => {
     try {
       setLoading(true);
-      const response = await applicationService.getApplications(filters, 1, 50);
-      if (response.success && response.data) {
-        setApplications(response.data.data);
+      
+      // Загружаем заявки из localStorage для демонстрации
+      const storedApplications = JSON.parse(localStorage.getItem('applications') || '[]');
+      
+      // Фильтруем заявки по статусу
+      let filteredApplications = storedApplications;
+      if (filters.status && filters.status.length > 0) {
+        filteredApplications = storedApplications.filter((app: any) => 
+          filters.status!.includes(app.status)
+        );
       }
+      
+      // Сортируем по дате создания (новые сверху)
+      filteredApplications.sort((a: any, b: any) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      
+      setApplications(filteredApplications);
+      
+      // Также пытаемся загрузить с сервера (если API доступен)
+      try {
+        const response = await applicationService.getApplications(filters, 1, 50);
+        if (response.success && response.data) {
+          // Объединяем данные с сервера с локальными данными
+          const serverApplications = response.data.data;
+          const combinedApplications = [...filteredApplications, ...serverApplications];
+          setApplications(combinedApplications);
+        }
+      } catch (serverError) {
+        console.log('Сервер недоступен, используем только локальные данные');
+      }
+      
     } catch (error) {
       console.error('Ошибка при загрузке заявлений:', error);
     } finally {
@@ -42,43 +85,98 @@ export default function QueuePage() {
 
   const loadStats = async () => {
     try {
-      const response = await applicationService.getApplicationStats();
-      if (response.success && response.data) {
-        setStats(response.data);
+      // Рассчитываем статистику из локальных данных
+      const storedApplications = JSON.parse(localStorage.getItem('applications') || '[]');
+      
+      const stats = {
+        total: storedApplications.length,
+        submitted: storedApplications.filter((app: any) => app.status === 'SUBMITTED').length,
+        underReview: storedApplications.filter((app: any) => app.status === 'UNDER_REVIEW').length,
+        approved: storedApplications.filter((app: any) => app.status === 'APPROVED').length,
+        rejected: storedApplications.filter((app: any) => app.status === 'REJECTED').length,
+        pending: storedApplications.filter((app: any) => app.status === 'PENDING').length
+      };
+      
+      setStats(stats);
+      
+      // Также пытаемся загрузить статистику с сервера
+      try {
+        const response = await applicationService.getApplicationStats();
+        if (response.success && response.data) {
+          // Объединяем статистику
+          setStats({
+            total: stats.total + (response.data.total || 0),
+            submitted: stats.submitted + (response.data.submitted || 0),
+            underReview: stats.underReview + (response.data.underReview || 0),
+            approved: stats.approved + (response.data.approved || 0),
+            rejected: stats.rejected + (response.data.rejected || 0),
+            pending: stats.pending + (response.data.pending || 0)
+          });
+        }
+      } catch (serverError) {
+        console.log('Сервер недоступен, используем только локальную статистику');
       }
+      
     } catch (error) {
       console.error('Ошибка при загрузке статистики:', error);
     }
   };
 
-  const handleStatusUpdate = async (applicationId: string, newStatus: ApplicationStatus) => {
+  const handleStatusUpdate = async (applicationId: number, newStatus: ApplicationStatus) => {
     try {
-      const response = await applicationService.updateApplicationStatus(
-        applicationId, 
-        newStatus, 
-        'Нурбек Жумабеков'
+      // Обновляем в localStorage
+      const storedApplications = JSON.parse(localStorage.getItem('applications') || '[]');
+      const updatedApplications = storedApplications.map((app: any) => 
+        app.id === applicationId 
+          ? { ...app, status: newStatus, updatedAt: new Date().toISOString() }
+          : app
+      );
+      localStorage.setItem('applications', JSON.stringify(updatedApplications));
+      
+      // Обновляем локальное состояние
+      setApplications(prev => 
+        prev.map(app => 
+          app.id === applicationId 
+            ? { ...app, status: newStatus, updatedAt: new Date().toISOString() }
+            : app
+        )
       );
       
-      if (response.success) {
-        setApplications(prev => 
-          prev.map(app => 
-            app.id === applicationId 
-              ? { ...app, status: newStatus }
-              : app
-          )
+      // Обновляем статистику
+      loadStats();
+      
+      // Также пытаемся обновить на сервере
+      try {
+        const response = await applicationService.updateApplicationStatus(
+          applicationId, 
+          newStatus, 
+          1 // userId
         );
-        loadStats(); // Обновляем статистику
+        console.log('Статус обновлен на сервере:', response);
+      } catch (serverError) {
+        console.log('Сервер недоступен, статус обновлен только локально');
       }
+      
     } catch (error) {
       console.error('Ошибка при обновлении статуса:', error);
     }
   };
 
-  const handlePriorityChange = (applicationId: string, newPriority: 'low' | 'medium' | 'high' | 'urgent') => {
+  const handlePriorityChange = (applicationId: number, newPriority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT') => {
+    // Обновляем в localStorage
+    const storedApplications = JSON.parse(localStorage.getItem('applications') || '[]');
+    const updatedApplications = storedApplications.map((app: any) => 
+      app.id === applicationId 
+        ? { ...app, priority: newPriority, updatedAt: new Date().toISOString() }
+        : app
+    );
+    localStorage.setItem('applications', JSON.stringify(updatedApplications));
+    
+    // Обновляем локальное состояние
     setApplications(prev => 
       prev.map(app => 
         app.id === applicationId 
-          ? { ...app, priority: newPriority }
+          ? { ...app, priority: newPriority, updatedAt: new Date().toISOString() }
           : app
       )
     );
@@ -94,7 +192,7 @@ export default function QueuePage() {
     setSelectedApplication(null);
   };
 
-  const handleDecisionClick = (applicationId: string) => {
+  const handleDecisionClick = (applicationId: number) => {
     setCurrentApplicationId(applicationId);
     setIsDecisionModalOpen(true);
   };
@@ -127,31 +225,31 @@ export default function QueuePage() {
     }
   };
 
-  const metrics = stats ? [
+  const metrics = stats && typeof stats === 'object' ? [
     {
       title: 'Всего в очереди',
-      value: (stats.byStatus.submitted + stats.byStatus.under_review).toString(),
+      value: ((stats.submitted || 0) + (stats.underReview || 0)).toString(),
       change: '+12%',
       changeType: 'positive' as const,
       icon: <i className="ri-file-list-3-line text-4xl text-blue-600"></i>
     },
     {
       title: 'Высокий приоритет',
-      value: applications.filter(app => app.priority === 'high' || app.priority === 'urgent').length.toString(),
+      value: applications.filter(app => (app as any).priority === 'HIGH' || (app as any).priority === 'URGENT').length.toString(),
       change: '+5%',
       changeType: 'positive' as const,
       icon: <i className="ri-alarm-warning-line text-4xl text-red-600"></i>
     },
     {
       title: 'Средний приоритет',
-      value: applications.filter(app => app.priority === 'medium').length.toString(),
+      value: applications.filter(app => (app as any).priority === 'MEDIUM').length.toString(),
       change: '+8%',
       changeType: 'positive' as const,
       icon: <i className="ri-time-line text-4xl text-yellow-600"></i>
     },
     {
       title: 'Низкий приоритет',
-      value: applications.filter(app => app.priority === 'low').length.toString(),
+      value: applications.filter(app => (app as any).priority === 'LOW').length.toString(),
       change: '-2%',
       changeType: 'negative' as const,
       icon: <i className="ri-calendar-line text-4xl text-green-600"></i>
@@ -160,44 +258,66 @@ export default function QueuePage() {
 
   const columns = [
     {
-      key: 'id',
+      key: 'applicationNumber',
       label: '№ заявки',
       render: (value: string) => (
         <span className="font-mono text-sm font-medium text-blue-600">{value}</span>
       )
     },
     {
-      key: 'applicantName',
+      key: 'applicant.fullName',
       label: 'Заявитель',
-      render: (value: string) => (
-        <span className="font-medium text-neutral-900">{value}</span>
+      render: (value: string, row: Application) => (
+        <div>
+          <div className="font-medium text-neutral-900">{row.applicantName || row.formData?.applicant?.fullName || 'Не указан'}</div>
+          <div className="text-xs text-gray-500 font-mono">{row.applicantPin || row.formData?.applicant?.pin || 'ПИН не указан'}</div>
+        </div>
       )
     },
     {
       key: 'priority',
       label: 'Приоритет',
-      render: (value: string, row: Application) => (
-        <select 
-          value={value}
-          onChange={(e) => handlePriorityChange(row.id, e.target.value as any)}
-          className="text-sm border border-neutral-300 rounded px-2 py-1"
-        >
-          <option value="low">Низкий</option>
-          <option value="medium">Средний</option>
-          <option value="high">Высокий</option>
-          <option value="urgent">Срочный</option>
-        </select>
-      )
+      render: (value: string, row: Application) => {
+        const priorityMap: { [key: string]: string } = {
+          'LOW': 'Низкий',
+          'MEDIUM': 'Средний', 
+          'HIGH': 'Высокий',
+          'URGENT': 'Срочный'
+        };
+        const priorityColor = {
+          'LOW': 'text-green-600 bg-green-100',
+          'MEDIUM': 'text-yellow-600 bg-yellow-100',
+          'HIGH': 'text-orange-600 bg-orange-100',
+          'URGENT': 'text-red-600 bg-red-100'
+        };
+        return (
+          <select 
+            value={value}
+            onChange={(e) => handlePriorityChange(row.id, e.target.value as any)}
+            className={`text-sm border border-neutral-300 rounded px-2 py-1 ${priorityColor[value as keyof typeof priorityColor] || 'text-gray-600 bg-gray-100'}`}
+          >
+            <option value="LOW">Низкий</option>
+            <option value="MEDIUM">Средний</option>
+            <option value="HIGH">Высокий</option>
+            <option value="URGENT">Срочный</option>
+          </select>
+        );
+      }
     },
     {
       key: 'riskScore',
       label: 'Риск',
       render: (value: number) => (
-        <span className={`text-sm font-medium ${
-          value > 50 ? 'text-red-600' : value > 25 ? 'text-yellow-600' : 'text-green-600'
-        }`}>
-          {value}%
-        </span>
+        <div className="flex items-center space-x-2">
+          <div className={`w-3 h-3 rounded-full ${
+            value > 70 ? 'bg-red-500' : value > 40 ? 'bg-yellow-500' : 'bg-green-500'
+          }`}></div>
+          <span className={`text-sm font-medium ${
+            value > 70 ? 'text-red-600' : value > 40 ? 'text-yellow-600' : 'text-green-600'
+          }`}>
+            {value}%
+          </span>
+        </div>
       )
     },
     {
@@ -205,10 +325,16 @@ export default function QueuePage() {
       label: 'Статус',
       render: (value: string) => {
         const statusMap: { [key: string]: string } = {
-          'submitted': 'Подана',
-          'under_review': 'На рассмотрении',
-          'approved': 'Одобрена',
-          'rejected': 'Отклонена'
+          'DRAFT': 'Черновик',
+          'SUBMITTED': 'Подана',
+          'UNDER_REVIEW': 'На рассмотрении',
+          'PENDING_APPROVAL': 'На утверждении',
+          'APPROVED': 'Одобрена',
+          'REJECTED': 'Отклонена',
+          'PAYMENT_PROCESSING': 'Обработка платежа',
+          'PAID': 'Выплачено',
+          'CANCELLED': 'Отменено',
+          'TERMINATED': 'Прекращено'
         };
         return (
           <StatusBadge status={value as any}>
@@ -220,10 +346,17 @@ export default function QueuePage() {
     {
       key: 'submittedAt',
       label: 'Дата подачи',
-      render: (value: Date) => (
-        <span className="text-sm text-neutral-600">
-          {value.toLocaleDateString('ru-RU')}
-        </span>
+      render: (value: any) => (
+        <div className="text-sm">
+          <div className="font-medium text-neutral-900">
+            {value ? new Date(value).toLocaleDateString('ru-RU') : '-'}
+          </div>
+          {value && (
+            <div className="text-xs text-gray-500">
+              {new Date(value).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+            </div>
+          )}
+        </div>
       )
     },
     {
@@ -231,26 +364,32 @@ export default function QueuePage() {
       label: 'Действия',
       render: (value: any, row: Application) => (
         <div className="flex space-x-2">
-          {row.status === 'submitted' && (
+          {row.status === 'SUBMITTED' && (
             <button 
-              onClick={() => handleStatusUpdate(row.id, 'under_review')}
+              onClick={() => handleStatusUpdate(row.id, 'UNDER_REVIEW')}
               className="btn-primary text-sm px-3 py-1"
+              title="Взять заявку в работу"
             >
+              <i className="ri-play-line mr-1"></i>
               Взять в работу
             </button>
           )}
-          {row.status === 'under_review' && (
+          {row.status === 'UNDER_REVIEW' && (
             <button 
               onClick={() => handleDecisionClick(row.id)}
               className="btn-danger text-sm px-3 py-1"
+              title="Принять решение по заявке"
             >
+              <i className="ri-check-line mr-1"></i>
               Решение
             </button>
           )}
           <button 
             onClick={() => handleViewDetails(row)}
             className="btn-secondary text-sm px-3 py-1"
+            title="Просмотреть детали заявки"
           >
+            <i className="ri-eye-line mr-1"></i>
             Детали
           </button>
         </div>
@@ -270,12 +409,27 @@ export default function QueuePage() {
           <button 
             onClick={loadApplications}
             className="btn-secondary"
+            disabled={loading}
           >
-            <i className="ri-refresh-line mr-2"></i>
-            Обновить очередь
+            <i className={`ri-refresh-line mr-2 ${loading ? 'animate-spin' : ''}`}></i>
+            {loading ? 'Обновление...' : 'Обновить очередь'}
+          </button>
+          <button 
+            onClick={() => {
+              localStorage.removeItem('applications');
+              loadApplications();
+            }}
+            className="btn-danger"
+            title="Очистить все заявки (только для демонстрации)"
+          >
+            <i className="ri-delete-bin-line mr-2"></i>
+            Очистить
           </button>
         </div>
       </div>
+
+      {/* Test Data Loader */}
+      <TestDataLoader onDataLoaded={loadApplications} />
 
       {/* Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -401,7 +555,7 @@ export default function QueuePage() {
             <div className="flex justify-between items-center">
               <span className="text-neutral-600">Обработано сегодня</span>
               <span className="font-semibold text-green-600">
-                {stats?.byStatus.approved || 0} заявок
+                {stats?.approved || 0} заявок
               </span>
             </div>
             <div className="flex justify-between items-center">

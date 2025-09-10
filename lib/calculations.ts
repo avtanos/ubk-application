@@ -1,7 +1,27 @@
 // Авторасчеты согласно ТУ
 export interface HouseholdMetrics {
+  familySize: number;
+  childrenCount: number;
+  adultsCount: number;
   totalIncomeMonth: number;
   perCapitaIncome: number;
+  totalPropertyValue: number;
+  totalLivestockValue: number;
+  totalVehicleValue: number;
+  totalLandValue: number;
+  isEligibleForBenefit: boolean;
+  benefitAmount: number;
+  calculationCoeffs: {
+    regionCoeff: number;
+    additionalCoeff: number;
+    childrenCoeff: number;
+    borderBonus: number;
+  };
+  violations: {
+    hasLightCarUnder20: boolean;
+    exceedsLivestockLimit: boolean;
+    livestockLimitExceeded: number;
+  };
   convUnitsTotal: number;
   criteriaFlags: {
     incomeEligible: boolean;
@@ -105,31 +125,95 @@ export const calculateBenefitAmount = (
 
 // Основная функция расчета показателей домохозяйства
 export const calculateHouseholdMetrics = (
-  incomes: IncomeItem[],
-  livestock: LivestockItem[],
-  vehicles: VehicleItem[],
-  familySize: number
+  familyMembers: any[],
+  incomes: any[],
+  landPlots: any[],
+  livestock: any[],
+  vehicles: any[]
 ): HouseholdMetrics => {
-  // Расчет доходов
-  const totalIncomeMonth = calculateTotalIncomeMonth(incomes);
-  const perCapitaIncome = calculatePerCapitaIncome(totalIncomeMonth, familySize);
+  const familySize = familyMembers.length;
+  const childrenCount = familyMembers.filter(m => m.type === 'child').length;
+  const adultsCount = familyMembers.filter(m => m.type === 'adult').length;
   
-  // Расчет скота
-  const convUnitsTotal = calculateConventionalUnits(livestock);
+  // Расчет общего дохода в месяц
+  let totalIncomeMonth = 0;
+  incomes.forEach(income => {
+    if (income.periodicity === 'M') {
+      totalIncomeMonth += income.amount;
+    } else if (income.periodicity === 'Y') {
+      totalIncomeMonth += income.amount / 12;
+    }
+  });
+  
+  const perCapitaIncome = familySize > 0 ? totalIncomeMonth / familySize : 0;
+  
+  // Расчет стоимости имущества
+  const totalLandValue = landPlots.reduce((sum, plot) => sum + (plot.estimatedValue || 0), 0);
+  const totalLivestockValue = livestock.reduce((sum, animal) => sum + (animal.estimatedValue || 0), 0);
+  const totalVehicleValue = vehicles.reduce((sum, vehicle) => sum + (vehicle.estimatedValue || 0), 0);
+  const totalPropertyValue = totalLandValue + totalLivestockValue + totalVehicleValue;
+  
+  // Расчет условных единиц скота
+  const convUnitsTotal = livestock.reduce((sum, animal) => sum + animal.convUnits, 0);
+  
+  // Проверка нарушений
+  const currentYear = new Date().getFullYear();
+  const hasLightCarUnder20 = vehicles.some(vehicle => 
+    vehicle.isLightCar && (currentYear - vehicle.year) < 20
+  );
+  
+  const livestockLimit = familySize * 4; // 4 МРС на члена семьи
+  const exceedsLivestockLimit = convUnitsTotal > livestockLimit;
+  const livestockLimitExceeded = Math.max(0, convUnitsTotal - livestockLimit);
+  
+  // Расчет коэффициентов
+  const regionCoeff = 1.0; // Базовый коэффициент региона
+  const additionalCoeff = 1.0; // Дополнительный коэффициент
+  const childrenCoeff = Math.max(1, childrenCount); // Коэффициент по количеству детей
+  const borderBonus = 0; // Бонус для приграничных районов
+  
+  // Проверка ограничений
+  const totalCoeff = regionCoeff * additionalCoeff;
+  const limitedCoeff = Math.min(totalCoeff, 1.8); // Ограничение 1.8
+  
+  // Расчет пособия
+  const baseAmount = 1000; // Базовая сумма пособия
+  const benefitAmount = baseAmount * childrenCoeff * limitedCoeff + borderBonus;
+  
+  // Проверка права на пособие
+  const isEligibleForBenefit = !hasLightCarUnder20 && 
+    !exceedsLivestockLimit && 
+    perCapitaIncome <= GUARANTEED_MINIMUM_INCOME;
+  
+  // Проверка критериев
   const livestockEligible = checkLivestockLimit(convUnitsTotal, familySize);
-  
-  // Проверка транспорта
   const vehicleEligible = checkVehicleAge(vehicles);
-  
-  // Проверка дохода
   const incomeEligible = checkIncomeEligibility(perCapitaIncome);
-  
-  // Общая проверка семьи (базовая логика)
   const familyEligible = familySize > 0;
   
   return {
+    familySize,
+    childrenCount,
+    adultsCount,
     totalIncomeMonth,
     perCapitaIncome,
+    totalPropertyValue,
+    totalLivestockValue,
+    totalVehicleValue,
+    totalLandValue,
+    isEligibleForBenefit,
+    benefitAmount: isEligibleForBenefit ? benefitAmount : 0,
+    calculationCoeffs: {
+      regionCoeff,
+      additionalCoeff,
+      childrenCoeff,
+      borderBonus
+    },
+    violations: {
+      hasLightCarUnder20,
+      exceedsLivestockLimit,
+      livestockLimitExceeded
+    },
     convUnitsTotal,
     criteriaFlags: {
       incomeEligible,
