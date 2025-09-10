@@ -224,10 +224,10 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
   };
 
   // Функция экспорта анализа доходов
-  const exportIncomeAnalysis = () => {
+  const exportIncomeAnalysis = async () => {
     try {
       // Импортируем функцию анализа доходов
-      const { analyzeApplicationIncome } = require('@/lib/incomeAnalysis');
+      const { analyzeApplicationIncome } = await import('@/lib/incomeAnalysis');
       
       // Получаем данные анализа
       const analysisResult = analyzeApplicationIncome(application);
