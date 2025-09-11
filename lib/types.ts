@@ -162,6 +162,8 @@ export interface FamilyMember {
   birthCertDate?: string;
   birthCertIssuer?: string;
   disabilityFlag: boolean;
+  // Новое поле
+  occupation?: string; // род занятий
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -181,6 +183,9 @@ export interface Income {
   evidenceDocId?: number;
   isVerified: boolean;
   verifiedAt?: string;
+  // Новые поля владельца
+  recipientPin?: string;
+  recipientFullName?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -195,6 +200,9 @@ export interface LandPlot {
   location?: string;
   estimatedValue?: number;
   isOwned: boolean;
+  // Новые поля владельца
+  ownerPin?: string;
+  ownerFullName?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -208,6 +216,9 @@ export interface Livestock {
   convUnits: number;
   estimatedValue?: number;
   isOwned: boolean;
+  // Новые поля владельца
+  ownerPin?: string;
+  ownerFullName?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -223,6 +234,22 @@ export interface Vehicle {
   regNo?: string;
   estimatedValue?: number;
   isOwned: boolean;
+  // Новые поля владельца
+  ownerPin?: string;
+  ownerFullName?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// 14.1. Специальные компенсации
+export interface SpecialCompensation {
+  id: number;
+  applicationId: number;
+  reason: string; // причина
+  type: string; // тип компенсации
+  amount: number; // сумма
+  periodFrom: string; // период с
+  periodTo?: string; // период по
   createdAt: string;
   updatedAt: string;
 }
@@ -267,6 +294,8 @@ export interface Application {
   inspectionRequired: boolean;
   inspectionDate?: string;
   inspectionResult?: InspectionResult;
+  // Новое поле
+  applicationType?: 'PRIMARY' | 'REPEAT'; // тип заявления
   createdAt: string;
   updatedAt: string;
   
@@ -277,6 +306,7 @@ export interface Application {
   landPlots?: LandPlot[];
   livestock?: Livestock[];
   vehicles?: Vehicle[];
+  specialCompensations?: SpecialCompensation[];
   householdMetrics?: HouseholdMetrics[];
   benefitAssignments?: BenefitAssignment[];
   calculations?: Calculation[];

@@ -972,12 +972,7 @@ export default function NewApplication() {
       completionData.childrenDataConsent &&
       completionData.dataAccuracyConfirmation &&
       completionData.terminationConditionsAcknowledgment &&
-      completionData.applicantSignature &&
-      documents.applicantPassport.isValid &&
-      documents.familyCompositionCertificate.isValid &&
-      familyMembers.filter(member => member.type === 'child').every(child => 
-        documents.childrenBirthCertificates.some(cert => cert.childId === child.id && cert.isValid)
-      )
+      completionData.applicantSignature
     );
   };
 
@@ -1936,6 +1931,18 @@ export default function NewApplication() {
                 </h3>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Тип заявления */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {language === 'ru' ? 'Тип заявления' : 'Арыздын түрү'} <span className="text-red-500">*</span>
+                      </label>
+                      <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                        <option value="">{language === 'ru' ? 'Выберите тип заявления' : 'Арыздын түрүн тандаңыз'}</option>
+                        <option value="primary">{language === 'ru' ? 'Первичное' : 'Биринчи'}</option>
+                        <option value="repeat">{language === 'ru' ? 'Повторное' : 'Кайра'}</option>
+                      </select>
+                    </div>
+
                     {/* ПИН заявителя */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -2039,7 +2046,7 @@ export default function NewApplication() {
                   {/* Основной документ */}
                   <div className="mt-6">
                     <h4 className="text-md font-medium text-gray-900 mb-3">
-                      {language === 'ru' ? 'Основной документ' : 'Негизги документ'} <span className="text-red-500">*</span>
+                      {language === 'ru' ? 'Основной документ (паспорт)' : 'Негизги документ (паспорт)'} <span className="text-red-500">*</span>
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {/* Тип документа */}
@@ -2106,13 +2113,38 @@ export default function NewApplication() {
                           ))}
                             </select>
                       </div>
+
+                      {/* Дата окончания */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          {language === 'ru' ? 'Дата окончания' : 'Бүтүш күнү'}
+                        </label>
+                        <input
+                          type="date"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      {/* Семейное положение */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          {language === 'ru' ? 'Семейное положение' : 'Үй-бүлө абалы'}
+                        </label>
+                        <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                          <option value="">{language === 'ru' ? 'Выберите семейное положение' : 'Үй-бүлө абалын тандаңыз'}</option>
+                          <option value="single">{language === 'ru' ? 'Холост/Не замужем' : 'Үйлөнбөгөн'}</option>
+                          <option value="married">{language === 'ru' ? 'Женат/Замужем' : 'Үйлөнгөн'}</option>
+                          <option value="divorced">{language === 'ru' ? 'Разведен/Разведена' : 'Ажырашкан'}</option>
+                          <option value="widowed">{language === 'ru' ? 'Вдовец/Вдова' : 'Жесир'}</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
 
                   {/* Адрес проживания - структурированный */}
                   <div className="mt-6">
                     <h4 className="text-md font-medium text-gray-900 mb-3">
-                      {language === 'ru' ? 'Адрес проживания' : 'Турак жай дареги'} <span className="text-red-500">*</span>
+                      {language === 'ru' ? 'Адрес по документу' : 'Документ боюнча дарек'} <span className="text-red-500">*</span>
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
@@ -2309,10 +2341,246 @@ export default function NewApplication() {
                   </div>
                       </div>
 
-                {/* Раздел 1.2: Орган соцзащиты и категории */}
+                {/* Раздел 1.2: Контакты (мульти) */}
                 <div className="border border-gray-200 rounded-lg p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    {language === 'ru' ? '1.2. Орган соцзащиты и категории' : '1.2. Социалдык коргоо органы жана категориялар'}
+                    {language === 'ru' ? '1.2. Контактная информация' : '1.2. Байланыш маалыматы'}
+                  </h3>
+                  
+                  <div className="space-y-4">
+                    {tuData.contacts.map((contact, index) => (
+                      <div key={contact.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                        <div className="flex justify-between items-center mb-4">
+                          <h4 className="font-medium text-gray-800">
+                            {language === 'ru' ? `Контакт ${index + 1}` : `Байланыш ${index + 1}`}
+                    </h4>
+                          <div className="flex items-center space-x-2">
+                            <label className="flex items-center space-x-1">
+                              <input
+                                type="checkbox"
+                                checked={contact.isPrimary}
+                                onChange={(e) => updateTuContact(contact.id, 'isPrimary', e.target.checked)}
+                                className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                              />
+                              <span className="text-sm text-gray-700">
+                                {language === 'ru' ? 'Основной' : 'Негизги'}
+                              </span>
+                          </label>
+                            <button
+                              type="button"
+                              onClick={() => removeTuContact(contact.id)}
+                              className="text-red-600 hover:text-red-800 text-sm"
+                            >
+                              {language === 'ru' ? 'Удалить' : 'Өчүрүү'}
+                            </button>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Тип контакта' : 'Байланыш түрү'} <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              value={contact.type}
+                              onChange={(e) => updateTuContact(contact.id, 'type', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                            >
+                              <option value="">{language === 'ru' ? 'Выберите тип' : 'Түрүн тандаңыз'}</option>
+                              {contactTypeList.map(type => (
+                                <option key={type.id} value={type.id}>{type.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Значение' : 'Мааниси'} <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={contact.value}
+                              onChange={(e) => updateTuContact(contact.id, 'value', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                              placeholder={language === 'ru' ? 'Введите контакт' : 'Байланышты киргизиңиз'}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    <button
+                      type="button"
+                      onClick={addTuContact}
+                      className="w-full py-2 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-red-500 hover:text-red-500 transition-colors"
+                    >
+                      {language === 'ru' ? '+ Добавить контакт' : '+ Байланыш кошуу'}
+                    </button>
+                    </div>
+                  </div>
+
+                {/* Раздел 1.3: Адреса (REG/FACT) */}
+                <div className="border border-gray-200 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    {language === 'ru' ? '1.3. Адреса регистрации и проживания' : '1.3. Каттоо жана жашаган дареги'}
+                  </h3>
+                  
+                  <div className="space-y-4">
+                    {tuData.addresses.map((address, index) => (
+                      <div key={address.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                        <div className="flex justify-between items-center mb-4">
+                          <h4 className="font-medium text-gray-800">
+                            {language === 'ru' 
+                              ? `${address.type === 'REG' ? 'Адрес регистрации' : 'Фактический адрес'} ${index + 1}`
+                              : `${address.type === 'REG' ? 'Каттоо дареги' : 'Фактик дареги'} ${index + 1}`
+                            }
+                          </h4>
+                          <div className="flex items-center space-x-2">
+                            <label className="flex items-center space-x-1">
+                            <input
+                                type="checkbox"
+                                checked={address.isPrimary}
+                                onChange={(e) => updateTuAddress(address.id, 'isPrimary', e.target.checked)}
+                                className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                              />
+                              <span className="text-sm text-gray-700">
+                                {language === 'ru' ? 'Основной' : 'Негизги'}
+                              </span>
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => removeTuAddress(address.id)}
+                              className="text-red-600 hover:text-red-800 text-sm"
+                            >
+                              {language === 'ru' ? 'Удалить' : 'Өчүрүү'}
+                            </button>
+                            </div>
+                          </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Область' : 'Область'} <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              value={address.regionCode}
+                              onChange={(e) => updateTuAddress(address.id, 'regionCode', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                            >
+                              <option value="">{language === 'ru' ? 'Выберите область' : 'Областы тандаңыз'}</option>
+                              {regionList.map(region => (
+                                <option key={region.id} value={region.id}>{region.name}</option>
+                              ))}
+                            </select>
+                        </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Район' : 'Район'} <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={address.raionCode}
+                              onChange={(e) => updateTuAddress(address.id, 'raionCode', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                              placeholder={language === 'ru' ? 'Введите район' : 'Районду киргизиңиз'}
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Населённый пункт' : 'Турак жай'} <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              value={address.localityCode}
+                              onChange={(e) => updateTuAddress(address.id, 'localityCode', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                            >
+                              <option value="">{language === 'ru' ? 'Выберите населённый пункт' : 'Турак жайды тандаңыз'}</option>
+                              {localityList.map(locality => (
+                                <option key={locality.id} value={locality.id}>{locality.name}</option>
+                              ))}
+                            </select>
+                    </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Улица' : 'Көчө'} <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={address.street}
+                              onChange={(e) => updateTuAddress(address.id, 'street', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                              placeholder={language === 'ru' ? 'Введите улицу' : 'Көчөнү киргизиңиз'}
+                            />
+                  </div>
+
+                  <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Дом' : 'Үй'} <span className="text-red-500">*</span>
+                          </label>
+                            <input
+                              type="text"
+                              value={address.house}
+                              onChange={(e) => updateTuAddress(address.id, 'house', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                              placeholder={language === 'ru' ? 'Введите номер дома' : 'Үй номурун киргизиңиз'}
+                            />
+                            </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Квартира' : 'Квартира'}
+                            </label>
+                            <input
+                              type="text"
+                              value={address.flat}
+                              onChange={(e) => updateTuAddress(address.id, 'flat', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                              placeholder={language === 'ru' ? 'Введите номер квартиры' : 'Квартира номурун киргизиңиз'}
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Почтовый индекс' : 'Почта индекси'}
+                            </label>
+                            <input
+                              type="text"
+                              value={address.postalCode}
+                              onChange={(e) => updateTuAddress(address.id, 'postalCode', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                              placeholder={language === 'ru' ? 'Введите индекс' : 'Индекси киргизиңиз'}
+                            />
+                          </div>
+                          </div>
+                        </div>
+                      ))}
+                    
+                    <div className="flex space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => addTuAddress('REG')}
+                        className="px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-red-500 hover:text-red-500 transition-colors"
+                      >
+                        {language === 'ru' ? '+ Адрес регистрации' : '+ Каттоо дареги'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => addTuAddress('FACT')}
+                        className="px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-red-500 hover:text-red-500 transition-colors"
+                      >
+                        {language === 'ru' ? '+ Фактический адрес' : '+ Фактик дареги'}
+                      </button>
+                    </div>
+                    </div>
+                  </div>
+
+                {/* Раздел 1.4: Орган соцзащиты и категории */}
+                <div className="border border-gray-200 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    {language === 'ru' ? '1.4. Орган соцзащиты и категории' : '1.4. Социалдык коргоо органы жана категориялар'}
                 </h3>
                 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -2478,10 +2746,10 @@ export default function NewApplication() {
                   </div>
                 </div>
 
-                {/* Раздел 1.3: Платежные реквизиты */}
+                {/* Раздел 1.5: Платежные реквизиты */}
                 <div className="border border-gray-200 rounded-lg p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    {language === 'ru' ? '1.3. Платежные реквизиты' : '1.3. Төлөм реквизиттери'}
+                    {language === 'ru' ? '1.5. Платежные реквизиты' : '1.5. Төлөм реквизиттери'}
                   </h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -2558,241 +2826,7 @@ export default function NewApplication() {
                   </div>
                 </div>
 
-                {/* Раздел 1.4: Адреса (REG/FACT) */}
-                <div className="border border-gray-200 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    {language === 'ru' ? '1.4. Адреса регистрации и проживания' : '1.4. Каттоо жана жашаган дареги'}
-                  </h3>
-                  
-                  <div className="space-y-4">
-                    {tuData.addresses.map((address, index) => (
-                      <div key={address.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                        <div className="flex justify-between items-center mb-4">
-                          <h4 className="font-medium text-gray-800">
-                            {language === 'ru' 
-                              ? `${address.type === 'REG' ? 'Адрес регистрации' : 'Фактический адрес'} ${index + 1}`
-                              : `${address.type === 'REG' ? 'Каттоо дареги' : 'Фактик дареги'} ${index + 1}`
-                            }
-                          </h4>
-                          <div className="flex items-center space-x-2">
-                            <label className="flex items-center space-x-1">
-                            <input
-                                type="checkbox"
-                                checked={address.isPrimary}
-                                onChange={(e) => updateTuAddress(address.id, 'isPrimary', e.target.checked)}
-                                className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
-                              />
-                              <span className="text-sm text-gray-700">
-                                {language === 'ru' ? 'Основной' : 'Негизги'}
-                              </span>
-                            </label>
-                            <button
-                              type="button"
-                              onClick={() => removeTuAddress(address.id)}
-                              className="text-red-600 hover:text-red-800 text-sm"
-                            >
-                              {language === 'ru' ? 'Удалить' : 'Өчүрүү'}
-                            </button>
-                            </div>
-                          </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              {language === 'ru' ? 'Область' : 'Область'} <span className="text-red-500">*</span>
-                            </label>
-                            <select
-                              value={address.regionCode}
-                              onChange={(e) => updateTuAddress(address.id, 'regionCode', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                            >
-                              <option value="">{language === 'ru' ? 'Выберите область' : 'Областы тандаңыз'}</option>
-                              {regionList.map(region => (
-                                <option key={region.id} value={region.id}>{region.name}</option>
-                              ))}
-                            </select>
-                        </div>
-                          
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              {language === 'ru' ? 'Район' : 'Район'} <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                              type="text"
-                              value={address.raionCode}
-                              onChange={(e) => updateTuAddress(address.id, 'raionCode', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                              placeholder={language === 'ru' ? 'Введите район' : 'Районду киргизиңиз'}
-                            />
-                          </div>
-                          
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              {language === 'ru' ? 'Населённый пункт' : 'Турак жай'} <span className="text-red-500">*</span>
-                            </label>
-                            <select
-                              value={address.localityCode}
-                              onChange={(e) => updateTuAddress(address.id, 'localityCode', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                            >
-                              <option value="">{language === 'ru' ? 'Выберите населённый пункт' : 'Турак жайды тандаңыз'}</option>
-                              {localityList.map(locality => (
-                                <option key={locality.id} value={locality.id}>{locality.name}</option>
-                              ))}
-                            </select>
-                    </div>
-                          
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              {language === 'ru' ? 'Улица' : 'Көчө'} <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                              type="text"
-                              value={address.street}
-                              onChange={(e) => updateTuAddress(address.id, 'street', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                              placeholder={language === 'ru' ? 'Введите улицу' : 'Көчөнү киргизиңиз'}
-                            />
-                  </div>
 
-                  <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              {language === 'ru' ? 'Дом' : 'Үй'} <span className="text-red-500">*</span>
-                          </label>
-                            <input
-                              type="text"
-                              value={address.house}
-                              onChange={(e) => updateTuAddress(address.id, 'house', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                              placeholder={language === 'ru' ? 'Введите номер дома' : 'Үй номурун киргизиңиз'}
-                            />
-                            </div>
-                          
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              {language === 'ru' ? 'Квартира' : 'Квартира'}
-                            </label>
-                            <input
-                              type="text"
-                              value={address.flat}
-                              onChange={(e) => updateTuAddress(address.id, 'flat', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                              placeholder={language === 'ru' ? 'Введите номер квартиры' : 'Квартира номурун киргизиңиз'}
-                            />
-                          </div>
-                          
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              {language === 'ru' ? 'Почтовый индекс' : 'Почта индекси'}
-                            </label>
-                            <input
-                              type="text"
-                              value={address.postalCode}
-                              onChange={(e) => updateTuAddress(address.id, 'postalCode', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                              placeholder={language === 'ru' ? 'Введите индекс' : 'Индекси киргизиңиз'}
-                            />
-                          </div>
-                          </div>
-                        </div>
-                      ))}
-                    
-                    <div className="flex space-x-2">
-                      <button
-                        type="button"
-                        onClick={() => addTuAddress('REG')}
-                        className="px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-red-500 hover:text-red-500 transition-colors"
-                      >
-                        {language === 'ru' ? '+ Адрес регистрации' : '+ Каттоо дареги'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => addTuAddress('FACT')}
-                        className="px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-red-500 hover:text-red-500 transition-colors"
-                      >
-                        {language === 'ru' ? '+ Фактический адрес' : '+ Фактик дареги'}
-                      </button>
-                    </div>
-                    </div>
-                  </div>
-
-                {/* Раздел 1.5: Контакты (мульти) */}
-                <div className="border border-gray-200 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    {language === 'ru' ? '1.5. Контактная информация' : '1.5. Байланыш маалыматы'}
-                  </h3>
-                  
-                  <div className="space-y-4">
-                    {tuData.contacts.map((contact, index) => (
-                      <div key={contact.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                        <div className="flex justify-between items-center mb-4">
-                          <h4 className="font-medium text-gray-800">
-                            {language === 'ru' ? `Контакт ${index + 1}` : `Байланыш ${index + 1}`}
-                    </h4>
-                          <div className="flex items-center space-x-2">
-                            <label className="flex items-center space-x-1">
-                              <input
-                                type="checkbox"
-                                checked={contact.isPrimary}
-                                onChange={(e) => updateTuContact(contact.id, 'isPrimary', e.target.checked)}
-                                className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
-                              />
-                              <span className="text-sm text-gray-700">
-                                {language === 'ru' ? 'Основной' : 'Негизги'}
-                              </span>
-                          </label>
-                            <button
-                              type="button"
-                              onClick={() => removeTuContact(contact.id)}
-                              className="text-red-600 hover:text-red-800 text-sm"
-                            >
-                              {language === 'ru' ? 'Удалить' : 'Өчүрүү'}
-                            </button>
-                          </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              {language === 'ru' ? 'Тип контакта' : 'Байланыш түрү'} <span className="text-red-500">*</span>
-                            </label>
-                            <select
-                              value={contact.type}
-                              onChange={(e) => updateTuContact(contact.id, 'type', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                            >
-                              <option value="">{language === 'ru' ? 'Выберите тип' : 'Түрүн тандаңыз'}</option>
-                              {contactTypeList.map(type => (
-                                <option key={type.id} value={type.id}>{type.name}</option>
-                              ))}
-                            </select>
-                          </div>
-                          
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              {language === 'ru' ? 'Значение' : 'Мааниси'} <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                              type="text"
-                              value={contact.value}
-                              onChange={(e) => updateTuContact(contact.id, 'value', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                              placeholder={language === 'ru' ? 'Введите контакт' : 'Байланышты киргизиңиз'}
-                            />
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    
-                    <button
-                      type="button"
-                      onClick={addTuContact}
-                      className="w-full py-2 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-red-500 hover:text-red-500 transition-colors"
-                    >
-                      {language === 'ru' ? '+ Добавить контакт' : '+ Байланыш кошуу'}
-                    </button>
-                    </div>
-                  </div>
 
                 {/* Раздел 2: Состав семьи */}
                 <div className="border border-gray-200 rounded-lg p-6">
@@ -2829,17 +2863,45 @@ export default function NewApplication() {
                       </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {/* ФИО члена семьи */}
+                          {/* Фамилия */}
               <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                              {language === 'ru' ? 'ФИО члена семьи' : 'Үй-бүлө мүчөсүнүн аты-жөнү'} <span className="text-red-500">*</span>
+                              {language === 'ru' ? 'Фамилия' : 'Фамилиясы'} <span className="text-red-500">*</span>
                           </label>
                         <input
                             type="text"
-                              value={member.fullName}
-                              onChange={(e) => updateFamilyMember(member.id, 'fullName', e.target.value)}
+                              value={member.lastName || ''}
+                              onChange={(e) => updateFamilyMember(member.id, 'lastName', e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                              placeholder={language === 'ru' ? 'Введите полное имя' : 'Толук атын киргизиңиз'}
+                              placeholder={language === 'ru' ? 'Введите фамилию' : 'Фамилиясын киргизиңиз'}
+                            />
+                          </div>
+
+                          {/* Имя */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Имя' : 'Аты'} <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={member.firstName || ''}
+                              onChange={(e) => updateFamilyMember(member.id, 'firstName', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                              placeholder={language === 'ru' ? 'Введите имя' : 'Атын киргизиңиз'}
+                            />
+                          </div>
+
+                          {/* Отчество */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Отчество' : 'Атасынын аты'}
+                            </label>
+                            <input
+                              type="text"
+                              value={member.middleName || ''}
+                              onChange={(e) => updateFamilyMember(member.id, 'middleName', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                              placeholder={language === 'ru' ? 'Введите отчество' : 'Атасынын атын киргизиңиз'}
                           />
                   </div>
 
@@ -2919,6 +2981,39 @@ export default function NewApplication() {
                           </select>
                           </div>
 
+                          {/* Категория */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Категория' : 'Категория'}
+                            </label>
+                            <select
+                              value={member.category || ''}
+                              onChange={(e) => updateFamilyMember(member.id, 'category', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                            >
+                              <option value="">{language === 'ru' ? 'Выберите категорию' : 'Категорияны тандаңыз'}</option>
+                              <option value="general">{language === 'ru' ? 'Общий' : 'Жалпы'}</option>
+                              <option value="disabled">{language === 'ru' ? 'Инвалид' : 'Өнүгүү бузулуу'}</option>
+                              <option value="pensioner">{language === 'ru' ? 'Пенсионер' : 'Пенсионер'}</option>
+                              <option value="student">{language === 'ru' ? 'Студент' : 'Студент'}</option>
+                              <option value="unemployed">{language === 'ru' ? 'Безработный' : 'Жумушсуз'}</option>
+                          </select>
+                          </div>
+
+                          {/* Род занятий */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Род занятий' : 'Кесиби'}
+                            </label>
+                            <input
+                              type="text"
+                              value={member.occupation || ''}
+                              onChange={(e) => updateFamilyMember(member.id, 'occupation', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                              placeholder={language === 'ru' ? 'Введите род занятий' : 'Кесибин киргизиңиз'}
+                            />
+                          </div>
+
                           {/* Родство */}
                       <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -2962,6 +3057,7 @@ export default function NewApplication() {
                             </select>
                     </div>
 
+
                           {/* Тип документа */}
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -2981,6 +3077,20 @@ export default function NewApplication() {
                             </select>
                   </div>
 
+                          {/* Серия документа */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Серия' : 'Сериясы'}
+                            </label>
+                            <input
+                              type="text"
+                              value={member.documentSeries || ''}
+                              onChange={(e) => updateFamilyMember(member.id, 'documentSeries', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                              placeholder={language === 'ru' ? 'Введите серию' : 'Серияны киргизиңиз'}
+                            />
+                          </div>
+
                           {/* Номер документа */}
                   <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -2994,6 +3104,46 @@ export default function NewApplication() {
                               placeholder={language === 'ru' ? 'Введите номер документа' : 'Документтин номурун киргизиңиз'}
                       />
                             </div>
+
+                          {/* Дата выдачи */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Дата выдачи' : 'Берилген күнү'}
+                            </label>
+                            <input
+                              type="date"
+                              value={member.documentIssueDate || ''}
+                              onChange={(e) => updateFamilyMember(member.id, 'documentIssueDate', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                            />
+                          </div>
+
+                          {/* Дата окончания */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Дата окончания' : 'Бүтүш күнү'}
+                            </label>
+                            <input
+                              type="date"
+                              value={member.documentExpiryDate || ''}
+                              onChange={(e) => updateFamilyMember(member.id, 'documentExpiryDate', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                            />
+                          </div>
+
+                          {/* Выдавший орган */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Выдавший орган' : 'Берүүчү орган'}
+                            </label>
+                            <input
+                              type="text"
+                              value={member.documentIssuingAuthority || ''}
+                              onChange={(e) => updateFamilyMember(member.id, 'documentIssuingAuthority', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                              placeholder={language === 'ru' ? 'Введите орган выдачи' : 'Берүүчү органды киргизиңиз'}
+                            />
+                          </div>
 
                           {/* Категория ребенка - только для детей */}
                           {member.type === 'child' && (
@@ -3017,119 +3167,169 @@ export default function NewApplication() {
                           )}
                   </div>
 
-                        {/* Свидетельство о рождении - только для детей */}
-                        {member.type === 'child' && (
-                          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                            <h5 className="font-medium text-blue-900 mb-3">
-                              {language === 'ru' ? 'Свидетельство о рождении' : 'Туулган күбөлүгү'}
-                            </h5>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                                <label className="block text-sm font-medium text-blue-800 mb-1">
-                                  {language === 'ru' ? 'Номер свидетельства' : 'Күбөлүктүн номуру'}
-                          </label>
-                            <input
-                                  type="text"
-                                  value={member.birthCertificate.number}
-                                  onChange={(e) => updateFamilyMember(member.id, 'birthCertificate.number', e.target.value)}
-                                  className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                  placeholder={language === 'ru' ? 'Введите номер' : 'Номурун киргизиңиз'}
-                                />
-                            </div>
-                              <div>
-                                <label className="block text-sm font-medium text-blue-800 mb-1">
-                                  {language === 'ru' ? 'Дата выдачи' : 'Берилген күнү'}
-                                </label>
-                      <input
-                                  type="date"
-                                  value={member.birthCertificate.issueDate}
-                                  onChange={(e) => updateFamilyMember(member.id, 'birthCertificate.issueDate', e.target.value)}
-                                  className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                />
-                          </div>
-                              <div>
-                                <label className="block text-sm font-medium text-blue-800 mb-1">
-                                  {language === 'ru' ? 'Орган выдачи' : 'Берүүчү орган'}
-                                </label>
-                      <input
-                                  type="text"
-                                  value={member.birthCertificate.issuingAuthority}
-                                  onChange={(e) => updateFamilyMember(member.id, 'birthCertificate.issuingAuthority', e.target.value)}
-                                  className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                  placeholder={language === 'ru' ? 'Введите орган выдачи' : 'Берүүчү органды киргизиңиз'}
-                                />
-                        </div>
-                    </div>
-                  </div>
-            )}
 
-                        {/* Детализированные доходы - только для взрослых */}
-                        {member.type === 'adult' && (
-                          <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                            <h5 className="font-medium text-green-900 mb-3">
-                              {language === 'ru' ? 'Ежемесячные доходы (по видам)' : 'Айлык кирешелер (түрлөрү боюнча)'}
-                                </h5>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              {incomeTypeList.slice(0, 6).map(incomeType => (
-                                <div key={incomeType.id}>
-                                  <label className="block text-sm font-medium text-green-800 mb-1">
-                                    {incomeType.name}
-                          </label>
-                          <div className="relative">
-                            <input
-                              type="number"
-                                      value={0}
-                                      onChange={(e) => {}}
-                                      className="w-full pl-8 pr-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                              placeholder="0"
-                              min="0"
-                            />
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                      <span className="text-green-600 text-sm">₽</span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                            <div className="mt-3 p-3 bg-green-100 rounded-lg">
-                              <div className="flex justify-between items-center">
-                                <span className="font-medium text-green-900">
-                                  {language === 'ru' ? 'Общий доход:' : 'Жалпы киреше:'}
-                    </span>
-                                <span className="font-bold text-green-900 text-lg">
-                                  0 ₽
-                        </span>
-                  </div>
-                </div>
-              </div>
-            )}
                         </div>
                     ))}
                     
-                    {/* Кнопки добавления членов семьи */}
-                    <div className="flex flex-col sm:flex-row gap-3">
+                    {/* Кнопка добавления члена семьи */}
+                    <div className="flex justify-center">
               <button
                         onClick={() => addFamilyMember('adult')}
-                        className="flex-1 bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 inline-flex items-center justify-center"
+                        className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 inline-flex items-center justify-center"
                       >
                         <i className="ri-user-add-line mr-2"></i>
-                        {language === 'ru' ? 'Добавить взрослого' : 'Чоң адамды кошуу'}
-              </button>
-                  <button
-                        onClick={() => addFamilyMember('child')}
-                        className="flex-1 bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 inline-flex items-center justify-center"
-                >
-                        <i className="ri-user-heart-line mr-2"></i>
-                        {language === 'ru' ? 'Добавить ребенка' : 'Баланы кошуу'}
+                        {language === 'ru' ? 'Запросить члена семьи' : 'Үй-бүлө мүчөсүн сурап берүү'}
                   </button>
                     </div>
                   </div>
                 </div>
 
-                {/* Раздел 3: Подсобное хозяйство */}
+                {/* Раздел 3: Доходы */}
                 <div className="border border-gray-200 rounded-lg p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    {language === 'ru' ? '3. Подсобное хозяйство' : '3. Жардамчы чарба'}
+                    {language === 'ru' ? '3. Доходы' : '3. Киреше'}
+                  </h3>
+                  
+                  <div className="space-y-4">
+                    {incomes.map((income, index) => (
+                      <div key={income.id} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex justify-between items-center mb-3">
+                          <h5 className="font-medium text-gray-800">
+                            {language === 'ru' ? `Доход ${index + 1}` : `Киреше ${index + 1}`}
+                            </h5>
+                          {incomes.length > 1 && (
+                            <button
+                              onClick={() => removeIncome(income.id)}
+                              className="text-red-500 hover:text-red-700 text-sm"
+                            >
+                              {language === 'ru' ? 'Удалить' : 'Өчүрүү'}
+                            </button>
+                          )}
+                        </div>
+                      
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Тип дохода' : 'Киреше түрү'} <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              value={income.incomeTypeCode}
+                              onChange={(e) => updateIncome(income.id, 'incomeTypeCode', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                            >
+                              <option value="">{language === 'ru' ? 'Выберите тип' : 'Түрүн тандаңыз'}</option>
+                              {getDirectory('incomeTypeList').map((item) => (
+                                <option key={item.code} value={item.code}>
+                                  {item.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Сумма' : 'Сумма'} <span className="text-red-500">*</span>
+                          </label>
+                            <input
+                              type="number"
+                              value={income.amount}
+                              onChange={(e) => updateIncome(income.id, 'amount', parseFloat(e.target.value) || 0)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                              placeholder="0"
+                              min="0"
+                                />
+                            </div>
+                          
+                              <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Периодичность' : 'Мезгилдүүлүк'} <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              value={income.periodicity}
+                              onChange={(e) => updateIncome(income.id, 'periodicity', e.target.value as 'M' | 'Y')}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                            >
+                              <option value="">{language === 'ru' ? 'Выберите периодичность' : 'Мезгилдүүлүктү тандаңыз'}</option>
+                              {getDirectory('incomePeriodicityList').map((item) => (
+                                <option key={item.code} value={item.code}>
+                                  {item.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Период с' : 'Мезгил башталышы'}
+                                </label>
+                      <input
+                                  type="date"
+                              value={income.periodFrom}
+                              onChange={(e) => updateIncome(income.id, 'periodFrom', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                />
+                          </div>
+                          
+                              <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Период по' : 'Мезгил аягы'}
+                                </label>
+                      <input
+                              type="date"
+                              value={income.periodTo || ''}
+                              onChange={(e) => updateIncome(income.id, 'periodTo', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                />
+                        </div>
+                    </div>
+
+                        {/* Кому принадлежит доход */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'ПИН получателя' : 'Алуучунун ПИНи'} <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={income.recipientPin || ''}
+                              onChange={(e) => updateIncome(income.id, 'recipientPin', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                              placeholder={language === 'ru' ? 'Введите ПИН получателя' : 'Алуучунун ПИНин киргизиңиз'}
+                              maxLength={14}
+                            />
+                  </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'ФИО получателя' : 'Алуучунун ФИОсу'} <span className="text-red-500">*</span>
+                          </label>
+                            <input
+                              type="text"
+                              value={income.recipientFullName || ''}
+                              onChange={(e) => updateIncome(income.id, 'recipientFullName', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                              placeholder={language === 'ru' ? 'Введите ФИО получателя' : 'Алуучунун ФИОсун киргизиңиз'}
+                            />
+                            </div>
+                          </div>
+                        </div>
+                    ))}
+                    
+              <button
+                      onClick={addIncome}
+                      className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                    >
+                      {language === 'ru' ? '+ Запросить доход' : '+ Киреше сурап берүү'}
+                  </button>
+                  </div>
+                </div>
+
+                {/* Раздел 4: Подсобное хозяйство */}
+                <div className="border border-gray-200 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    {language === 'ru' ? '4. Подсобное хозяйство' : '4. Жардамчы чарба'}
                   </h3>
                   
                   <div className="space-y-6">
@@ -3209,6 +3409,36 @@ export default function NewApplication() {
                                 </select>
                             </div>
                           </div>
+
+                          {/* Кому принадлежит участок */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                {language === 'ru' ? 'ПИН владельца' : 'Ээсинин ПИНи'} <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                value={plot.ownerPin || ''}
+                                onChange={(e) => updateLandPlot(plot.id, 'ownerPin', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                placeholder={language === 'ru' ? 'Введите ПИН владельца' : 'Ээсинин ПИНин киргизиңиз'}
+                                maxLength={14}
+                              />
+                            </div>
+                            
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                {language === 'ru' ? 'ФИО владельца' : 'Ээсинин ФИОсу'} <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                value={plot.ownerFullName || ''}
+                                onChange={(e) => updateLandPlot(plot.id, 'ownerFullName', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                placeholder={language === 'ru' ? 'Введите ФИО владельца' : 'Ээсинин ФИОсун киргизиңиз'}
+                              />
+                            </div>
+                          </div>
                         </div>
                       ))}
                         
@@ -3217,7 +3447,7 @@ export default function NewApplication() {
                           className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 inline-flex items-center justify-center"
                         >
                           <i className="ri-add-line mr-2"></i>
-                          {language === 'ru' ? 'Добавить участок' : 'Учакта кошуу'}
+                          {language === 'ru' ? 'Запросить участок' : 'Учакта сурап берүү'}
                         </button>
                     </div>
                   </div>
@@ -3296,6 +3526,36 @@ export default function NewApplication() {
                               </p>
                             </div>
                           </div>
+
+                          {/* Кому принадлежит скот */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                {language === 'ru' ? 'ПИН владельца' : 'Ээсинин ПИНи'} <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                value={item.ownerPin || ''}
+                                onChange={(e) => updateLivestock(item.id, 'ownerPin', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                placeholder={language === 'ru' ? 'Введите ПИН владельца' : 'Ээсинин ПИНин киргизиңиз'}
+                                maxLength={14}
+                              />
+                            </div>
+                            
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                {language === 'ru' ? 'ФИО владельца' : 'Ээсинин ФИОсу'} <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                value={item.ownerFullName || ''}
+                                onChange={(e) => updateLivestock(item.id, 'ownerFullName', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                placeholder={language === 'ru' ? 'Введите ФИО владельца' : 'Ээсинин ФИОсун киргизиңиз'}
+                              />
+                            </div>
+                          </div>
                         </div>
                       ))}
                         
@@ -3304,7 +3564,7 @@ export default function NewApplication() {
                           className="w-full bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 inline-flex items-center justify-center"
                     >
                           <i className="ri-add-line mr-2"></i>
-                          {language === 'ru' ? 'Добавить скот' : 'Мал кошуу'}
+                          {language === 'ru' ? 'Запросить скот' : 'Малды сурап берүү'}
                     </button>
                       </div>
                       
@@ -3405,6 +3665,36 @@ export default function NewApplication() {
                                 />
                             </div>
                           </div>
+
+                          {/* Кому принадлежит транспорт */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                {language === 'ru' ? 'ПИН владельца' : 'Ээсинин ПИНи'} <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                value={vehicle.ownerPin || ''}
+                                onChange={(e) => updateVehicle(vehicle.id, 'ownerPin', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                placeholder={language === 'ru' ? 'Введите ПИН владельца' : 'Ээсинин ПИНин киргизиңиз'}
+                                maxLength={14}
+                              />
+                            </div>
+                            
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                {language === 'ru' ? 'ФИО владельца' : 'Ээсинин ФИОсу'} <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                value={vehicle.ownerFullName || ''}
+                                onChange={(e) => updateVehicle(vehicle.id, 'ownerFullName', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                placeholder={language === 'ru' ? 'Введите ФИО владельца' : 'Ээсинин ФИОсун киргизиңиз'}
+                                />
+                            </div>
+                          </div>
                         </div>
                       ))}
                         
@@ -3413,7 +3703,7 @@ export default function NewApplication() {
                           className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 inline-flex items-center justify-center"
                         >
                           <i className="ri-add-line mr-2"></i>
-                          {language === 'ru' ? 'Добавить транспорт' : 'Транспорт кошуу'}
+                          {language === 'ru' ? 'Запросить транспорт' : 'Транспортту сурап берүү'}
                         </button>
                     </div>
                   </div>
@@ -3492,437 +3782,124 @@ export default function NewApplication() {
                   </div>
                 </div>
 
-                {/* Раздел 4: Доходы */}
+                {/* Раздел 5: Специальные компенсации */}
                 <div className="border border-gray-200 rounded-lg p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    {language === 'ru' ? '4. Доходы' : '4. Киреше'}
+                    {language === 'ru' ? '5. Специальные компенсации' : '5. Атайын компенсациялар'}
                   </h3>
                   
                   <div className="space-y-4">
-                    {incomes.map((income, index) => (
-                      <div key={income.id} className="border border-gray-200 rounded-lg p-4">
-                        <div className="flex justify-between items-center mb-3">
-                          <h5 className="font-medium text-gray-800">
-                            {language === 'ru' ? `Доход ${index + 1}` : `Киреше ${index + 1}`}
-                          </h5>
-                          {incomes.length > 1 && (
+                    {tuData.specialCompensations.map((compensation, index) => (
+                      <div key={compensation.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                        <div className="flex justify-between items-center mb-4">
+                          <h4 className="font-medium text-gray-800">
+                            {language === 'ru' ? `Компенсация ${index + 1}` : `Компенсация ${index + 1}`}
+                          </h4>
                             <button
-                              onClick={() => removeIncome(income.id)}
-                              className="text-red-500 hover:text-red-700 text-sm"
+                            type="button"
+                            onClick={() => removeTuSpecialCompensation(compensation.id)}
+                            className="text-red-600 hover:text-red-800 text-sm"
                             >
                               {language === 'ru' ? 'Удалить' : 'Өчүрүү'}
                             </button>
-                          )}
                         </div>
                       
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              {language === 'ru' ? 'Тип дохода' : 'Киреше түрү'} <span className="text-red-500">*</span>
+                              {language === 'ru' ? 'Причина' : 'Себеби'} <span className="text-red-500">*</span>
                             </label>
                             <select
-                              value={income.incomeTypeCode}
-                              onChange={(e) => updateIncome(income.id, 'incomeTypeCode', e.target.value)}
+                              value={compensation.reason}
+                              onChange={(e) => updateTuSpecialCompensation(compensation.id, 'reason', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                            >
+                              <option value="">{language === 'ru' ? 'Выберите причину' : 'Себебин тандаңыз'}</option>
+                              {compensationReasonList.map(reason => (
+                                <option key={reason.id} value={reason.id}>{reason.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Тип компенсации' : 'Компенсация түрү'} <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              value={compensation.type}
+                              onChange={(e) => updateTuSpecialCompensation(compensation.id, 'type', e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                             >
                               <option value="">{language === 'ru' ? 'Выберите тип' : 'Түрүн тандаңыз'}</option>
-                              {getDirectory('incomeTypeList').map((item) => (
-                                <option key={item.code} value={item.code}>
-                                  {item.name}
-                                </option>
+                              {compensationTypeList.map(type => (
+                                <option key={type.id} value={type.id}>{type.name}</option>
                               ))}
                             </select>
-                          </div>
-                          
+                        </div>
+                        
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              {language === 'ru' ? 'Сумма' : 'Сумма'} <span className="text-red-500">*</span>
+                              {language === 'ru' ? 'Сумма' : 'Суммасы'} <span className="text-red-500">*</span>
                             </label>
                             <input
                               type="number"
-                              value={income.amount}
-                              onChange={(e) => updateIncome(income.id, 'amount', parseFloat(e.target.value) || 0)}
+                              value={compensation.amount}
+                              onChange={(e) => updateTuSpecialCompensation(compensation.id, 'amount', parseFloat(e.target.value) || 0)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                              placeholder="0"
+                              placeholder={language === 'ru' ? 'Введите сумму' : 'Сумманы киргизиңиз'}
                               min="0"
+                              step="0.01"
                             />
                           </div>
                           
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              {language === 'ru' ? 'Периодичность' : 'Мезгилдүүлүк'} <span className="text-red-500">*</span>
-                            </label>
-                            <select
-                              value={income.periodicity}
-                              onChange={(e) => updateIncome(income.id, 'periodicity', e.target.value as 'M' | 'Y')}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                            >
-                              <option value="">{language === 'ru' ? 'Выберите периодичность' : 'Мезгилдүүлүктү тандаңыз'}</option>
-                              {getDirectory('incomePeriodicityList').map((item) => (
-                                <option key={item.code} value={item.code}>
-                                  {item.name}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              {language === 'ru' ? 'Период с' : 'Мезгил башталышы'}
+                              {language === 'ru' ? 'Период с' : 'Мөөнөт башталышы'}
                             </label>
                             <input
                               type="date"
-                              value={income.periodFrom}
-                              onChange={(e) => updateIncome(income.id, 'periodFrom', e.target.value)}
+                              value={compensation.periodFrom}
+                              onChange={(e) => updateTuSpecialCompensation(compensation.id, 'periodFrom', e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                             />
                           </div>
                           
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              {language === 'ru' ? 'Период по' : 'Мезгил аягы'}
-                            </label>
-                            <input
-                              type="date"
-                              value={income.periodTo || ''}
-                              onChange={(e) => updateIncome(income.id, 'periodTo', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                    
-                    <button
-                      onClick={addIncome}
-                      className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                    >
-                      {language === 'ru' ? '+ Добавить доход' : '+ Киреше кошуу'}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Раздел 5: Документы */}
-
-                {/* Раздел 5: Документы */}
-                <div className="border border-gray-200 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    {language === 'ru' ? '5. Документы' : '5. Документтер'}
-                </h3>
-                
-                  <div className="space-y-6">
-                    {/* Паспорт заявителя */}
-                    <div className="border border-gray-200 rounded-lg p-4">
-                      <h4 className="font-medium text-gray-900 mb-4">
-                        {language === 'ru' ? 'Паспорт заявителя' : 'Арыз берүүчүнүн паспорту'} <span className="text-red-500">*</span>
-                      </h4>
-                      
-                      <div className="space-y-3">
-                        <div className="flex items-center space-x-4">
-                      <input
-                            type="file"
-                            accept=".jpg,.jpeg,.png,.pdf"
-                            onChange={(e) => updateApplicantPassport(e.target.files?.[0] || null)}
-                            className="hidden"
-                            id="applicant-passport"
-                          />
-                          <label
-                            htmlFor="applicant-passport"
-                            className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 cursor-pointer inline-flex items-center justify-center"
-                          >
-                            <i className="ri-upload-line mr-2"></i>
-                            {language === 'ru' ? 'Выбрать файл' : 'Файл тандаңыз'}
-                      </label>
-                    </div>
-                        
-                        {documents.applicantPassport.fileName && (
-                          <div className={`p-3 rounded-lg border ${documents.applicantPassport.isValid ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center">
-                                <i className={`ri-${documents.applicantPassport.isValid ? 'check-line' : 'error-warning-line'} text-lg ${documents.applicantPassport.isValid ? 'text-green-600' : 'text-red-600'} mr-2`}></i>
-                                <span className="font-medium text-gray-800">{documents.applicantPassport.fileName}</span>
-                                <span className="text-sm text-gray-500 ml-2">
-                                  ({(documents.applicantPassport.fileSize / 1024 / 1024).toFixed(2)} MB)
-                                </span>
-                  </div>
-                  <button
-                                onClick={() => updateApplicantPassport(null)}
-                                className="text-red-600 hover:text-red-800"
-                              >
-                                <i className="ri-delete-bin-line"></i>
-                              </button>
-                </div>
-                            {documents.applicantPassport.error && (
-                              <p className="text-red-600 text-sm mt-1">{documents.applicantPassport.error}</p>
-                            )}
-              </div>
-            )}
-
-                        <p className="text-sm text-gray-600">
-                          {language === 'ru' 
-                            ? 'Поддерживаемые форматы: JPG, PNG, PDF. Максимальный размер: 5MB'
-                            : 'Колдолуучу форматтар: JPG, PNG, PDF. Максималдык көлөм: 5MB'
-                          }
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Свидетельства о рождении детей */}
-                    {familyMembers.filter(member => member.type === 'child').length > 0 && (
-                      <div className="border border-gray-200 rounded-lg p-4">
-                        <h4 className="font-medium text-gray-900 mb-4">
-                          {language === 'ru' ? 'Свидетельства о рождении детей' : 'Балалардын туулгандыгы тууралуу күбөлүк'} <span className="text-red-500">*</span>
-                        </h4>
-
-                <div className="space-y-4">
-                          {familyMembers
-                            .filter(member => member.type === 'child')
-                            .map((child) => {
-                              const certificate = documents.childrenBirthCertificates.find(cert => cert.childId === child.id);
-                              return (
-                                <div key={child.id} className="border border-gray-200 rounded-lg p-3">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <h5 className="font-medium text-gray-800">
-                                      {language === 'ru' ? 'Ребенок:' : 'Бала:'} {child.fullName}
-                                    </h5>
-                                  </div>
-                                  
-                                  <div className="flex items-center space-x-4">
-                                    <input
-                                      type="file"
-                                      accept=".jpg,.jpeg,.png,.pdf"
-                                      onChange={(e) => updateChildBirthCertificate(child.id, e.target.files?.[0] || null)}
-                                      className="hidden"
-                                      id={`child-birth-cert-${child.id}`}
-                                    />
-                                    <label
-                                      htmlFor={`child-birth-cert-${child.id}`}
-                                      className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 cursor-pointer inline-flex items-center justify-center"
-                                    >
-                                      <i className="ri-upload-line mr-2"></i>
-                                      {language === 'ru' ? 'Выбрать файл' : 'Файл тандаңыз'}
-                                    </label>
-                                  </div>
-                                  
-                                  {certificate && (
-                                    <div className={`mt-2 p-3 rounded-lg border ${certificate.isValid ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                                      <div className="flex items-center justify-between">
-                                        <div className="flex items-center">
-                                          <i className={`ri-${certificate.isValid ? 'check-line' : 'error-warning-line'} text-lg ${certificate.isValid ? 'text-green-600' : 'text-red-600'} mr-2`}></i>
-                                          <span className="font-medium text-gray-800">{certificate.fileName}</span>
-                                          <span className="text-sm text-gray-500 ml-2">
-                                            ({(certificate.fileSize / 1024 / 1024).toFixed(2)} MB)
-                                          </span>
-                                        </div>
-                                        <button
-                                          onClick={() => updateChildBirthCertificate(child.id, null)}
-                                          className="text-red-600 hover:text-red-800"
-                                        >
-                                          <i className="ri-delete-bin-line"></i>
-                  </button>
-              </div>
-                                      {certificate.error && (
-                                        <p className="text-red-600 text-sm mt-1">{certificate.error}</p>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Справка о составе семьи */}
-                    <div className="border border-gray-200 rounded-lg p-4">
-                      <h4 className="font-medium text-gray-900 mb-4">
-                        {language === 'ru' ? 'Справка о составе семьи' : 'Үй-бүлө курамы тууралуу справка'} <span className="text-red-500">*</span>
-                    </h4>
-
-                          <div className="space-y-3">
-                        <div className="flex items-center space-x-4">
-                          <input
-                            type="file"
-                            accept=".jpg,.jpeg,.png,.pdf"
-                            onChange={(e) => updateFamilyCompositionCertificate(e.target.files?.[0] || null)}
-                            className="hidden"
-                            id="family-composition"
-                          />
-                          <label
-                            htmlFor="family-composition"
-                            className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 cursor-pointer inline-flex items-center justify-center"
-                          >
-                            <i className="ri-upload-line mr-2"></i>
-                            {language === 'ru' ? 'Выбрать файл' : 'Файл тандаңыз'}
-                          </label>
-                  </div>
-                        
-                        {documents.familyCompositionCertificate.fileName && (
-                          <div className={`p-3 rounded-lg border ${documents.familyCompositionCertificate.isValid ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                        <div className="flex items-center justify-between">
-                              <div className="flex items-center">
-                                <i className={`ri-${documents.familyCompositionCertificate.isValid ? 'check-line' : 'error-warning-line'} text-lg ${documents.familyCompositionCertificate.isValid ? 'text-green-600' : 'text-red-600'} mr-2`}></i>
-                                <span className="font-medium text-gray-800">{documents.familyCompositionCertificate.fileName}</span>
-                                <span className="text-sm text-gray-500 ml-2">
-                                  ({(documents.familyCompositionCertificate.fileSize / 1024 / 1024).toFixed(2)} MB)
-                              </span>
-                </div>
-                              <button
-                                onClick={() => updateFamilyCompositionCertificate(null)}
-                                className="text-red-600 hover:text-red-800"
-                              >
-                                <i className="ri-delete-bin-line"></i>
-                              </button>
-              </div>
-                            {documents.familyCompositionCertificate.error && (
-                              <p className="text-red-600 text-sm mt-1">{documents.familyCompositionCertificate.error}</p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                            </div>
-                            
-                    {/* Справки о доходах */}
-                    <div className="border border-gray-200 rounded-lg p-4">
-                      <h4 className="font-medium text-gray-900 mb-4">
-                        {language === 'ru' ? 'Справки о доходах' : 'Киреше тууралуу справкалар'}
-                      </h4>
-                      
-                      <div className="space-y-4">
-                        {documents.incomeCertificates.map((certificate, index) => (
-                          <div key={certificate.id} className="border border-gray-200 rounded-lg p-4">
-                            <div className="flex justify-between items-center mb-3">
-                              <h5 className="font-medium text-gray-800">
-                                {language === 'ru' ? `Справка о доходах ${index + 1}` : `Киреше справкасы ${index + 1}`}
-                                {isIncomeCertificateRequired(certificate.incomeType) && <span className="text-red-500 ml-1">*</span>}
-                                </h5>
-                  <button
-                                onClick={() => removeIncomeCertificate(certificate.id)}
-                                className="text-red-600 hover:text-red-800 p-1"
-                              >
-                                <i className="ri-delete-bin-line"></i>
-                              </button>
-                            </div>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
                               <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  {language === 'ru' ? 'Тип дохода' : 'Киреше түрү'} <span className="text-red-500">*</span>
-                                </label>
-                                <select 
-                                  value={certificate.incomeType}
-                                  onChange={(e) => updateIncomeCertificate(certificate.id, 'incomeType', e.target.value)}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                                >
-                                  <option value="">{language === 'ru' ? 'Выберите тип дохода' : 'Киреше түрүн тандаңыз'}</option>
-                                  {incomeTypeList.map(type => (
-                                    <option key={type.id} value={type.id}>
-                                      {type.name}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                              
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  {language === 'ru' ? 'Файл справки' : 'Справка файлы'} <span className="text-red-500">*</span>
+                              {language === 'ru' ? 'Период по' : 'Мөөнөт аягы'}
                                 </label>
                                 <input
-                                  type="file"
-                                  accept=".jpg,.jpeg,.png,.pdf"
-                                  onChange={(e) => updateIncomeCertificate(certificate.id, 'file', e.target.files?.[0] || null)}
+                              type="date"
+                              value={compensation.periodTo}
+                              onChange={(e) => updateTuSpecialCompensation(compensation.id, 'periodTo', e.target.value)}
                                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                                 />
                               </div>
                             </div>
-                            
-                            {certificate.fileName && (
-                              <div className={`p-3 rounded-lg border ${certificate.isValid ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center">
-                                    <i className={`ri-${certificate.isValid ? 'check-line' : 'error-warning-line'} text-lg ${certificate.isValid ? 'text-green-600' : 'text-red-600'} mr-2`}></i>
-                                    <span className="font-medium text-gray-800">{certificate.fileName}</span>
-                                    <span className="text-sm text-gray-500 ml-2">
-                                      ({(certificate.fileSize / 1024 / 1024).toFixed(2)} MB)
-                                    </span>
-                                  </div>
-                                </div>
-                                {certificate.error && (
-                                  <p className="text-red-600 text-sm mt-1">{certificate.error}</p>
-                                )}
-                                  </div>
-                                )}
                           </div>
                         ))}
                         
                         <button
-                          onClick={addIncomeCertificate}
-                          className="w-full bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 inline-flex items-center justify-center"
+                      type="button"
+                      onClick={addTuSpecialCompensation}
+                      className="w-full py-2 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-red-500 hover:text-red-500 transition-colors"
                         >
-                          <i className="ri-add-line mr-2"></i>
-                          {language === 'ru' ? 'Добавить справку о доходах' : 'Киреше справкасын кошуу'}
+                      {language === 'ru' ? '+ Запросить компенсацию' : '+ Компенсацияны сурап берүү'}
                   </button>
                       </div>
               </div>
                 
-                    {/* Справка от органа пробации */}
-                    <div className="border border-gray-200 rounded-lg p-4">
-                      <h4 className="font-medium text-gray-900 mb-4">
-                        {language === 'ru' ? 'Справка от органа пробации (при наличии)' : 'Пробация органдан справка (бар болсо)'}
-                        {documents.probationCertificate.isRequired && <span className="text-red-500 ml-1">*</span>}
-                    </h4>
+                {/* Раздел 6: Документы */}
 
-                          <div className="space-y-3">
-                        <div className="flex items-center space-x-4">
-                          <input
-                            type="file"
-                            accept=".jpg,.jpeg,.png,.pdf"
-                            onChange={(e) => updateProbationCertificate(e.target.files?.[0] || null)}
-                            className="hidden"
-                            id="probation-certificate"
-                          />
-                          <label
-                            htmlFor="probation-certificate"
-                            className="flex-1 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 cursor-pointer inline-flex items-center justify-center"
-                          >
-                            <i className="ri-upload-line mr-2"></i>
-                            {language === 'ru' ? 'Выбрать файл' : 'Файл тандаңыз'}
-                          </label>
-                        </div>
-                        
-                        {documents.probationCertificate.fileName && (
-                          <div className={`p-3 rounded-lg border ${documents.probationCertificate.isValid ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                        <div className="flex items-center justify-between">
-                              <div className="flex items-center">
-                                <i className={`ri-${documents.probationCertificate.isValid ? 'check-line' : 'error-warning-line'} text-lg ${documents.probationCertificate.isValid ? 'text-green-600' : 'text-red-600'} mr-2`}></i>
-                                <span className="font-medium text-gray-800">{documents.probationCertificate.fileName}</span>
-                                <span className="text-sm text-gray-500 ml-2">
-                                  ({(documents.probationCertificate.fileSize / 1024 / 1024).toFixed(2)} MB)
-                                  </span>
-                                </div>
-                              <button
-                                onClick={() => updateProbationCertificate(null)}
-                                className="text-red-600 hover:text-red-800"
-                              >
-                                <i className="ri-delete-bin-line"></i>
-                              </button>
-                              </div>
-                            {documents.probationCertificate.error && (
-                              <p className="text-red-600 text-sm mt-1">{documents.probationCertificate.error}</p>
-                            )}
-                          </div>
-                        )}
-                        
-                        <p className="text-sm text-gray-600">
-                          {language === 'ru' 
-                            ? 'Документ требуется только при наличии судимости или нахождения под надзором'
-                            : 'Документ гана соттолуу же көзөмөлдө болгондо талап кылынат'
-                          }
-                        </p>
-                      </div>
-                    </div>
+                {/* Раздел 6: Документы */}
+                <div className="border border-gray-200 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    {language === 'ru' ? '6. Документы' : '6. Документтер'}
+                </h3>
+                
+                  <div className="space-y-6">
+
+
 
                     {/* Дополнительные документы */}
                     <div className="border border-gray-200 rounded-lg p-4">
@@ -4016,42 +3993,12 @@ export default function NewApplication() {
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
                               <span className="text-gray-700">
-                            {language === 'ru' ? 'Паспорт заявителя:' : 'Арыз берүүчүнүн паспорту:'}
+                            {language === 'ru' ? 'Дополнительные документы:' : 'Кошумча документтер:'}
                               </span>
-                          <span className={`font-medium ${documents.applicantPassport.isValid ? 'text-green-600' : 'text-red-600'}`}>
-                            {documents.applicantPassport.isValid ? (language === 'ru' ? 'Загружен' : 'Жүктөлдү') : (language === 'ru' ? 'Не загружен' : 'Жүктөлбөдү')}
-                          </span>
-                            </div>
-                        
-                        <div className="flex justify-between items-center">
-                              <span className="text-gray-700">
-                            {language === 'ru' ? 'Справка о составе семьи:' : 'Үй-бүлө курамы тууралуу справка:'}
-                              </span>
-                          <span className={`font-medium ${documents.familyCompositionCertificate.isValid ? 'text-green-600' : 'text-red-600'}`}>
-                            {documents.familyCompositionCertificate.isValid ? (language === 'ru' ? 'Загружена' : 'Жүктөлдү') : (language === 'ru' ? 'Не загружена' : 'Жүктөлбөдү')}
-                          </span>
-                            </div>
-                        
-                        <div className="flex justify-between items-center">
-                                <span className="text-gray-700">
-                            {language === 'ru' ? 'Свидетельства о рождении детей:' : 'Балалардын туулгандыгы тууралуу күбөлүктөр:'}
-                                </span>
-                          <span className={`font-medium ${documents.childrenBirthCertificates.length > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {documents.childrenBirthCertificates.length > 0 
-                              ? `${documents.childrenBirthCertificates.length} ${language === 'ru' ? 'загружено' : 'жүктөлдү'}`
-                              : (language === 'ru' ? 'Не загружены' : 'Жүктөлбөдү')
-                            }
-                          </span>
-                              </div>
-                        
-                        <div className="flex justify-between items-center">
-                            <span className="text-gray-700">
-                            {language === 'ru' ? 'Справки о доходах:' : 'Киреше тууралуу справкалар:'}
-                            </span>
-                          <span className={`font-medium ${documents.incomeCertificates.length > 0 ? 'text-green-600' : 'text-yellow-600'}`}>
-                            {documents.incomeCertificates.length > 0 
-                              ? `${documents.incomeCertificates.length} ${language === 'ru' ? 'загружено' : 'жүктөлдү'}`
-                              : (language === 'ru' ? 'Не загружены' : 'Жүктөлбөдү')
+                          <span className={`font-medium ${documents.additionalDocuments.length > 0 ? 'text-green-600' : 'text-gray-600'}`}>
+                            {documents.additionalDocuments.length > 0 
+                              ? `${documents.additionalDocuments.length} ${language === 'ru' ? 'загружено' : 'жүктөлдү'}`
+                              : (language === 'ru' ? 'Нет документов' : 'Документтер жок')
                             }
                             </span>
                           </div>
@@ -4060,231 +4007,12 @@ export default function NewApplication() {
                         </div>
                       </div>
 
-                {/* Раздел 5.1: Специальные компенсации */}
-                <div className="border border-gray-200 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    {language === 'ru' ? '5.1. Специальные компенсации' : '5.1. Атайын компенсациялар'}
-                  </h3>
-                  
-                  <div className="space-y-4">
-                    {tuData.specialCompensations.map((compensation, index) => (
-                      <div key={compensation.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                        <div className="flex justify-between items-center mb-4">
-                          <h4 className="font-medium text-gray-800">
-                            {language === 'ru' ? `Компенсация ${index + 1}` : `Компенсация ${index + 1}`}
-                          </h4>
-                          <button
-                            type="button"
-                            onClick={() => removeTuSpecialCompensation(compensation.id)}
-                            className="text-red-600 hover:text-red-800 text-sm"
-                          >
-                            {language === 'ru' ? 'Удалить' : 'Өчүрүү'}
-                          </button>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              {language === 'ru' ? 'Причина' : 'Себеби'} <span className="text-red-500">*</span>
-                            </label>
-                            <select
-                              value={compensation.reason}
-                              onChange={(e) => updateTuSpecialCompensation(compensation.id, 'reason', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                            >
-                              <option value="">{language === 'ru' ? 'Выберите причину' : 'Себебин тандаңыз'}</option>
-                              {compensationReasonList.map(reason => (
-                                <option key={reason.id} value={reason.id}>{reason.name}</option>
-                              ))}
-                            </select>
-                          </div>
-                          
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              {language === 'ru' ? 'Тип компенсации' : 'Компенсация түрү'} <span className="text-red-500">*</span>
-                            </label>
-                            <select
-                              value={compensation.type}
-                              onChange={(e) => updateTuSpecialCompensation(compensation.id, 'type', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                            >
-                              <option value="">{language === 'ru' ? 'Выберите тип' : 'Түрүн тандаңыз'}</option>
-                              {compensationTypeList.map(type => (
-                                <option key={type.id} value={type.id}>{type.name}</option>
-                              ))}
-                            </select>
-                          </div>
-                          
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              {language === 'ru' ? 'Сумма' : 'Суммасы'} <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                              type="number"
-                              value={compensation.amount}
-                              onChange={(e) => updateTuSpecialCompensation(compensation.id, 'amount', parseFloat(e.target.value) || 0)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                              placeholder={language === 'ru' ? 'Введите сумму' : 'Сумманы киргизиңиз'}
-                              min="0"
-                              step="0.01"
-                            />
-                          </div>
-                          
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              {language === 'ru' ? 'Период с' : 'Мөөнөт башталышы'}
-                            </label>
-                            <input
-                              type="date"
-                              value={compensation.periodFrom}
-                              onChange={(e) => updateTuSpecialCompensation(compensation.id, 'periodFrom', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                            />
-                          </div>
-                          
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              {language === 'ru' ? 'Период по' : 'Мөөнөт аягы'}
-                            </label>
-                            <input
-                              type="date"
-                              value={compensation.periodTo}
-                              onChange={(e) => updateTuSpecialCompensation(compensation.id, 'periodTo', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                    
-                    <button
-                      type="button"
-                      onClick={addTuSpecialCompensation}
-                      className="w-full py-2 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-red-500 hover:text-red-500 transition-colors"
-                    >
-                      {language === 'ru' ? '+ Добавить компенсацию' : '+ Компенсация кошуу'}
-                    </button>
-                  </div>
-                </div>
 
-                {/* Раздел 5.2: Возвраты */}
-                <div className="border border-gray-200 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    {language === 'ru' ? '5.2. Возвраты и передоформления' : '5.2. Кайтарымдар жана кайра расмийлөө'}
-                  </h3>
-                  
-                  <div className="space-y-4">
-                    {tuData.refunds.map((refund, index) => (
-                      <div key={refund.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                        <div className="flex justify-between items-center mb-4">
-                          <h4 className="font-medium text-gray-800">
-                            {language === 'ru' ? `Возврат ${index + 1}` : `Кайтарым ${index + 1}`}
-                          </h4>
-                          <button
-                            type="button"
-                            onClick={() => setTuData(prev => ({
-                              ...prev,
-                              refunds: prev.refunds.filter(item => item.id !== refund.id)
-                            }))}
-                            className="text-red-600 hover:text-red-800 text-sm"
-                          >
-                            {language === 'ru' ? 'Удалить' : 'Өчүрүү'}
-                          </button>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              {language === 'ru' ? 'Причина возврата' : 'Кайтарым себеби'} <span className="text-red-500">*</span>
-                            </label>
-                            <select
-                              value={refund.reason}
-                              onChange={(e) => setTuData(prev => ({
-                                ...prev,
-                                refunds: prev.refunds.map(item => 
-                                  item.id === refund.id ? { ...item, reason: e.target.value } : item
-                                )
-                              }))}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                            >
-                              <option value="">{language === 'ru' ? 'Выберите причину' : 'Себебин тандаңыз'}</option>
-                              {refusalReasons.map(reason => (
-                                <option key={reason.id} value={reason.id}>{reason.name}</option>
-                              ))}
-                            </select>
-                          </div>
-                          
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              {language === 'ru' ? 'Дата возврата' : 'Кайтарым күнү'} <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                              type="date"
-                              value={refund.returnDate}
-                              onChange={(e) => setTuData(prev => ({
-                                ...prev,
-                                refunds: prev.refunds.map(item => 
-                                  item.id === refund.id ? { ...item, returnDate: e.target.value } : item
-                                )
-                              }))}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                            />
-                          </div>
-                          
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              {language === 'ru' ? 'Сумма возврата' : 'Кайтарым суммасы'} <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                              type="number"
-                              value={refund.amount}
-                              onChange={(e) => setTuData(prev => ({
-                                ...prev,
-                                refunds: prev.refunds.map(item => 
-                                  item.id === refund.id ? { ...item, amount: parseFloat(e.target.value) || 0 } : item
-                                )
-                              }))}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                              placeholder={language === 'ru' ? 'Введите сумму' : 'Сумманы киргизиңиз'}
-                              min="0"
-                              step="0.01"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                    
-                    <div className="flex space-x-2">
-                      <button
-                        type="button"
-                        onClick={() => setTuData(prev => ({
-                          ...prev,
-                          refunds: [...prev.refunds, {
-                            id: Date.now(),
-                            reason: '',
-                            returnDate: '',
-                            amount: 0
-                          }]
-                        }))}
-                        className="px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-red-500 hover:text-red-500 transition-colors"
-                      >
-                        {language === 'ru' ? '+ Добавить возврат' : '+ Кайтарым кошуу'}
-                      </button>
-                      
-                      <button
-                        type="button"
-                        className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
-                      >
-                        {language === 'ru' ? 'Передоформить на другое лицо' : 'Башка адамга кайра расмийлөө'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Раздел 6: Расчёт (завершение) */}
+                {/* Раздел 7: Расчёт (завершение) */}
                 <div className="border border-gray-200 rounded-lg p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    {language === 'ru' ? '6. Расчёт (завершение)' : '6. Эсептөө (аяктоо)'}
+                    {language === 'ru' ? '7. Расчёт (завершение)' : '7. Эсептөө (аяктоо)'}
                   </h3>
 
                   {/* Авторасчеты показателей домохозяйства */}

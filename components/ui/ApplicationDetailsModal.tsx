@@ -302,6 +302,8 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
     { id: 'identity', label: 'Документы', icon: 'ri-id-card-line' },
     { id: 'addresses', label: 'Адреса и контакты', icon: 'ri-map-pin-line' },
     { id: 'income', label: 'Все доходы', icon: 'ri-money-dollar-circle-line' },
+    { id: 'property', label: 'Имущество', icon: 'ri-home-line' },
+    { id: 'compensations', label: 'Компенсации', icon: 'ri-hand-coin-line' },
     { id: 'inspection', label: 'Проверка', icon: 'ri-search-eye-line' },
     { id: 'history', label: 'История', icon: 'ri-history-line' }
   ];
@@ -344,6 +346,7 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
                   </StatusBadge>
                 </div>
                 <p><span className="font-medium">Риск:</span> {application.riskScore}%</p>
+                <p><span className="font-medium">Тип заявления:</span> {((application as any).applicationType === 'REPEAT' ? 'Повторное' : 'Первичное') || 'Не указан'}</p>
               </div>
             </div>
             <div>
@@ -588,6 +591,11 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
                                   {member.pin && (
                                     <p className="text-xs text-neutral-500 mt-1">
                                       ПИН: {member.pin}
+                                    </p>
+                                  )}
+                                  {member.occupation && (
+                                    <p className="text-xs text-neutral-500 mt-1">
+                                      Род занятий: {member.occupation}
                                     </p>
                                   )}
                                 </div>
@@ -855,6 +863,8 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
                         <th className="text-left py-2 md:py-3 font-medium text-neutral-700">Сумма</th>
                         <th className="text-left py-2 md:py-3 font-medium text-neutral-700 hidden sm:table-cell">Источник</th>
                         <th className="text-left py-2 md:py-3 font-medium text-neutral-700 hidden md:table-cell">Период</th>
+                        <th className="text-left py-2 md:py-3 font-medium text-neutral-700 hidden lg:table-cell">ПИН получателя</th>
+                        <th className="text-left py-2 md:py-3 font-medium text-neutral-700 hidden lg:table-cell">ФИО получателя</th>
                         <th className="text-left py-2 md:py-3 font-medium text-neutral-700">Регулярный</th>
                       </tr>
                     </thead>
@@ -865,6 +875,8 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
                           <td className="py-2 md:py-3 font-medium">{income.amount ? income.amount.toLocaleString() : '0'} сом</td>
                           <td className="py-2 md:py-3 hidden sm:table-cell">{income.source || income.sourceRef || '-'}</td>
                           <td className="py-2 md:py-3 hidden md:table-cell">{income.period || '-'}</td>
+                          <td className="py-2 md:py-3 hidden lg:table-cell font-mono text-xs">{income.recipientPin || '-'}</td>
+                          <td className="py-2 md:py-3 hidden lg:table-cell">{income.recipientFullName || '-'}</td>
                           <td className="py-2 md:py-3">
                             <span className={`px-2 py-1 text-xs rounded ${income.periodicity === 'M' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
                               {income.periodicity === 'M' ? 'Да' : 'Нет'}
@@ -874,7 +886,7 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
                       ))}
                       {getIncomes().length === 0 && (
                         <tr>
-                          <td colSpan={5} className="py-4 text-center text-neutral-500">Нет данных о доходах</td>
+                          <td colSpan={7} className="py-4 text-center text-neutral-500">Нет данных о доходах</td>
                         </tr>
                       )}
                     </tbody>
@@ -1037,6 +1049,14 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
                                     <p className="text-sm text-neutral-900">{plot.location || 'Не указано'}</p>
                                   </div>
                                   <div>
+                                    <label className="text-sm font-medium text-neutral-700">ПИН владельца</label>
+                                    <p className="text-sm text-neutral-900 font-mono">{plot.ownerPin || 'Не указан'}</p>
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium text-neutral-700">ФИО владельца</label>
+                                    <p className="text-sm text-neutral-900">{plot.ownerFullName || 'Не указан'}</p>
+                                  </div>
+                                  <div>
                                     <label className="text-sm font-medium text-neutral-700">Оценочная стоимость</label>
                                     <p className="text-sm text-neutral-900">{plot.estimatedValue ? `${plot.estimatedValue.toLocaleString()} сом` : 'Не указана'}</p>
                                   </div>
@@ -1095,6 +1115,14 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
                                   <div>
                                     <label className="text-sm font-medium text-neutral-700">В собственности</label>
                                     <p className="text-sm text-neutral-900">{animal.isOwned ? 'Да' : 'Нет'}</p>
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium text-neutral-700">ПИН владельца</label>
+                                    <p className="text-sm text-neutral-900 font-mono">{animal.ownerPin || 'Не указан'}</p>
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium text-neutral-700">ФИО владельца</label>
+                                    <p className="text-sm text-neutral-900">{animal.ownerFullName || 'Не указан'}</p>
                                   </div>
                                 </div>
                               </div>
@@ -1155,6 +1183,14 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
                                   <div>
                                     <label className="text-sm font-medium text-neutral-700">В собственности</label>
                                     <p className="text-sm text-neutral-900">{vehicle.isOwned ? 'Да' : 'Нет'}</p>
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium text-neutral-700">ПИН владельца</label>
+                                    <p className="text-sm text-neutral-900 font-mono">{vehicle.ownerPin || 'Не указан'}</p>
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium text-neutral-700">ФИО владельца</label>
+                                    <p className="text-sm text-neutral-900">{vehicle.ownerFullName || 'Не указан'}</p>
                                   </div>
                                 </div>
                               </div>
