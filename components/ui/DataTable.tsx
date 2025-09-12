@@ -1,11 +1,14 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useState, useMemo } from 'react';
 
 interface Column {
   key: string;
   label: string;
   sortable?: boolean;
+  filterable?: boolean;
+  filterType?: 'text' | 'select' | 'date' | 'number';
+  filterOptions?: { value: string; label: string }[];
   render?: (value: any, row: any) => ReactNode;
 }
 
@@ -17,6 +20,7 @@ interface DataTableProps {
   className?: string;
   searchable?: boolean;
   sortable?: boolean;
+  filterable?: boolean;
 }
 
 export default function DataTable({ 
@@ -26,8 +30,73 @@ export default function DataTable({
   emptyMessage = 'Нет данных для отображения',
   className = '',
   searchable = false,
-  sortable = false
+  sortable = false,
+  filterable = false
 }: DataTableProps) {
+  const [filters, setFilters] = useState<Record<string, string>>({});
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+
+  // Фильтрация данных
+  const filteredData = useMemo(() => {
+    let filtered = [...data];
+
+    // Применяем фильтры
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value && value.trim() !== '') {
+        filtered = filtered.filter(row => {
+          const cellValue = row[key];
+          if (cellValue === null || cellValue === undefined) return false;
+          
+          const stringValue = cellValue.toString().toLowerCase();
+          const filterValue = value.toLowerCase();
+          
+          return stringValue.includes(filterValue);
+        });
+      }
+    });
+
+    // Применяем сортировку
+    if (sortConfig) {
+      filtered.sort((a, b) => {
+        const aValue = a[sortConfig.key];
+        const bValue = b[sortConfig.key];
+        
+        if (aValue < bValue) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+
+    return filtered;
+  }, [data, filters, sortConfig]);
+
+  const handleFilterChange = (key: string, value: string) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
+  const handleSort = (key: string) => {
+    if (!sortable) return;
+    
+    setSortConfig(prev => {
+      if (prev?.key === key) {
+        return prev.direction === 'asc' 
+          ? { key, direction: 'desc' }
+          : null;
+      }
+      return { key, direction: 'asc' };
+    });
+  };
+
+  const clearFilters = () => {
+    setFilters({});
+  };
   if (loading) {
     return (
       <div className={`table-container ${className}`}>
@@ -59,16 +128,90 @@ export default function DataTable({
       <div className="hidden md:block">
         <table className="table">
           <thead className="table-header">
+            {/* Header Row */}
             <tr>
               {columns.map((column) => (
                 <th key={column.key} className="table-header-cell">
-                  {column.label}
+                  <div className="flex items-center space-x-2">
+                    <span 
+                      className={sortable && column.sortable ? 'cursor-pointer hover:text-blue-600' : ''}
+                      onClick={() => column.sortable && handleSort(column.key)}
+                    >
+                      {column.label}
+                    </span>
+                    {sortable && column.sortable && (
+                      <div className="flex flex-col">
+                        <i className={`ri-arrow-up-s-line text-xs ${
+                          sortConfig?.key === column.key && sortConfig.direction === 'asc' 
+                            ? 'text-blue-600' 
+                            : 'text-gray-400'
+                        }`}></i>
+                        <i className={`ri-arrow-down-s-line text-xs -mt-1 ${
+                          sortConfig?.key === column.key && sortConfig.direction === 'desc' 
+                            ? 'text-blue-600' 
+                            : 'text-gray-400'
+                        }`}></i>
+                      </div>
+                    )}
+                  </div>
                 </th>
               ))}
             </tr>
+            {/* Filter Row */}
+            {filterable && (
+              <tr className="bg-gray-50">
+                {columns.map((column) => (
+                  <td key={`filter-${column.key}`} className="table-cell p-2">
+                    {column.filterable !== false ? (
+                      <div className="w-full">
+                        {column.filterType === 'select' && column.filterOptions ? (
+                          <select
+                            value={filters[column.key] || ''}
+                            onChange={(e) => handleFilterChange(column.key, e.target.value)}
+                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="">Все</option>
+                            {column.filterOptions.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        ) : column.filterType === 'date' ? (
+                          <input
+                            type="date"
+                            value={filters[column.key] || ''}
+                            onChange={(e) => handleFilterChange(column.key, e.target.value)}
+                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        ) : column.filterType === 'number' ? (
+                          <input
+                            type="number"
+                            placeholder="Число..."
+                            value={filters[column.key] || ''}
+                            onChange={(e) => handleFilterChange(column.key, e.target.value)}
+                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        ) : (
+                          <input
+                            type="text"
+                            placeholder="Поиск..."
+                            value={filters[column.key] || ''}
+                            onChange={(e) => handleFilterChange(column.key, e.target.value)}
+                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      <div className="h-8"></div>
+                    )}
+                  </td>
+                ))}
+              </tr>
+            )}
           </thead>
           <tbody className="table-body">
-            {data.map((row, index) => (
+            {filteredData.map((row, index) => (
               <tr key={index} className="table-row">
                 {columns.map((column) => (
                   <td key={column.key} className="table-cell">
@@ -86,7 +229,7 @@ export default function DataTable({
 
       {/* Mobile Cards */}
       <div className="md:hidden space-y-3">
-        {data.map((row, index) => (
+        {filteredData.map((row, index) => (
           <div key={index} className="bg-white border border-neutral-200 rounded-lg p-4 shadow-sm">
             {columns.map((column) => (
               <div key={column.key} className="flex justify-between items-center py-2 border-b border-neutral-100 last:border-b-0">
@@ -102,6 +245,21 @@ export default function DataTable({
           </div>
         ))}
       </div>
+
+      {/* Filter Controls */}
+      {filterable && Object.keys(filters).some(key => filters[key]) && (
+        <div className="mt-4 flex justify-between items-center">
+          <div className="text-sm text-gray-600">
+            Показано {filteredData.length} из {data.length} записей
+          </div>
+          <button
+            onClick={clearFilters}
+            className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded border"
+          >
+            Очистить фильтры
+          </button>
+        </div>
+      )}
     </div>
   );
 }

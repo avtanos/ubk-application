@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import MetricCard from '@/components/ui/MetricCard';
 import DataTable from '@/components/ui/DataTable';
 import StatusBadge from '@/components/ui/StatusBadge';
-import UniversalFilters, { FilterConfig } from '@/components/ui/UniversalFilters';
 import UniversalBulkActions, { BulkAction } from '@/components/ui/UniversalBulkActions';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
@@ -174,13 +173,6 @@ export default function AdminDashboard() {
     setFilteredPayments(filtered);
   };
 
-  const handleFiltersChange = (newFilters: Record<string, any>) => {
-    setFilters(newFilters);
-  };
-
-  const handleClearFilters = () => {
-    setFilters({});
-  };
 
   const handleSelectPayment = (payment: any, isSelected: boolean) => {
     if (isSelected) {
@@ -219,61 +211,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // Конфигурация фильтров для выплат
-  const paymentFilterConfig: FilterConfig[] = [
-    {
-      key: 'status',
-      label: 'Статус',
-      type: 'select',
-      options: [
-        { value: 'paid', label: 'Выплачено' },
-        { value: 'pending', label: 'Ожидает' },
-        { value: 'processing', label: 'В обработке' },
-        { value: 'suspended', label: 'Приостановлено' }
-      ]
-    },
-    {
-      key: 'region',
-      label: 'Регион',
-      type: 'select',
-      options: [
-        { value: 'Бишкек', label: 'Бишкек' },
-        { value: 'Чуй', label: 'Чуй' },
-        { value: 'Ош', label: 'Ош' },
-        { value: 'Нарын', label: 'Нарын' },
-        { value: 'Баткен', label: 'Баткен' },
-        { value: 'Иссык-Куль', label: 'Иссык-Куль' }
-      ]
-    },
-    {
-      key: 'dateFrom',
-      label: 'Дата от',
-      type: 'date'
-    },
-    {
-      key: 'dateTo',
-      label: 'Дата до',
-      type: 'date'
-    },
-    {
-      key: 'family',
-      label: 'Семья',
-      type: 'text',
-      placeholder: 'Введите фамилию'
-    },
-    {
-      key: 'amountMin',
-      label: 'Сумма от (сом)',
-      type: 'number',
-      placeholder: '0'
-    },
-    {
-      key: 'amountMax',
-      label: 'Сумма до (сом)',
-      type: 'number',
-      placeholder: '1000000'
-    }
-  ];
 
   // Конфигурация массовых действий для выплат
   const paymentBulkActions: BulkAction[] = [
@@ -609,13 +546,6 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* Фильтры */}
-              <UniversalFilters
-                title="Фильтры выплат"
-                filters={paymentFilterConfig}
-                onFiltersChange={handleFiltersChange}
-                onClearFilters={handleClearFilters}
-              />
 
               {/* Массовые операции */}
               <UniversalBulkActions

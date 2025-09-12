@@ -6,7 +6,6 @@ import { translations } from '@/lib/translations';
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
 import { regions, incomeCategories } from '@/lib/mockData';
 import { calculateBenefit, validateFamilyComposition } from '@/lib/benefitCalculator';
-import { ApplicationForm } from '@/components/forms/ApplicationForm';
 import { 
   genderList, 
   citizenshipList, 
@@ -71,7 +70,6 @@ import { applicationService } from '@/lib/api/applicationService';
 export default function NewApplication() {
   const [language, setLanguage] = useState('ru');
   const [isClient, setIsClient] = useState(false);
-  const [useNewForm, setUseNewForm] = useState(false);
   
   // API сервис уже импортирован
   
@@ -1874,7 +1872,7 @@ export default function NewApplication() {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <Link href="/citizen" className="flex items-center space-x-4">
+              <Link href="/" className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-red-600 rounded-lg flex items-center justify-center">
                   <i className="ri-government-line text-2xl text-white"></i>
                 </div>
@@ -1890,26 +1888,17 @@ export default function NewApplication() {
             </div>
 
             <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setUseNewForm(!useNewForm)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  useNewForm 
-                    ? 'bg-green-600 text-white' 
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                {useNewForm ? 'Новая форма' : 'Старая форма'}
-              </button>
-            <LanguageSwitcher currentLanguage={language} onLanguageChange={setLanguage} />
+              <Link href="/dashboard" className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors">
+                <i className="ri-arrow-left-line"></i>
+                <span className="hidden sm:inline">Назад в кабинет</span>
+              </Link>
+              <LanguageSwitcher currentLanguage={language} onLanguageChange={setLanguage} />
             </div>
           </div>
         </div>
       </header>
 
       <div className="container mx-auto px-6 py-8">
-        {useNewForm ? (
-          <ApplicationForm />
-        ) : (
         <div className="bg-white rounded-xl shadow-sm">
           <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-4">
@@ -4451,9 +4440,8 @@ export default function NewApplication() {
                 )}
             </div>
           </div>
-          </div>
-        )}
         </div>
+      </div>
     </div>
   );
 }

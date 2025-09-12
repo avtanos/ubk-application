@@ -66,7 +66,7 @@ export default function BenefitCalculator() {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <Link href="/citizen" className="flex items-center space-x-4">
+              <Link href="/" className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-red-600 rounded-lg flex items-center justify-center">
                   <i className="ri-government-line text-2xl text-white"></i>
                 </div>
@@ -82,6 +82,10 @@ export default function BenefitCalculator() {
             </div>
             
             <div className="flex items-center space-x-4">
+              <Link href="/dashboard" className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors">
+                <i className="ri-arrow-left-line"></i>
+                <span className="hidden sm:inline">Назад в кабинет</span>
+              </Link>
               <LanguageSwitcher currentLanguage={language} onLanguageChange={setLanguage} />
             </div>
           </div>

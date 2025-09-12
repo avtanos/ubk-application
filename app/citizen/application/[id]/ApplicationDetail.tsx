@@ -42,8 +42,8 @@ export default function ApplicationDetail({ applicationId }: ApplicationDetailPr
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Application not found</h1>
-          <Link href="/citizen" className="text-red-600 hover:text-red-700">
-            Return to Citizen Portal
+          <Link href="/" className="text-red-600 hover:text-red-700">
+            Return to Home
           </Link>
         </div>
       </div>
@@ -116,7 +116,7 @@ export default function ApplicationDetail({ applicationId }: ApplicationDetailPr
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <Link href="/citizen" className="flex items-center space-x-4">
+              <Link href="/" className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-red-600 rounded-lg flex items-center justify-center">
                   <i className="ri-government-line text-2xl text-white"></i>
                 </div>

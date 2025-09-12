@@ -7,9 +7,7 @@ import DataTable from '@/components/ui/DataTable';
 import StatusBadge from '@/components/ui/StatusBadge';
 import ApplicationDetailsModal from '@/components/ui/ApplicationDetailsModal';
 import DecisionModal from '@/components/ui/DecisionModal';
-import UniversalFilters, { FilterConfig } from '@/components/ui/UniversalFilters';
 import UniversalBulkActions, { BulkAction } from '@/components/ui/UniversalBulkActions';
-import TestDataLoader from '@/components/ui/TestDataLoader';
 import { applicationService } from '@/lib/api/applicationService';
 import { Application, ApplicationStatus } from '@/lib/types';
 
@@ -24,6 +22,7 @@ export default function DashboardPage() {
   const [currentApplicationId, setCurrentApplicationId] = useState<string>('');
   const [selectedApplications, setSelectedApplications] = useState<Application[]>([]);
   const [filters, setFilters] = useState<Record<string, any>>({});
+  const [activeTab, setActiveTab] = useState<'all' | 'queue'>('all');
 
   useEffect(() => {
     loadDashboardData();
@@ -44,14 +43,21 @@ export default function DashboardPage() {
 
   useEffect(() => {
     applyFilters();
-  }, [applications, filters]);
+  }, [applications, filters, activeTab]);
 
   const loadDashboardData = async () => {
     try {
       setLoading(true);
       
       // Загружаем заявки из localStorage для демонстрации
-      const storedApplications = JSON.parse(localStorage.getItem('applications') || '[]');
+      let storedApplications = JSON.parse(localStorage.getItem('applications') || '[]');
+      
+      // Если нет данных, загружаем тестовые данные автоматически
+      if (storedApplications.length === 0) {
+        const { loadTestApplications } = await import('@/lib/testData');
+        loadTestApplications();
+        storedApplications = JSON.parse(localStorage.getItem('applications') || '[]');
+      }
       
       // Сортируем по дате создания (новые сверху)
       storedApplications.sort((a: any, b: any) => 
@@ -108,6 +114,13 @@ export default function DashboardPage() {
   const applyFilters = () => {
     let filtered = [...applications];
 
+    // Фильтр по вкладке
+    if (activeTab === 'queue') {
+      filtered = filtered.filter(app => 
+        app.status === 'SUBMITTED' || app.status === 'UNDER_REVIEW'
+      );
+    }
+
     if (filters.status) {
       filtered = filtered.filter(app => app.status === filters.status);
     }
@@ -148,13 +161,6 @@ export default function DashboardPage() {
     setFilteredApplications(filtered);
   };
 
-  const handleFiltersChange = (newFilters: Record<string, any>) => {
-    setFilters(newFilters);
-  };
-
-  const handleClearFilters = () => {
-    setFilters({});
-  };
 
   const handleSelectApplication = (application: Application, isSelected: boolean) => {
     if (isSelected) {
@@ -229,6 +235,26 @@ export default function DashboardPage() {
     }
   };
 
+  const handlePriorityChange = (applicationId: number, newPriority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT') => {
+    // Обновляем в localStorage
+    const storedApplications = JSON.parse(localStorage.getItem('applications') || '[]');
+    const updatedApplications = storedApplications.map((app: any) => 
+      app.id === applicationId 
+        ? { ...app, priority: newPriority, updatedAt: new Date().toISOString() }
+        : app
+    );
+    localStorage.setItem('applications', JSON.stringify(updatedApplications));
+    
+    // Обновляем локальное состояние
+    setApplications(prev => 
+      prev.map(app => 
+        app.id === applicationId 
+          ? { ...app, priority: newPriority, updatedAt: new Date().toISOString() }
+          : app
+      )
+    );
+  };
+
   const handleViewDetails = (application: Application) => {
     setSelectedApplication(application);
     setIsDetailsModalOpen(true);
@@ -283,75 +309,60 @@ export default function DashboardPage() {
     );
   }
 
-  const metrics = stats && typeof stats === 'object' ? [
-    {
-      title: 'В очереди',
-      value: (stats.submitted || 0).toString(),
-      change: { value: '+2 за неделю', type: 'positive' as const },
-      icon: <i className="ri-file-list-3-line text-4xl text-blue-600"></i>
-    },
-    {
-      title: 'На рассмотрении',
-      value: (stats.underReview || 0).toString(),
-      change: { value: '+1 за неделю', type: 'positive' as const },
-      icon: <i className="ri-time-line text-4xl text-yellow-600"></i>
-    },
-    {
-      title: 'Одобрено сегодня',
-      value: (stats.approved || 0).toString(),
-      change: { value: '+5 за неделю', type: 'positive' as const },
-      icon: <i className="ri-check-line text-4xl text-green-600"></i>
-    },
-    {
-      title: 'Высокий риск',
-      value: applications.filter(app => (app as any).riskScore > 50).length.toString(),
-      change: { value: '+1 за неделю', type: 'negative' as const },
-      icon: <i className="ri-alert-line text-4xl text-red-600"></i>
-    }
-  ] : [];
+  const metrics = stats && typeof stats === 'object' ? (
+    activeTab === 'queue' ? [
+      {
+        title: 'Высокий приоритет',
+        value: applications.filter(app => app.priority === 'HIGH' || app.priority === 'URGENT').length.toString(),
+        change: { value: '+2 за неделю', type: 'positive' as const },
+        icon: <i className="ri-fire-line text-4xl text-red-600"></i>
+      },
+      {
+        title: 'Средний приоритет',
+        value: applications.filter(app => app.priority === 'MEDIUM').length.toString(),
+        change: { value: '+1 за неделю', type: 'positive' as const },
+        icon: <i className="ri-time-line text-4xl text-yellow-600"></i>
+      },
+      {
+        title: 'Низкий приоритет',
+        value: applications.filter(app => app.priority === 'LOW').length.toString(),
+        change: { value: '-2 за неделю', type: 'negative' as const },
+        icon: <i className="ri-calendar-line text-4xl text-green-600"></i>
+      },
+      {
+        title: 'Всего в очереди',
+        value: (stats.submitted + stats.underReview || 0).toString(),
+        change: { value: '+3 за неделю', type: 'positive' as const },
+        icon: <i className="ri-file-list-3-line text-4xl text-blue-600"></i>
+      }
+    ] : [
+      {
+        title: 'В очереди',
+        value: (stats.submitted || 0).toString(),
+        change: { value: '+2 за неделю', type: 'positive' as const },
+        icon: <i className="ri-file-list-3-line text-4xl text-blue-600"></i>
+      },
+      {
+        title: 'На рассмотрении',
+        value: (stats.underReview || 0).toString(),
+        change: { value: '+1 за неделю', type: 'positive' as const },
+        icon: <i className="ri-time-line text-4xl text-yellow-600"></i>
+      },
+      {
+        title: 'Одобрено сегодня',
+        value: (stats.approved || 0).toString(),
+        change: { value: '+5 за неделю', type: 'positive' as const },
+        icon: <i className="ri-check-line text-4xl text-green-600"></i>
+      },
+      {
+        title: 'Высокий риск',
+        value: applications.filter(app => (app as any).riskScore > 50).length.toString(),
+        change: { value: '+1 за неделю', type: 'negative' as const },
+        icon: <i className="ri-alert-line text-4xl text-red-600"></i>
+      }
+    ]
+  ) : [];
 
-  // Конфигурация фильтров
-  const filterConfig: FilterConfig[] = [
-    {
-      key: 'status',
-      label: 'Статус',
-      type: 'select',
-      options: [
-        { value: 'pending', label: 'Ожидает' },
-        { value: 'approved', label: 'Одобрено' },
-        { value: 'rejected', label: 'Отклонено' },
-        { value: 'processing', label: 'В обработке' }
-      ]
-    },
-    {
-      key: 'dateFrom',
-      label: 'Дата от',
-      type: 'date'
-    },
-    {
-      key: 'dateTo',
-      label: 'Дата до',
-      type: 'date'
-    },
-    {
-      key: 'applicantName',
-      label: 'Имя заявителя',
-      type: 'text',
-      placeholder: 'Введите имя'
-    },
-    {
-      key: 'amountMin',
-      label: 'Сумма от (сом)',
-      type: 'number',
-      placeholder: '0'
-    },
-    {
-      key: 'amountMax',
-      label: 'Сумма до (сом)',
-      type: 'number',
-      placeholder: '1000000'
-    }
-  ];
 
   // Конфигурация массовых действий
   const bulkActions: BulkAction[] = [
@@ -396,6 +407,7 @@ export default function DashboardPage() {
           className="w-4 h-4 text-blue-600 border-neutral-300 rounded focus:ring-blue-500"
         />
       ),
+      filterable: false,
       render: (value: any, row: Application) => (
         <input
           type="checkbox"
@@ -408,6 +420,8 @@ export default function DashboardPage() {
     {
       key: 'id',
       label: '№ заявки',
+      filterable: true,
+      filterType: 'text',
       render: (value: string) => (
         <span className="font-mono text-sm font-medium text-blue-600">{value}</span>
       )
@@ -415,6 +429,8 @@ export default function DashboardPage() {
     {
       key: 'applicantName',
       label: 'Заявитель',
+      filterable: true,
+      filterType: 'text',
       render: (value: string, row: Application) => (
         <div>
           <div className="font-medium text-neutral-900">{row.applicantName || row.formData?.applicant?.fullName || 'Не указан'}</div>
@@ -425,6 +441,14 @@ export default function DashboardPage() {
     {
       key: 'priority',
       label: 'Приоритет',
+      filterable: true,
+      filterType: 'select',
+      filterOptions: [
+        { value: 'LOW', label: 'Низкий' },
+        { value: 'MEDIUM', label: 'Средний' },
+        { value: 'HIGH', label: 'Высокий' },
+        { value: 'URGENT', label: 'Срочный' }
+      ],
       render: (value: string, row: Application) => {
         const priorityMap: { [key: string]: string } = {
           'LOW': 'Низкий',
@@ -448,6 +472,8 @@ export default function DashboardPage() {
     {
       key: 'riskScore',
       label: 'Риск',
+      filterable: true,
+      filterType: 'number',
       render: (value: number) => (
         <div className="flex items-center space-x-2">
           <div className={`w-3 h-3 rounded-full ${
@@ -464,6 +490,20 @@ export default function DashboardPage() {
     {
       key: 'status',
       label: 'Статус',
+      filterable: true,
+      filterType: 'select',
+      filterOptions: [
+        { value: 'DRAFT', label: 'Черновик' },
+        { value: 'SUBMITTED', label: 'Подана' },
+        { value: 'UNDER_REVIEW', label: 'На рассмотрении' },
+        { value: 'PENDING_APPROVAL', label: 'На утверждении' },
+        { value: 'APPROVED', label: 'Одобрена' },
+        { value: 'REJECTED', label: 'Отклонена' },
+        { value: 'PAYMENT_PROCESSING', label: 'Обработка платежа' },
+        { value: 'PAID', label: 'Выплачено' },
+        { value: 'CANCELLED', label: 'Отменено' },
+        { value: 'TERMINATED', label: 'Прекращено' }
+      ],
       render: (value: string) => {
         const statusMap: { [key: string]: string } = {
           'DRAFT': 'Черновик',
@@ -500,36 +540,82 @@ export default function DashboardPage() {
         </div>
       )
     },
+    ...(activeTab === 'queue' ? [{
+      key: 'priority',
+      label: 'Приоритет',
+      filterable: true,
+      filterType: 'select',
+      filterOptions: [
+        { value: 'LOW', label: 'Низкий' },
+        { value: 'MEDIUM', label: 'Средний' },
+        { value: 'HIGH', label: 'Высокий' },
+        { value: 'URGENT', label: 'Срочный' }
+      ],
+      render: (value: string) => {
+        const priorityMap: { [key: string]: { label: string; color: string } } = {
+          'LOW': { label: 'Низкий', color: 'text-green-600 bg-green-100' },
+          'MEDIUM': { label: 'Средний', color: 'text-yellow-600 bg-yellow-100' },
+          'HIGH': { label: 'Высокий', color: 'text-orange-600 bg-orange-100' },
+          'URGENT': { label: 'Срочный', color: 'text-red-600 bg-red-100' }
+        };
+        return (
+          <select 
+            value={value}
+            onChange={(e) => handlePriorityChange(parseInt((row as any).id), e.target.value as any)}
+            className={`text-sm border border-neutral-300 rounded px-2 py-1 ${priorityMap[value as keyof typeof priorityMap]?.color || 'text-gray-600 bg-gray-100'}`}
+          >
+            <option value="LOW">Низкий</option>
+            <option value="MEDIUM">Средний</option>
+            <option value="HIGH">Высокий</option>
+            <option value="URGENT">Срочный</option>
+          </select>
+        );
+      }
+    }] : []),
     {
       key: 'actions',
       label: 'Действия',
+      filterable: false,
       render: (value: any, row: Application) => (
-        <div className="flex space-x-2">
-          {row.status === 'submitted' && (
+        <div className="flex flex-wrap gap-1">
+          {row.status === 'SUBMITTED' && (
             <button 
-              onClick={() => handleStatusUpdate(row.id, 'under_review')}
-              className="btn-primary text-sm px-3 py-1"
+              onClick={() => handleStatusUpdate(row.id, 'UNDER_REVIEW')}
+              className="btn-primary text-xs px-2 py-1"
+              title="Взять заявку в работу"
             >
               Взять в работу
             </button>
           )}
-          {row.status === 'under_review' && (
+          {row.status === 'UNDER_REVIEW' && (
             <button 
               onClick={() => handleDecisionClick(row.id)}
-              className="btn-danger text-sm px-3 py-1"
+              className="btn-danger text-xs px-2 py-1"
+              title="Принять решение по заявке"
             >
               Решение
             </button>
           )}
+          {row.status === 'DRAFT' && (
+            <button 
+              onClick={() => handleStatusUpdate(row.id, 'SUBMITTED')}
+              className="btn-secondary text-xs px-2 py-1"
+              title="Отправить заявку на рассмотрение"
+            >
+              Отправить
+            </button>
+          )}
           <button 
             onClick={() => handleViewDetails(row)}
-            className="btn-secondary text-sm px-3 py-1"
+            className="btn-secondary text-xs px-2 py-1"
+            title="Просмотреть детали заявки"
           >
             Детали
           </button>
           <button 
             // onClick={() => handleCalcDetails(row)}
-            className="btn-secondary text-sm px-3 py-1"
+            className="btn-secondary text-xs px-2 py-1"
+            title="Открыть калькулятор"
           >
             Калькулятор
           </button>
@@ -553,35 +639,49 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Test Data Loader */}
-      <TestDataLoader onDataLoaded={loadDashboardData} />
 
       {/* Applications Table */}
       <div className="card">
-        <div className="flex mb-4 md:mb-6">
-          <div> <h3 className="text-base md:text-lg font-semibold text-neutral-900">Приоритетная очередь заявок</h3>
-          <p className="text-xs md:text-sm text-neutral-600 mt-1">Управление заявлениями на семейные пособия</p>
-           </div>
-           <div className='justify-end flex ml-auto'>
-            
-             <Link href="/citizen/calculator" className="btn-secondary text-sm md:text-base">
-          <i className="ri-calculator-line mr-2"></i>
-          <span className="hidden sm:inline">Калькулятор пособия</span>
-          <span className="sm:hidden">Калькулятор</span>
-        </Link>
-        
-        </div>
-         
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 md:mb-6 gap-4">
+          <div>
+            <h3 className="text-base md:text-lg font-semibold text-neutral-900">
+              {activeTab === 'all' ? 'Все заявки' : 'Очередь заявок'}
+            </h3>
+            <p className="text-xs md:text-sm text-neutral-600 mt-1">
+              {activeTab === 'all' 
+                ? 'Управление всеми заявлениями на семейные пособия' 
+                : 'Управление заявками в очереди на рассмотрение'
+              }
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            {/* Вкладки */}
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setActiveTab('all')}
+                className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
+                  activeTab === 'all'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Все заявки
+              </button>
+              <button
+                onClick={() => setActiveTab('queue')}
+                className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
+                  activeTab === 'queue'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Очередь
+              </button>
+            </div>
+          </div>
         </div>
         
 
-        {/* Фильтры */}
-        <UniversalFilters
-          title="Фильтры заявлений"
-          filters={filterConfig}
-          onFiltersChange={handleFiltersChange}
-          onClearFilters={handleClearFilters}
-        />
 
         {/* Массовые операции */}
         <UniversalBulkActions
@@ -603,6 +703,8 @@ export default function DashboardPage() {
           columns={columns}
           data={filteredApplications}
           emptyMessage="Нет заявок для отображения"
+          filterable={true}
+          sortable={true}
         />
       </div>
 

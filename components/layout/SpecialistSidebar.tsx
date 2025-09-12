@@ -19,13 +19,6 @@ export default function SpecialistSidebar({ isCollapsed = false, onToggle }: Spe
       href: '/dashboard'
     },
     {
-      id: 'queue',
-      label: 'Очередь заявок',
-      icon: <i className="ri-file-list-3-line"></i>,
-      href: '/dashboard/queue'
-    },
-
-    {
       id: 'inspections',
       label: 'Выездные проверки',
       icon: <i className="ri-car-line"></i>,
