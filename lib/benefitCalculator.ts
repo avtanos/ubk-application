@@ -16,6 +16,8 @@ export interface LandPlot {
 
 export interface Livestock {
   cows: number;
+  heifers: number;  // телки
+  bulls: number;    // быки
   horses: number;
   sheep: number;
   goats: number;
@@ -56,16 +58,18 @@ export interface ExternalCheckResult {
   message: string;
 }
 
-// Нормативы доходности земли (сом/сотка/месяц)
+// Нормативы доходности земли (сом/сотка/месяц) - обновлены согласно официальным данным
 const LAND_INCOME_NORMS = {
   irrigated: 20,    // орошаемый земельный надел
   rain_fed: 10,     // богарный надел
   household: 30     // приусадебный участок
 };
 
-// Коэффициенты перевода скота в условные единицы (МРС)
+// Коэффициенты перевода скота в условные единицы (МРС) - обновлены согласно официальным данным
 const LIVESTOCK_MRS_COEFFICIENTS = {
   cows: 6,      // 1 корова = 6 МРС
+  heifers: 2.5, // 1 телка = 2.5 МРС
+  bulls: 8,     // 1 бык = 8 МРС
   horses: 7,    // 1 лошадь = 7 МРС
   sheep: 1,     // 1 овца = 1 МРС
   goats: 1,     // 1 коза = 1 МРС
@@ -82,6 +86,37 @@ const MAX_MRS_PER_PERSON = 4;
 
 // Возраст автомобиля, при котором он не учитывается как актив
 const MAX_CAR_AGE = 20;
+
+// Гарантированный минимальный доход (ГМД) - устанавливается ежегодно Кабмином
+export const GMD_THRESHOLD = 6000; // сом на человека в месяц
+
+// Доходы, не учитываемые в расчете пособия
+export const EXCLUDED_INCOMES = [
+  'benefits',           // пособия
+  'funeral_allowance',  // пособие на погребение
+  'material_aid',       // матпомощь
+  'scholarships',       // стипендии
+  'travel_expenses',    // командировочные
+  'social_contract',    // соцконтракт (3 мес.)
+  'personal_assistant', // выплаты персональному ассистенту
+  'other_excluded'      // прочие исключения
+];
+
+// Пособия и выплаты, которые учитываются (могут быть препятствием)
+export const INCLUDED_BENEFITS = [
+  'monthly_compensations', // ежемесячные денежные компенсации взамен льгот
+  'pensions',              // пенсии (кроме льготных инвалидных ниже базовой части)
+  'other_regular_payments' // другие регулярные выплаты, не входящие в перечень исключений
+];
+
+// Члены семьи, которые НЕ учитываются в составе семьи
+export const EXCLUDED_FAMILY_MEMBERS = [
+  'conscripts',           // военнослужащие срочной службы
+  'convicts',             // осужденные
+  'state_support',        // на полном гособеспечении
+  'deprived_rights',      // лишённые родительских прав
+  'outsiders'             // посторонние
+];
 
 // Расчет дохода от земельных участков
 function calculateLandIncome(landPlots: LandPlot[]): number {
@@ -130,7 +165,7 @@ export function calculateBenefit(
   regionId: string,
   totalIncome: number,
   landPlots: LandPlot[] = [],
-  livestock: Livestock = { cows: 0, horses: 0, sheep: 0, goats: 0, pigs: 0, poultry: 0, other: 0 },
+  livestock: Livestock = { cows: 0, heifers: 0, bulls: 0, horses: 0, sheep: 0, goats: 0, pigs: 0, poultry: 0, other: 0 },
   assets: HouseholdAssets = { hasCar: false, hasTractor: false, hasTruck: false }
 ): BenefitCalculation {
   const region = regions.find(r => r.id === regionId);
@@ -453,64 +488,92 @@ export function validateFamilyComposition(familyMembers: FamilyMember[]): { vali
   };
 }
 
+// Расчет среднедушевого дохода за 3 месяца (согласно официальным правилам)
+export function calculatePerCapitaIncome(
+  familyMembers: FamilyMember[], 
+  monthlyIncomes: Record<string, number>[], 
+  landPlots: LandPlot[] = [],
+  livestock: Livestock = { cows: 0, heifers: 0, bulls: 0, horses: 0, sheep: 0, goats: 0, pigs: 0, poultry: 0, other: 0 }
+): number {
+  // Суммируем доходы за 3 месяца
+  const totalIncome3Months = monthlyIncomes.reduce((total, monthIncomes) => {
+    return total + Object.values(monthIncomes).reduce((sum, income) => sum + income, 0);
+  }, 0);
+  
+  // Добавляем доходы от ЛПХ (они постоянные)
+  const landIncome = calculateLandIncome(landPlots);
+  const livestockIncome = calculateLivestockIncome(livestock);
+  const totalHouseholdIncome3Months = (landIncome + livestockIncome) * 3;
+  
+  // Общий доход за 3 месяца
+  const totalFamilyIncome3Months = totalIncome3Months + totalHouseholdIncome3Months;
+  
+  // Среднедушевой доход = доход семьи за 3 мес. ÷ 3 ÷ число членов семьи
+  const perCapitaIncome = familyMembers.length > 0 
+    ? (totalFamilyIncome3Months / 3) / familyMembers.length 
+    : 0;
+    
+  return Math.round(perCapitaIncome);
+}
+
 // Calculate income breakdown by categories
 export function calculateIncomeBreakdown(incomes: Record<string, number>) {
   const categories = {
-    primary: 0,      // I. Primary Income
-    education: 0,    // II. Education
-    other: 0,        // III. Other Income
-    business: 0,     // IV. Business Activity
-    land: 0,         // V. Land Ownership
-    farming: 0,      // VI. Subsidiary Farming
-    financial: 0     // VII. Financial Instruments
+    primary: 0,        // I. Основные доходы
+    property: 0,       // II. Доходы от собственности
+    agriculture: 0,    // III. Доходы от сельского хозяйства
+    business: 0,       // IV. Предпринимательская деятельность
+    employment: 0,     // V. Трудоустройство
+    foreign: 0,        // VI. Внешние доходы
+    compensation: 0,   // VII. Компенсации
+    land: 0,           // VIII. Земельные доходы
+    social: 0,         // IX. Социальные выплаты
+    financial: 0       // X. Финансовые инструменты
   };
   
   // Map income types to categories
   const categoryMap = {
-    // Primary Income
+    // Основные доходы
     salary: 'primary', 
     pension: 'primary', 
-    social_benefits: 'primary',
+    scholarship: 'primary',
+    unemployment_benefit: 'primary',
+    alimony: 'primary',
     
-    // Education
-    scholarship: 'education', 
-    tuition: 'education', 
-    education_grants: 'education',
+    // Доходы от собственности
+    property_rental: 'property',
+    tenant_payment: 'property',
+    car_rental: 'property',
     
-    // Other Income
-    alimony: 'other', 
-    dividends: 'other', 
-    assistance: 'other',
-    rental_income: 'other',
-    other_income: 'other',
+    // Доходы от сельского хозяйства
+    tenant_coop_income: 'agriculture',
+    farm_work_payment: 'agriculture',
+    individual_labor: 'agriculture',
     
-    // Business Activity
-    business: 'business', 
-    patents: 'business',
-    freelance: 'business',
-    consulting: 'business',
+    // Предпринимательская деятельность
+    business_income: 'business',
     
-    // Land Ownership
-    irrigated_agriculture: 'land', 
-    rain_fed_agriculture: 'land',
-    household_garden: 'land',
+    // Трудоустройство
+    part_time_work: 'employment',
     
-    // Subsidiary Farming
-    cattle_income: 'farming', 
-    horse_income: 'farming',
-    sheep_income: 'farming',
-    goat_income: 'farming',
-    pig_income: 'farming',
-    poultry_income: 'farming',
-    bee_income: 'farming',
-    fish_income: 'farming',
-    other_livestock: 'farming',
+    // Внешние доходы
+    foreign_income: 'foreign',
     
-    // Financial Instruments
-    deposits: 'financial', 
-    investments: 'financial',
-    securities: 'financial',
-    crypto_income: 'financial'
+    // Компенсации
+    compensation: 'compensation',
+    monetary_compensation: 'compensation',
+    
+    // Земельные доходы
+    land_rental: 'land',
+    household_plot: 'land',
+    farm_income: 'land',
+    
+    // Социальные выплаты
+    family_help: 'social',
+    social_benefit: 'social',
+    
+    // Финансовые инструменты
+    dividends: 'financial'
   };
   
   Object.entries(incomes).forEach(([key, value]) => {

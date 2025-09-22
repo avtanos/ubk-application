@@ -4,7 +4,10 @@ import { useState, useEffect } from 'react';
 import MobileOptimizedModal from './MobileOptimizedModal';
 import StatusBadge from './StatusBadge';
 import IncomeAnalysisModal from './IncomeAnalysisModal';
+import ExternalDataViewer from './ExternalDataViewer';
 import { Application, FamilyMember, Income, Document, InspectionResult } from '@/lib/types';
+import { externalApiService } from '@/lib/externalApiService';
+import { calculateBenefit, calculatePerCapitaIncome } from '@/lib/benefitCalculator';
 
 interface ApplicationDetailsModalProps {
   application: Application | null;
@@ -13,9 +16,12 @@ interface ApplicationDetailsModalProps {
 }
 
 export default function ApplicationDetailsModal({ application, isOpen, onClose }: ApplicationDetailsModalProps) {
-  const [activeTab, setActiveTab] = useState<'applicant' | 'family' | 'identity' | 'addresses' | 'income' | 'property' | 'compensations' | 'inspection' | 'history'>('applicant');
+  const [activeTab, setActiveTab] = useState<'applicant' | 'family' | 'identity' | 'addresses' | 'income' | 'property' | 'compensations' | 'inspection' | 'external' | 'history'>('applicant');
   const [isIncomeAnalysisOpen, setIsIncomeAnalysisOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [externalData, setExternalData] = useState<any>(null);
+  const [isLoadingExternal, setIsLoadingExternal] = useState(false);
+  const [benefitCalculation, setBenefitCalculation] = useState<any>(null);
 
   // Закрытие выпадающего меню при клике вне его
   useEffect(() => {
@@ -33,6 +39,58 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isDropdownOpen]);
+
+  // Загрузка внешних данных при открытии модального окна
+  useEffect(() => {
+    if (isOpen && application) {
+      loadExternalData();
+      calculateBenefitData();
+    }
+  }, [isOpen, application]);
+
+  const loadExternalData = async () => {
+    if (!application) return;
+    
+    setIsLoadingExternal(true);
+    try {
+      const applicantPin = (application as any).applicantPin || (application as any).formData?.applicant?.pin;
+      if (applicantPin) {
+        const data = await externalApiService.getAllDataByPIN(applicantPin);
+        setExternalData(data);
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки внешних данных:', error);
+    } finally {
+      setIsLoadingExternal(false);
+    }
+  };
+
+  const calculateBenefitData = () => {
+    if (!application) return;
+    
+    try {
+      const familyMembers = getFamilyMembers();
+      const incomes = getIncomes();
+      const landPlots = getLandPlots();
+      const livestock = getLivestock();
+      
+      // Преобразуем данные в формат для калькулятора
+      const monthlyIncomes = incomes.map((income: any) => ({
+        [income.type || income.incomeTypeCode || 'other']: income.amount || 0
+      }));
+      
+      const calculation = calculateBenefit(
+        familyMembers,
+        monthlyIncomes,
+        landPlots,
+        livestock
+      );
+      
+      setBenefitCalculation(calculation);
+    } catch (error) {
+      console.error('Ошибка расчета пособия:', error);
+    }
+  };
 
   if (!application) return null;
 
@@ -303,6 +361,7 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
     { id: 'addresses', label: 'Адреса и контакты', icon: 'ri-map-pin-line' },
     { id: 'income', label: 'Все доходы', icon: 'ri-money-dollar-circle-line' },
     { id: 'inspection', label: 'Проверка', icon: 'ri-search-eye-line' },
+    { id: 'external', label: 'Внешние данные', icon: 'ri-database-2-line' },
     { id: 'history', label: 'История', icon: 'ri-history-line' }
   ];
 
@@ -810,17 +869,42 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
 
           {activeTab === 'income' && (
             <div className="space-y-4 md:space-y-6">
-              {/* Источники дохода */}
+              {/* Расчет пособия */}
+              {benefitCalculation && (
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 md:p-6">
+                  <h4 className="text-base md:text-lg font-semibold text-blue-900 mb-4">Расчет пособия</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-white rounded-lg p-4">
+                      <div className="text-sm text-gray-600 mb-1">Среднедушевой доход</div>
+                      <div className="text-xl font-bold text-blue-900">
+                        {benefitCalculation.perCapitaIncome.toLocaleString()} сом
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-lg p-4">
+                      <div className="text-sm text-gray-600 mb-1">Порог ГМД</div>
+                      <div className="text-xl font-bold text-green-900">6,000 сом</div>
+                    </div>
+                    <div className="bg-white rounded-lg p-4">
+                      <div className="text-sm text-gray-600 mb-1">Статус</div>
+                      <div className={`text-xl font-bold ${benefitCalculation.perCapitaIncome < 6000 ? 'text-green-900' : 'text-red-900'}`}>
+                        {benefitCalculation.perCapitaIncome < 6000 ? 'Право на пособие' : 'Превышен порог ГМД'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 8-категорийный анализ доходов */}
               <div className="bg-white border border-neutral-200 rounded-lg p-4 md:p-6">
                 <div className="flex items-center justify-between mb-3 md:mb-4">
-                  <h4 className="text-base md:text-lg font-semibold text-neutral-900">Источники дохода</h4>
+                  <h4 className="text-base md:text-lg font-semibold text-neutral-900">8-категорийный анализ доходов</h4>
                   <div className="relative dropdown-container">
                     <button
                       onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                       className="flex items-center space-x-2 px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
                     >
                       <i className="ri-bar-chart-line"></i>
-                      <span>8-категорийный анализ</span>
+                      <span>Анализ</span>
                       <i className="ri-arrow-down-s-line ml-1"></i>
                     </button>
                     
@@ -853,6 +937,43 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
                     )}
                   </div>
                 </div>
+
+                {/* Категории доходов */}
+                {benefitCalculation && benefitCalculation.incomeBreakdown && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    {Object.entries(benefitCalculation.incomeBreakdown).map(([category, amount]: [string, any]) => (
+                      <div key={category} className="bg-gray-50 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <h5 className="font-medium text-gray-900">{category}</h5>
+                          <span className="text-sm text-gray-600">
+                            {((amount / benefitCalculation.totalIncome) * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                        <div className="text-lg font-bold text-blue-900">
+                          {amount.toLocaleString()} сом
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Общая статистика */}
+                {benefitCalculation && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div className="bg-blue-50 rounded-lg p-4">
+                      <h5 className="font-medium text-blue-900 mb-2">Общий доход семьи</h5>
+                      <div className="text-2xl font-bold text-blue-900">
+                        {benefitCalculation.totalIncome.toLocaleString()} сом
+                      </div>
+                    </div>
+                    <div className="bg-green-50 rounded-lg p-4">
+                      <h5 className="font-medium text-green-900 mb-2">Размер семьи</h5>
+                      <div className="text-2xl font-bold text-green-900">
+                        {benefitCalculation.familySize} чел.
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs md:text-sm">
                     <thead>
@@ -1020,6 +1141,46 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
 
 
 
+          {activeTab === 'external' && (
+            <div className="space-y-6">
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <i className="ri-database-2-line text-2xl text-blue-600"></i>
+                  <h4 className="text-xl font-semibold text-neutral-900">Внешние данные</h4>
+                </div>
+                <button
+                  onClick={loadExternalData}
+                  disabled={isLoadingExternal}
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  <i className={`ri-refresh-line ${isLoadingExternal ? 'animate-spin' : ''}`}></i>
+                  <span>{isLoadingExternal ? 'Загрузка...' : 'Обновить'}</span>
+                </button>
+              </div>
+
+              {isLoadingExternal ? (
+                <div className="text-center py-8">
+                  <i className="ri-loader-4-line text-4xl text-blue-500 animate-spin mb-4"></i>
+                  <p className="text-gray-600">Загрузка внешних данных...</p>
+                </div>
+              ) : externalData ? (
+                <ExternalDataViewer language="ru" data={externalData} />
+              ) : (
+                <div className="text-center py-8">
+                  <i className="ri-database-2-line text-4xl text-gray-400 mb-4"></i>
+                  <p className="text-gray-600">Внешние данные не загружены</p>
+                  <button
+                    onClick={loadExternalData}
+                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Загрузить данные
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           {activeTab === 'inspection' && (
             <div className="space-y-6">
               {/* Header */}
@@ -1030,200 +1191,208 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
 
               {/* Verification Services Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Tunduk */}
-                <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                {/* МСЭК */}
+                <div className={`border rounded-lg p-6 ${externalData?.msek?.isSuccess ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                        <i className="ri-check-line text-green-600"></i>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${externalData?.msek?.isSuccess ? 'bg-green-100' : 'bg-red-100'}`}>
+                        <i className={`${externalData?.msek?.isSuccess ? 'ri-check-line text-green-600' : 'ri-error-warning-line text-red-600'}`}></i>
                       </div>
-                      <h5 className="text-lg font-semibold text-green-900">Tunduk</h5>
+                      <h5 className={`text-lg font-semibold ${externalData?.msek?.isSuccess ? 'text-green-900' : 'text-red-900'}`}>МСЭК</h5>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <i className="ri-check-line text-green-600"></i>
-                      <button className="text-sm text-green-700 hover:text-green-800 font-medium">
+                      <i className={`${externalData?.msek?.isSuccess ? 'ri-check-line text-green-600' : 'ri-error-warning-line text-red-600'}`}></i>
+                      <button 
+                        onClick={loadExternalData}
+                        className="text-sm hover:opacity-80 font-medium"
+                      >
                         Обновить
                       </button>
                     </div>
                   </div>
-                  <div className="text-sm text-green-700 mb-3">
-                    Последняя проверка: 2025-01-21 10:30
+                  <div className={`text-sm mb-3 ${externalData?.msek?.isSuccess ? 'text-green-700' : 'text-red-700'}`}>
+                    {externalData?.msek?.timestamp ? `Проверка: ${new Date(externalData.msek.timestamp).toLocaleString()}` : 'Не проверено'}
                   </div>
-                  <div className="text-sm text-green-800 mb-4">
-                    Данные: Личность подтверждена, ПИН валиден
+                  <div className={`text-sm mb-4 ${externalData?.msek?.isSuccess ? 'text-green-800' : 'text-red-800'}`}>
+                    {externalData?.msek?.isSuccess 
+                      ? `Данные: ${externalData.msek.data ? 'Инвалидность найдена' : 'Инвалидность не установлена'}`
+                      : `Ошибка: ${externalData?.msek?.errorMessage || 'Сервис недоступен'}`
+                    }
                   </div>
-                  <div className="flex items-center space-x-2 text-sm text-green-700">
-                    <i className="ri-check-line"></i>
-                    <span>Данные подтверждены и актуальны</span>
+                  <div className={`flex items-center space-x-2 text-sm ${externalData?.msek?.isSuccess ? 'text-green-700' : 'text-red-700'}`}>
+                    <i className={`${externalData?.msek?.isSuccess ? 'ri-check-line' : 'ri-error-warning-line'}`}></i>
+                    <span>{externalData?.msek?.isSuccess ? 'Данные подтверждены' : 'Требует внимания'}</span>
                   </div>
                 </div>
 
-                {/* Центр занятости */}
-                <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                {/* ГРС: Паспорт */}
+                <div className={`border rounded-lg p-6 ${externalData?.grsPassport?.isSuccess ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                        <i className="ri-briefcase-line text-green-600"></i>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${externalData?.grsPassport?.isSuccess ? 'bg-green-100' : 'bg-red-100'}`}>
+                        <i className={`${externalData?.grsPassport?.isSuccess ? 'ri-check-line text-green-600' : 'ri-error-warning-line text-red-600'}`}></i>
                       </div>
-                      <h5 className="text-lg font-semibold text-green-900">Центр занятости</h5>
+                      <h5 className={`text-lg font-semibold ${externalData?.grsPassport?.isSuccess ? 'text-green-900' : 'text-red-900'}`}>ГРС: Паспорт</h5>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <i className="ri-check-line text-green-600"></i>
-                      <button className="text-sm text-green-700 hover:text-green-800 font-medium">
+                      <i className={`${externalData?.grsPassport?.isSuccess ? 'ri-check-line text-green-600' : 'ri-error-warning-line text-red-600'}`}></i>
+                      <button 
+                        onClick={loadExternalData}
+                        className="text-sm hover:opacity-80 font-medium"
+                      >
                         Обновить
                       </button>
                     </div>
                   </div>
-                  <div className="text-sm text-green-700 mb-3">
-                    Последняя проверка: 2025-01-20 15:45
+                  <div className={`text-sm mb-3 ${externalData?.grsPassport?.isSuccess ? 'text-green-700' : 'text-red-700'}`}>
+                    {externalData?.grsPassport?.timestamp ? `Проверка: ${new Date(externalData.grsPassport.timestamp).toLocaleString()}` : 'Не проверено'}
                   </div>
-                  <div className="text-sm text-green-800 mb-4">
-                    Данные: Статус безработного, пособие не получает
+                  <div className={`text-sm mb-4 ${externalData?.grsPassport?.isSuccess ? 'text-green-800' : 'text-red-800'}`}>
+                    {externalData?.grsPassport?.isSuccess 
+                      ? `Данные: ${externalData.grsPassport.data ? 'Паспортные данные найдены' : 'Данные не найдены'}`
+                      : `Ошибка: ${externalData?.grsPassport?.errorMessage || 'Сервис недоступен'}`
+                    }
                   </div>
-                  <div className="flex items-center space-x-2 text-sm text-green-700">
-                    <i className="ri-check-line"></i>
-                    <span>Данные подтверждены и актуальны</span>
+                  <div className={`flex items-center space-x-2 text-sm ${externalData?.grsPassport?.isSuccess ? 'text-green-700' : 'text-red-700'}`}>
+                    <i className={`${externalData?.grsPassport?.isSuccess ? 'ri-check-line' : 'ri-error-warning-line'}`}></i>
+                    <span>{externalData?.grsPassport?.isSuccess ? 'Данные подтверждены' : 'Требует внимания'}</span>
                   </div>
                 </div>
 
-                {/* Налоговая служба */}
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-6">
+                {/* СФ: Пенсия */}
+                <div className={`border rounded-lg p-6 ${externalData?.sfPension?.isSuccess ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                        <i className="ri-file-text-line text-orange-600"></i>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${externalData?.sfPension?.isSuccess ? 'bg-green-100' : 'bg-red-100'}`}>
+                        <i className={`${externalData?.sfPension?.isSuccess ? 'ri-check-line text-green-600' : 'ri-error-warning-line text-red-600'}`}></i>
                       </div>
-                      <h5 className="text-lg font-semibold text-orange-900">Налоговая служба</h5>
+                      <h5 className={`text-lg font-semibold ${externalData?.sfPension?.isSuccess ? 'text-green-900' : 'text-red-900'}`}>СФ: Пенсия</h5>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <i className="ri-error-warning-line text-orange-600"></i>
-                      <button className="text-sm text-orange-700 hover:text-orange-800 font-medium">
+                      <i className={`${externalData?.sfPension?.isSuccess ? 'ri-check-line text-green-600' : 'ri-error-warning-line text-red-600'}`}></i>
+                      <button 
+                        onClick={loadExternalData}
+                        className="text-sm hover:opacity-80 font-medium"
+                      >
                         Обновить
                       </button>
                     </div>
                   </div>
-                  <div className="text-sm text-orange-700 mb-3">
-                    Последняя проверка: 2025-01-19 09:15
+                  <div className={`text-sm mb-3 ${externalData?.sfPension?.isSuccess ? 'text-green-700' : 'text-red-700'}`}>
+                    {externalData?.sfPension?.timestamp ? `Проверка: ${new Date(externalData.sfPension.timestamp).toLocaleString()}` : 'Не проверено'}
                   </div>
-                  <div className="text-sm text-orange-800 mb-4">
-                    Данные: Задолженность по налогам отсутствует, ИП не зарегистрирован
+                  <div className={`text-sm mb-4 ${externalData?.sfPension?.isSuccess ? 'text-green-800' : 'text-red-800'}`}>
+                    {externalData?.sfPension?.isSuccess 
+                      ? `Данные: ${externalData.sfPension.data ? 'Пенсия найдена' : 'Пенсия не назначена'}`
+                      : `Ошибка: ${externalData?.sfPension?.errorMessage || 'Сервис недоступен'}`
+                    }
                   </div>
-                  <div className="flex items-center space-x-2 text-sm text-orange-700">
-                    <i className="ri-error-warning-line"></i>
-                    <span>Обнаружены расхождения, требует внимания</span>
+                  <div className={`flex items-center space-x-2 text-sm ${externalData?.sfPension?.isSuccess ? 'text-green-700' : 'text-red-700'}`}>
+                    <i className={`${externalData?.sfPension?.isSuccess ? 'ri-check-line' : 'ri-error-warning-line'}`}></i>
+                    <span>{externalData?.sfPension?.isSuccess ? 'Данные подтверждены' : 'Требует внимания'}</span>
                   </div>
                 </div>
 
-                {/* Госкадастр */}
-                <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                {/* Ветеринария */}
+                <div className={`border rounded-lg p-6 ${externalData?.veterinary?.isSuccess ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                        <i className="ri-home-line text-green-600"></i>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${externalData?.veterinary?.isSuccess ? 'bg-green-100' : 'bg-red-100'}`}>
+                        <i className={`${externalData?.veterinary?.isSuccess ? 'ri-check-line text-green-600' : 'ri-error-warning-line text-red-600'}`}></i>
                       </div>
-                      <h5 className="text-lg font-semibold text-green-900">Госкадастр</h5>
+                      <h5 className={`text-lg font-semibold ${externalData?.veterinary?.isSuccess ? 'text-green-900' : 'text-red-900'}`}>Ветеринария</h5>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <i className="ri-check-line text-green-600"></i>
-                      <button className="text-sm text-green-700 hover:text-green-800 font-medium">
+                      <i className={`${externalData?.veterinary?.isSuccess ? 'ri-check-line text-green-600' : 'ri-error-warning-line text-red-600'}`}></i>
+                      <button 
+                        onClick={loadExternalData}
+                        className="text-sm hover:opacity-80 font-medium"
+                      >
                         Обновить
                       </button>
                     </div>
                   </div>
-                  <div className="text-sm text-green-700 mb-3">
-                    Последняя проверка: 2025-01-18 14:20
+                  <div className={`text-sm mb-3 ${externalData?.veterinary?.isSuccess ? 'text-green-700' : 'text-red-700'}`}>
+                    {externalData?.veterinary?.timestamp ? `Проверка: ${new Date(externalData.veterinary.timestamp).toLocaleString()}` : 'Не проверено'}
                   </div>
-                  <div className="text-sm text-green-800 mb-4">
-                    Данные: Собственность: 1 квартира 65 м²
+                  <div className={`text-sm mb-4 ${externalData?.veterinary?.isSuccess ? 'text-green-800' : 'text-red-800'}`}>
+                    {externalData?.veterinary?.isSuccess 
+                      ? `Данные: ${externalData.veterinary.data ? 'Животные найдены' : 'Животные не зарегистрированы'}`
+                      : `Ошибка: ${externalData?.veterinary?.errorMessage || 'Сервис недоступен'}`
+                    }
                   </div>
-                  <div className="flex items-center space-x-2 text-sm text-green-700">
-                    <i className="ri-check-line"></i>
-                    <span>Данные подтверждены и актуальны</span>
+                  <div className={`flex items-center space-x-2 text-sm ${externalData?.veterinary?.isSuccess ? 'text-green-700' : 'text-red-700'}`}>
+                    <i className={`${externalData?.veterinary?.isSuccess ? 'ri-check-line' : 'ri-error-warning-line'}`}></i>
+                    <span>{externalData?.veterinary?.isSuccess ? 'Данные подтверждены' : 'Требует внимания'}</span>
                   </div>
                 </div>
 
-                {/* Банковская система */}
-                <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                {/* ИСРТ: Занятость */}
+                <div className={`border rounded-lg p-6 ${externalData?.isrtEmployment?.isSuccess ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                        <i className="ri-bank-line text-green-600"></i>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${externalData?.isrtEmployment?.isSuccess ? 'bg-green-100' : 'bg-red-100'}`}>
+                        <i className={`${externalData?.isrtEmployment?.isSuccess ? 'ri-check-line text-green-600' : 'ri-error-warning-line text-red-600'}`}></i>
                       </div>
-                      <h5 className="text-lg font-semibold text-green-900">Банковская система</h5>
+                      <h5 className={`text-lg font-semibold ${externalData?.isrtEmployment?.isSuccess ? 'text-green-900' : 'text-red-900'}`}>ИСРТ: Занятость</h5>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <i className="ri-check-line text-green-600"></i>
-                      <button className="text-sm text-green-700 hover:text-green-800 font-medium">
+                      <i className={`${externalData?.isrtEmployment?.isSuccess ? 'ri-check-line text-green-600' : 'ri-error-warning-line text-red-600'}`}></i>
+                      <button 
+                        onClick={loadExternalData}
+                        className="text-sm hover:opacity-80 font-medium"
+                      >
                         Обновить
                       </button>
                     </div>
                   </div>
-                  <div className="text-sm text-green-700 mb-3">
-                    Последняя проверка: 2025-01-17 11:00
+                  <div className={`text-sm mb-3 ${externalData?.isrtEmployment?.isSuccess ? 'text-green-700' : 'text-red-700'}`}>
+                    {externalData?.isrtEmployment?.timestamp ? `Проверка: ${new Date(externalData.isrtEmployment.timestamp).toLocaleString()}` : 'Не проверено'}
                   </div>
-                  <div className="text-sm text-green-800 mb-4">
-                    Данные: 2 счета, общий остаток 45,000 сом
+                  <div className={`text-sm mb-4 ${externalData?.isrtEmployment?.isSuccess ? 'text-green-800' : 'text-red-800'}`}>
+                    {externalData?.isrtEmployment?.isSuccess 
+                      ? `Данные: ${externalData.isrtEmployment.data ? 'Статус занятости найден' : 'Данные не найдены'}`
+                      : `Ошибка: ${externalData?.isrtEmployment?.errorMessage || 'Сервис недоступен'}`
+                    }
                   </div>
-                  <div className="flex items-center space-x-2 text-sm text-green-700">
-                    <i className="ri-check-line"></i>
-                    <span>Данные подтверждены и актуальны</span>
+                  <div className={`flex items-center space-x-2 text-sm ${externalData?.isrtEmployment?.isSuccess ? 'text-green-700' : 'text-red-700'}`}>
+                    <i className={`${externalData?.isrtEmployment?.isSuccess ? 'ri-check-line' : 'ri-error-warning-line'}`}></i>
+                    <span>{externalData?.isrtEmployment?.isSuccess ? 'Данные подтверждены' : 'Требует внимания'}</span>
                   </div>
-                  </div>
-                  
-                {/* Медкомиссия */}
-                <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                        <i className="ri-hospital-line text-green-600"></i>
-                      </div>
-                      <h5 className="text-lg font-semibold text-green-900">Медкомиссия</h5>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <i className="ri-check-line text-green-600"></i>
-                      <button className="text-sm text-green-700 hover:text-green-800 font-medium">
-                        Обновить
-                      </button>
-                    </div>
-                  </div>
-                  <div className="text-sm text-green-700 mb-3">
-                    Последняя проверка: 2025-01-16 13:30
-                  </div>
-                  <div className="text-sm text-green-800 mb-4">
-                    Данные: Инвалидность не установлена
-                  </div>
-                  <div className="flex items-center space-x-2 text-sm text-green-700">
-                    <i className="ri-check-line"></i>
-                    <span>Данные подтверждены и актуальны</span>
-                  </div>
-                    </div>
+                </div>
 
-                {/* Служба пробации */}
-                <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                {/* ГНС: ИП */}
+                <div className={`border rounded-lg p-6 ${externalData?.gnsIndividualEntrepreneur?.isSuccess ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                        <i className="ri-shield-check-line text-green-600"></i>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${externalData?.gnsIndividualEntrepreneur?.isSuccess ? 'bg-green-100' : 'bg-red-100'}`}>
+                        <i className={`${externalData?.gnsIndividualEntrepreneur?.isSuccess ? 'ri-check-line text-green-600' : 'ri-error-warning-line text-red-600'}`}></i>
                       </div>
-                      <h5 className="text-lg font-semibold text-green-900">Служба пробации</h5>
-                        </div>
+                      <h5 className={`text-lg font-semibold ${externalData?.gnsIndividualEntrepreneur?.isSuccess ? 'text-green-900' : 'text-red-900'}`}>ГНС: ИП</h5>
+                    </div>
                     <div className="flex items-center space-x-2">
-                      <i className="ri-check-line text-green-600"></i>
-                      <button className="text-sm text-green-700 hover:text-green-800 font-medium">
+                      <i className={`${externalData?.gnsIndividualEntrepreneur?.isSuccess ? 'ri-check-line text-green-600' : 'ri-error-warning-line text-red-600'}`}></i>
+                      <button 
+                        onClick={loadExternalData}
+                        className="text-sm hover:opacity-80 font-medium"
+                      >
                         Обновить
                       </button>
-                        </div>
-                      </div>
-                  <div className="text-sm text-green-700 mb-3">
-                    Последняя проверка: 2025-01-15 16:45
-                  </div>
-                  <div className="text-sm text-green-800 mb-4">
-                    Данные: Судимость отсутствует
-                  </div>
-                  <div className="flex items-center space-x-2 text-sm text-green-700">
-                    <i className="ri-check-line"></i>
-                    <span>Данные подтверждены и актуальны</span>
                     </div>
+                  </div>
+                  <div className={`text-sm mb-3 ${externalData?.gnsIndividualEntrepreneur?.isSuccess ? 'text-green-700' : 'text-red-700'}`}>
+                    {externalData?.gnsIndividualEntrepreneur?.timestamp ? `Проверка: ${new Date(externalData.gnsIndividualEntrepreneur.timestamp).toLocaleString()}` : 'Не проверено'}
+                  </div>
+                  <div className={`text-sm mb-4 ${externalData?.gnsIndividualEntrepreneur?.isSuccess ? 'text-green-800' : 'text-red-800'}`}>
+                    {externalData?.gnsIndividualEntrepreneur?.isSuccess 
+                      ? `Данные: ${externalData.gnsIndividualEntrepreneur.data ? 'ИП найден' : 'ИП не зарегистрирован'}`
+                      : `Ошибка: ${externalData?.gnsIndividualEntrepreneur?.errorMessage || 'Сервис недоступен'}`
+                    }
+                  </div>
+                  <div className={`flex items-center space-x-2 text-sm ${externalData?.gnsIndividualEntrepreneur?.isSuccess ? 'text-green-700' : 'text-red-700'}`}>
+                    <i className={`${externalData?.gnsIndividualEntrepreneur?.isSuccess ? 'ri-check-line' : 'ri-error-warning-line'}`}></i>
+                    <span>{externalData?.gnsIndividualEntrepreneur?.isSuccess ? 'Данные подтверждены' : 'Требует внимания'}</span>
+                  </div>
                 </div>
               </div>
             </div>

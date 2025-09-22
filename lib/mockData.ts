@@ -339,52 +339,41 @@ export const mockApplications = [
   }
 ];
 
-// Детальные категории доходов с учетом ЛПХ
+// Обновленные категории доходов согласно официальному списку
 export const incomeCategories = [
-  // I. Primary Income - Основной доход
-  { id: 'salary', name: 'Заработная плата', category: 'primary', icon: 'ri-money-dollar-circle-line' },
+  // I. Основные доходы
+  { id: 'salary', name: 'Зарплата', category: 'primary', icon: 'ri-money-dollar-circle-line' },
   { id: 'pension', name: 'Пенсия', category: 'primary', icon: 'ri-user-heart-line' },
-  { id: 'social_benefits', name: 'Социальные пособия', category: 'primary', icon: 'ri-heart-line' },
+  { id: 'scholarship', name: 'Стипендия', category: 'primary', icon: 'ri-book-line' },
+  { id: 'unemployment_benefit', name: 'Пособие по безработице', category: 'primary', icon: 'ri-briefcase-line' },
+  { id: 'alimony', name: 'Алименты', category: 'primary', icon: 'ri-heart-line' },
   
-  // II. Education - Образование
-  { id: 'scholarship', name: 'Стипендии', category: 'education', icon: 'ri-book-line' },
-  { id: 'tuition', name: 'Плата за обучение', category: 'education', icon: 'ri-graduation-cap-line' },
-  { id: 'education_grants', name: 'Образовательные гранты', category: 'education', icon: 'ri-award-line' },
+  // II. Доходы от собственности
+  { id: 'property_rental', name: 'Доход от собственности, сданной в наем', category: 'property', icon: 'ri-home-line' },
+  { id: 'tenant_payment', name: 'Оплата от квартиросъемщиков/постояльцев', category: 'property', icon: 'ri-home-4-line' },
+  { id: 'car_rental', name: 'Доход от использования личной автомашины', category: 'property', icon: 'ri-car-line' },
   
-  // III. Other Income - Прочие доходы
-  { id: 'alimony', name: 'Алименты', category: 'other', icon: 'ri-heart-line' },
-  { id: 'dividends', name: 'Дивиденды', category: 'other', icon: 'ri-stock-line' },
-  { id: 'assistance', name: 'Помощь от родственников', category: 'other', icon: 'ri-hand-heart-line' },
-  { id: 'rental_income', name: 'Доход от аренды', category: 'other', icon: 'ri-home-line' },
-  { id: 'other_income', name: 'Прочие доходы', category: 'other', icon: 'ri-add-line' },
+  // III. Доходы от сельского хозяйства
+  { id: 'tenant_coop_income', name: 'Доходы арендаторов и кооператоров', category: 'agriculture', icon: 'ri-plant-line' },
+  { id: 'farm_work_payment', name: 'Оплата за работу в фермерских/крестьянских хозяйствах', category: 'agriculture', icon: 'ri-tractor-line' },
+  { id: 'individual_labor', name: 'Доход от индивидуальной трудовой деятельности', category: 'agriculture', icon: 'ri-tools-line' },
+  { id: 'business_income', name: 'Доход от предпринимательской, коммерческой деятельности', category: 'business', icon: 'ri-briefcase-line' },
+  { id: 'part_time_work', name: 'Оплата труда за работу по совместительству и найму', category: 'employment', icon: 'ri-time-line' },
   
-  // IV. Business Activity - Предпринимательская деятельность
-  { id: 'business', name: 'Предпринимательство', category: 'business', icon: 'ri-briefcase-line' },
-  { id: 'patents', name: 'Патенты и лицензии', category: 'business', icon: 'ri-award-line' },
-  { id: 'freelance', name: 'Фриланс', category: 'business', icon: 'ri-computer-line' },
-  { id: 'consulting', name: 'Консультационные услуги', category: 'business', icon: 'ri-customer-service-line' },
+  // IV. Внешние доходы
+  { id: 'foreign_income', name: 'Суммы, заработанные за пределами республики', category: 'foreign', icon: 'ri-global-line' },
+  { id: 'compensation', name: 'Суммы, полученные в порядке возмещения ущерба', category: 'compensation', icon: 'ri-shield-check-line' },
   
-  // V. Land Ownership - Землевладение (общие поля)
-  { id: 'irrigated_agriculture', name: 'Орошаемое земледелие', category: 'land', icon: 'ri-plant-line' },
-  { id: 'rain_fed_agriculture', name: 'Богарное земледелие', category: 'land', icon: 'ri-seedling-line' },
-  { id: 'household_garden', name: 'Приусадебный участок', category: 'land', icon: 'ri-home-garden-line' },
+  // V. Земельные доходы
+  { id: 'land_rental', name: 'Доход с земли, сданной (или могшей быть сданной) в аренду', category: 'land', icon: 'ri-landscape-line' },
+  { id: 'household_plot', name: 'Доход от личных приусадебных участков', category: 'land', icon: 'ri-home-garden-line' },
+  { id: 'farm_income', name: 'Доход с крестьянского и фермерского хозяйства', category: 'land', icon: 'ri-seedling-line' },
   
-  // VI. Subsidiary Farming - Подсобное хозяйство (детализированные поля)
-  { id: 'cattle_income', name: 'Доход от КРС', category: 'farming', icon: 'ri-cow-line' },
-  { id: 'horse_income', name: 'Доход от лошадей', category: 'farming', icon: 'ri-horse-line' },
-  { id: 'sheep_income', name: 'Доход от овец', category: 'farming', icon: 'ri-sheep-line' },
-  { id: 'goat_income', name: 'Доход от коз', category: 'farming', icon: 'ri-goat-line' },
-  { id: 'pig_income', name: 'Доход от свиней', category: 'farming', icon: 'ri-pig-line' },
-  { id: 'poultry_income', name: 'Доход от птицы', category: 'farming', icon: 'ri-chicken-line' },
-  { id: 'bee_income', name: 'Доход от пчеловодства', category: 'farming', icon: 'ri-bee-line' },
-  { id: 'fish_income', name: 'Доход от рыбоводства', category: 'farming', icon: 'ri-fish-line' },
-  { id: 'other_livestock', name: 'Прочий скот', category: 'farming', icon: 'ri-animal-line' },
-  
-  // VII. Financial Instruments - Финансовые инструменты
-  { id: 'deposits', name: 'Банковские депозиты', category: 'financial', icon: 'ri-bank-line' },
-  { id: 'investments', name: 'Инвестиции', category: 'financial', icon: 'ri-line-chart-line' },
-  { id: 'securities', name: 'Ценные бумаги', category: 'financial', icon: 'ri-file-chart-line' },
-  { id: 'crypto_income', name: 'Криптовалюты', category: 'financial', icon: 'ri-bit-coin-line' }
+  // VI. Социальные выплаты
+  { id: 'family_help', name: 'Помощь от родственников', category: 'social', icon: 'ri-hand-heart-line' },
+  { id: 'social_benefit', name: 'Социальное пособие или пенсия', category: 'social', icon: 'ri-heart-line' },
+  { id: 'dividends', name: 'Дивиденды', category: 'financial', icon: 'ri-stock-line' },
+  { id: 'monetary_compensation', name: 'Денежная компенсация', category: 'compensation', icon: 'ri-money-dollar-circle-line' }
 ];
 
 export const regions = [
@@ -459,5 +448,5 @@ export const externalIntegrations = [
   }
 ];
 
-export const GMD_THRESHOLD = 6000; // Guaranteed minimum income threshold
+export const GMD_THRESHOLD = 6000; // Гарантированный минимальный доход (устанавливается ежегодно Кабмином)
 export const BASE_BENEFIT_PER_CHILD = 1200; // Base amount: 1,200 soms per child under 16

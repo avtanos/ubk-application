@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { incomeCategories } from '@/lib/mockData';
 import { calculateIncomeBreakdown, calculateBenefit, validateFamilyComposition } from '@/lib/benefitCalculator';
 import type { LandPlot, Livestock, HouseholdAssets } from '@/lib/benefitCalculator';
+import CalculationRulesModal from './ui/CalculationRulesModal';
 
 interface IncomeCalculatorProps {
   language: string;
@@ -14,6 +15,7 @@ interface IncomeCalculatorProps {
 export default function IncomeCalculator({ language, onIncomeChange, onBenefitCalculation }: IncomeCalculatorProps) {
   const [incomes, setIncomes] = useState<Record<string, number>>({});
   const [activeCategory, setActiveCategory] = useState('primary');
+  const [showRulesModal, setShowRulesModal] = useState(false);
   
   // Новые состояния для ЛПХ
   const [landPlots, setLandPlots] = useState<LandPlot[]>([
@@ -21,6 +23,8 @@ export default function IncomeCalculator({ language, onIncomeChange, onBenefitCa
   ]);
   const [livestock, setLivestock] = useState<Livestock>({
     cows: 0,
+    heifers: 0,
+    bulls: 0,
     horses: 0,
     sheep: 0,
     goats: 0,
@@ -42,14 +46,17 @@ export default function IncomeCalculator({ language, onIncomeChange, onBenefitCa
   const [region, setRegion] = useState('bishkek');
 
   const categories = [
-    { id: 'primary', name: language === 'ru' ? 'Основной доход' : 'Негизги киреше', color: 'blue' },
-    { id: 'education', name: language === 'ru' ? 'Образование' : 'Билим берүү', color: 'green' },
-    { id: 'other', name: language === 'ru' ? 'Прочие доходы' : 'Башка кирешелер', color: 'yellow' },
+    { id: 'primary', name: language === 'ru' ? 'Основные доходы' : 'Негизги кирешелер', color: 'blue' },
+    { id: 'property', name: language === 'ru' ? 'Доходы от собственности' : 'Мүлкүдөн кирешелер', color: 'green' },
+    { id: 'agriculture', name: language === 'ru' ? 'Сельское хозяйство' : 'Айыл чарбасы', color: 'yellow' },
     { id: 'business', name: language === 'ru' ? 'Предпринимательство' : 'Ишкердик', color: 'purple' },
-    { id: 'land', name: language === 'ru' ? 'Землевладение' : 'Жер ээлик', color: 'orange' },
-    { id: 'farming', name: language === 'ru' ? 'Подсобное хозяйство' : 'Жардамчы чарба', color: 'teal' },
-    { id: 'financial', name: language === 'ru' ? 'Финансовые инструменты' : 'Финансылык куралдар', color: 'indigo' },
-    { id: 'household', name: language === 'ru' ? 'ЛПХ детально' : 'ЖЧ деталдуу', color: 'red' }
+    { id: 'employment', name: language === 'ru' ? 'Трудоустройство' : 'Жумуш орду', color: 'orange' },
+    { id: 'foreign', name: language === 'ru' ? 'Внешние доходы' : 'Тышкы кирешелер', color: 'teal' },
+    { id: 'compensation', name: language === 'ru' ? 'Компенсации' : 'Компенсациялар', color: 'indigo' },
+    { id: 'land', name: language === 'ru' ? 'Земельные доходы' : 'Жер кирешелери', color: 'red' },
+    { id: 'social', name: language === 'ru' ? 'Социальные выплаты' : 'Социалдык төлөмдөр', color: 'pink' },
+    { id: 'financial', name: language === 'ru' ? 'Финансовые инструменты' : 'Финансылык куралдар', color: 'gray' },
+    { id: 'household', name: language === 'ru' ? 'ЛПХ детально' : 'ЖЧ деталдуу', color: 'brown' }
   ];
 
   const handleIncomeChange = (incomeId: string, value: number) => {
@@ -127,7 +134,10 @@ export default function IncomeCalculator({ language, onIncomeChange, onBenefitCa
       orange: 'bg-orange-50 border-orange-200 text-orange-900',
       teal: 'bg-teal-50 border-teal-200 text-teal-900',
       indigo: 'bg-indigo-50 border-indigo-200 text-indigo-900',
-      red: 'bg-red-50 border-red-200 text-red-900'
+      red: 'bg-red-50 border-red-200 text-red-900',
+      pink: 'bg-pink-50 border-pink-200 text-pink-900',
+      gray: 'bg-gray-50 border-gray-200 text-gray-900',
+      brown: 'bg-amber-50 border-amber-200 text-amber-900'
     };
     return colors[color as keyof typeof colors] || colors.blue;
   };
@@ -142,8 +152,11 @@ export default function IncomeCalculator({ language, onIncomeChange, onBenefitCa
   }, 0);
 
   const livestockMRS = Object.entries(livestock).reduce((total, [type, count]) => {
-    const coefficients = { cows: 6, horses: 7, sheep: 1, goats: 1, pigs: 2, poultry: 0.1, other: 1 };
-    return total + (count * coefficients[type as keyof typeof coefficients]);
+    const coefficients = { 
+      cows: 6, heifers: 2.5, bulls: 8, horses: 7, 
+      sheep: 1, goats: 1, pigs: 2, poultry: 0.1, other: 1 
+    };
+    return total + (count * (coefficients[type as keyof typeof coefficients] || 0));
   }, 0);
 
   const livestockIncome = livestockMRS * 500; // 500 сом на МРС в месяц
@@ -152,15 +165,26 @@ export default function IncomeCalculator({ language, onIncomeChange, onBenefitCa
   return (
     <div className="bg-white rounded-xl shadow-sm border">
       <div className="p-6 border-b border-gray-200">
-        <h3 className="text-xl font-bold text-gray-900 flex items-center">
-          <i className="ri-calculator-line mr-3 text-blue-600"></i>
-          {language === 'ru' ? 'Калькулятор доходов' : 'Кирешелерди эсептегич'}
-        </h3>
-        <p className="text-gray-600 mt-2">
-          {language === 'ru' 
-            ? 'Детальный расчет доходов по 7 категориям с учетом ЛПХ для определения права на пособие'
-            : 'Жөлөкпулга укукту аныктоо үчүн 7 категория боюнча ЛПХни эске алуу менен кирешелерди деталдуу эсептөө'}
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-xl font-bold text-gray-900 flex items-center">
+              <i className="ri-calculator-line mr-3 text-blue-600"></i>
+              {language === 'ru' ? 'Калькулятор доходов' : 'Кирешелерди эсептегич'}
+            </h3>
+            <p className="text-gray-600 mt-2">
+              {language === 'ru' 
+                ? 'Детальный расчет доходов по 10 категориям с учетом ЛПХ для определения права на пособие'
+                : 'Жөлөкпулга укукту аныктоо үчүн 10 категория боюнча ЛПХни эске алуу менен кирешелерди деталдуу эсептөө'}
+            </p>
+          </div>
+          <button
+            onClick={() => setShowRulesModal(true)}
+            className="flex items-center px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+          >
+            <i className="ri-information-line mr-2"></i>
+            {language === 'ru' ? 'Правила расчета' : 'Эсептөө эрежелери'}
+          </button>
+        </div>
       </div>
 
       <div className="flex">
@@ -266,6 +290,30 @@ export default function IncomeCalculator({ language, onIncomeChange, onBenefitCa
                         min="0"
                         value={livestock.cows}
                         onChange={(e) => handleLivestockChange('cows', parseInt(e.target.value) || 0)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {language === 'ru' ? 'Телки' : 'Телкелер'}
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={livestock.heifers}
+                        onChange={(e) => handleLivestockChange('heifers', parseInt(e.target.value) || 0)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {language === 'ru' ? 'Быки' : 'Букалар'}
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={livestock.bulls}
+                        onChange={(e) => handleLivestockChange('bulls', parseInt(e.target.value) || 0)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
@@ -515,6 +563,13 @@ export default function IncomeCalculator({ language, onIncomeChange, onBenefitCa
           </div>
         </div>
       </div>
+      
+      {/* Модальное окно с правилами расчета */}
+      <CalculationRulesModal
+        isOpen={showRulesModal}
+        onClose={() => setShowRulesModal(false)}
+        language={language}
+      />
     </div>
   );
 }

@@ -107,9 +107,9 @@ export default function Home() {
             </p>
             
             {/* Main Entry Cards */}
-            <div className="flex flex-col sm:flex-row gap-4 md:gap-6 justify-center items-center max-w-6xl mx-auto">
-              <Link href="/dashboard" className="group w-full sm:w-auto">
-                <div className="bg-white rounded-2xl p-6 md:p-8 text-center w-full sm:w-72 md:w-80 h-40 md:h-48 flex flex-col justify-center items-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 justify-center items-center max-w-6xl mx-auto">
+              <Link href="/dashboard" className="group w-full">
+                <div className="bg-white rounded-2xl p-6 md:p-8 text-center w-full h-40 md:h-48 flex flex-col justify-center items-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
                   <div className="w-12 h-12 md:w-16 md:h-16 bg-yellow-100 rounded-2xl mb-3 md:mb-4 flex items-center justify-center group-hover:scale-110 transition-transform">
                     <i className="ri-user-settings-line text-2xl md:text-3xl text-yellow-600"></i>
                   </div>
@@ -122,8 +122,8 @@ export default function Home() {
                 </div>
               </Link>
               
-              <Link href="/accountant" className="group w-full sm:w-auto">
-                <div className="bg-white rounded-2xl p-6 md:p-8 text-center w-full sm:w-72 md:w-80 h-40 md:h-48 flex flex-col justify-center items-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+              <Link href="/accountant" className="group w-full">
+                <div className="bg-white rounded-2xl p-6 md:p-8 text-center w-full h-40 md:h-48 flex flex-col justify-center items-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
                   <div className="w-12 h-12 md:w-16 md:h-16 bg-green-100 rounded-2xl mb-3 md:mb-4 flex items-center justify-center group-hover:scale-110 transition-transform">
                     <i className="ri-money-dollar-circle-line text-2xl md:text-3xl text-green-600"></i>
                   </div>
@@ -136,8 +136,8 @@ export default function Home() {
                 </div>
               </Link>
               
-              <Link href="/director" className="group w-full sm:w-auto">
-                <div className="bg-white rounded-2xl p-6 md:p-8 text-center w-full sm:w-72 md:w-80 h-40 md:h-48 flex flex-col justify-center items-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+              <Link href="/director" className="group w-full">
+                <div className="bg-white rounded-2xl p-6 md:p-8 text-center w-full h-40 md:h-48 flex flex-col justify-center items-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
                   <div className="w-12 h-12 md:w-16 md:h-16 bg-blue-100 rounded-2xl mb-3 md:mb-4 flex items-center justify-center group-hover:scale-110 transition-transform">
                     <i className="ri-government-line text-2xl md:text-3xl text-blue-600"></i>
                   </div>
@@ -150,8 +150,8 @@ export default function Home() {
                 </div>
               </Link>
               
-              <Link href="/admin" className="group w-full sm:w-auto">
-                <div className="bg-white rounded-2xl p-6 md:p-8 text-center w-full sm:w-72 md:w-80 h-40 md:h-48 flex flex-col justify-center items-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+              <Link href="/admin" className="group w-full">
+                <div className="bg-white rounded-2xl p-6 md:p-8 text-center w-full h-40 md:h-48 flex flex-col justify-center items-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
                   <div className="w-12 h-12 md:w-16 md:h-16 bg-red-100 rounded-2xl mb-3 md:mb-4 flex items-center justify-center group-hover:scale-110 transition-transform">
                     <i className="ri-shield-user-line text-2xl md:text-3xl text-red-600"></i>
                   </div>
@@ -160,6 +160,34 @@ export default function Home() {
                   </h3>
                   <p className="text-xs md:text-sm text-neutral-600">
                     {t.adminDesc}
+                  </p>
+                </div>
+              </Link>
+
+              <Link href="/integrations" className="group w-full">
+                <div className="bg-white rounded-2xl p-6 md:p-8 text-center w-full h-40 md:h-48 flex flex-col justify-center items-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+                  <div className="w-12 h-12 md:w-16 md:h-16 bg-purple-100 rounded-2xl mb-3 md:mb-4 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i className="ri-database-2-line text-2xl md:text-3xl text-purple-600"></i>
+                  </div>
+                  <h3 className="text-lg md:text-xl font-bold text-neutral-900 mb-2">
+                    {language === 'ru' ? 'Интеграции' : 'Интеграциялар'}
+                  </h3>
+                  <p className="text-xs md:text-sm text-neutral-600">
+                    {language === 'ru' ? 'Внешние сервисы' : 'Тышкы сервистер'}
+                  </p>
+                </div>
+              </Link>
+
+              <Link href="/citizen" className="group w-full">
+                <div className="bg-white rounded-2xl p-6 md:p-8 text-center w-full h-40 md:h-48 flex flex-col justify-center items-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+                  <div className="w-12 h-12 md:w-16 md:h-16 bg-orange-100 rounded-2xl mb-3 md:mb-4 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <i className="ri-user-line text-2xl md:text-3xl text-orange-600"></i>
+                  </div>
+                  <h3 className="text-lg md:text-xl font-bold text-neutral-900 mb-2">
+                    {language === 'ru' ? 'Гражданам' : 'Жарандарга'}
+                  </h3>
+                  <p className="text-xs md:text-sm text-neutral-600">
+                    {language === 'ru' ? 'Подача заявления' : 'Арыз берүү'}
                   </p>
                 </div>
               </Link>
