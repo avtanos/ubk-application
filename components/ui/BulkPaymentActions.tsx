@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Payment, PaymentStatus } from '@/lib/types';
+import { Payment } from '@/lib/types';
 
 interface BulkPaymentActionsProps {
   selectedPayments: Payment[];

@@ -30,7 +30,7 @@ export default function ScheduleInspectionForm({
     notes: ''
   });
 
-  const [inspectors, setInspectors] = useState([
+  const [inspectors] = useState([
     { id: 1, name: 'Нурбек Жумабеков', position: 'Специалист по выездным проверкам' },
     { id: 2, name: 'Айгуль Токтосунова', position: 'Специалист по выездным проверкам' },
     { id: 3, name: 'Марат Беков', position: 'Старший специалист' },

@@ -1283,7 +1283,7 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
                       </div>
                       <p className="text-sm text-blue-800">
                         Данная заявка требует проведения выездной проверки условий проживания семьи. 
-                        Заявка будет отображена в разделе "Выездные проверки" для планирования визита.
+                        Заявка будет отображена в разделе &quot;Выездные проверки&quot; для планирования визита.
                       </p>
                       <div className="mt-3">
                         <button

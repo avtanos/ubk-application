@@ -129,7 +129,7 @@ export default function InspectionReportForm({
     if (initialData) {
       setFormData({ ...formData, ...initialData });
     }
-  }, [initialData]);
+  }, [initialData, formData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;

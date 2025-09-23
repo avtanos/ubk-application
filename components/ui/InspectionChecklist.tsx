@@ -3,7 +3,6 @@
 import { useState } from 'react';
 
 interface InspectionChecklistProps {
-  inspectionId: number;
   onComplete: (completedItems: string[]) => void;
   onUpdate: (itemId: string, completed: boolean, notes?: string) => void;
   initialData?: {
@@ -22,7 +21,6 @@ interface ChecklistItem {
 }
 
 export default function InspectionChecklist({ 
-  inspectionId, 
   onComplete, 
   onUpdate,
   initialData 

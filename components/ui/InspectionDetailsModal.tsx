@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Modal from './Modal';
 import StatusBadge from './StatusBadge';
 import InspectionChecklist from './InspectionChecklist';
-import { Inspection, InspectionReport, InspectionStatus } from '@/lib/types';
+import { Inspection, InspectionStatus } from '@/lib/types';
 
 interface InspectionDetailsModalProps {
   inspection: Inspection | null;
