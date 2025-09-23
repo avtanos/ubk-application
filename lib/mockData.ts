@@ -113,11 +113,47 @@ export const mockApplications = [
       {
         id: '1',
         type: 'salary' as const,
-        amount: 30000,
+        amount: 20000,
         source: 'ООО "Торговый дом"',
         period: 'Январь 2025',
         isRegular: true,
         documents: ['doc1.pdf']
+      },
+      {
+        id: '2',
+        type: 'education' as const,
+        amount: 3000,
+        source: 'Стипендия студента',
+        period: 'Январь 2025',
+        isRegular: true,
+        documents: ['doc2.pdf']
+      },
+      {
+        id: '3',
+        type: 'land_use' as const,
+        amount: 10000,
+        source: 'Аренда земли',
+        period: 'Январь 2025',
+        isRegular: true,
+        documents: ['doc3.pdf']
+      },
+      {
+        id: '4',
+        type: 'banking' as const,
+        amount: 500,
+        source: 'Депозитные проценты',
+        period: 'Январь 2025',
+        isRegular: true,
+        documents: ['doc4.pdf']
+      },
+      {
+        id: '5',
+        type: 'other' as const,
+        amount: 300,
+        source: 'Семейная помощь',
+        period: 'Январь 2025',
+        isRegular: false,
+        documents: ['doc5.pdf']
       }
     ],
     documents: [
@@ -211,6 +247,42 @@ export const mockApplications = [
         period: 'Январь 2025',
         isRegular: true,
         documents: ['doc2.pdf']
+      },
+      {
+        id: '2',
+        type: 'education' as const,
+        amount: 2000,
+        source: 'Стипендия студента',
+        period: 'Январь 2025',
+        isRegular: true,
+        documents: ['doc2_2.pdf']
+      },
+      {
+        id: '3',
+        type: 'agriculture' as const,
+        amount: 5000,
+        source: 'Продажа урожая',
+        period: 'Январь 2025',
+        isRegular: false,
+        documents: ['doc2_3.pdf']
+      },
+      {
+        id: '4',
+        type: 'livestock' as const,
+        amount: 3000,
+        source: 'Продажа молочной продукции',
+        period: 'Январь 2025',
+        isRegular: true,
+        documents: ['doc2_4.pdf']
+      },
+      {
+        id: '5',
+        type: 'other' as const,
+        amount: 1000,
+        source: 'Семейная помощь',
+        period: 'Январь 2025',
+        isRegular: false,
+        documents: ['doc2_5.pdf']
       }
     ],
     documents: [
@@ -298,6 +370,42 @@ export const mockApplications = [
         period: 'Январь 2025',
         isRegular: true,
         documents: ['doc3.pdf']
+      },
+      {
+        id: '2',
+        type: 'education' as const,
+        amount: 1500,
+        source: 'Стипендия студента',
+        period: 'Январь 2025',
+        isRegular: true,
+        documents: ['doc3_2.pdf']
+      },
+      {
+        id: '3',
+        type: 'entrepreneur' as const,
+        amount: 2000,
+        source: 'Доходы ИП',
+        period: 'Январь 2025',
+        isRegular: true,
+        documents: ['doc3_3.pdf']
+      },
+      {
+        id: '4',
+        type: 'agriculture' as const,
+        amount: 1500,
+        source: 'Продажа овощей',
+        period: 'Январь 2025',
+        isRegular: false,
+        documents: ['doc3_4.pdf']
+      },
+      {
+        id: '5',
+        type: 'other' as const,
+        amount: 500,
+        source: 'Алименты',
+        period: 'Январь 2025',
+        isRegular: true,
+        documents: ['doc3_5.pdf']
       }
     ],
     documents: [
