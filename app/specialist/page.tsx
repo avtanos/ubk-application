@@ -25,9 +25,7 @@ export default function SpecialistDashboard() {
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [showCalculatorModal, setShowCalculatorModal] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState<string | null>(null);
-  const [calculatorApplication, setCalculatorApplication] = useState<any>(null);
   const [selectedApplications, setSelectedApplications] = useState<string[]>([]);
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
@@ -111,13 +109,6 @@ export default function SpecialistDashboard() {
     }
   };
 
-  const handleCalculatorClick = (applicationId: string) => {
-    console.log('Calculator button clicked for application:', applicationId);
-    const application = enhancedApplications.find(app => app.id === applicationId);
-    console.log('Found application:', application);
-    setCalculatorApplication(application);
-    setShowCalculatorModal(true);
-  };
 
   const handleDecisionClick = (applicationId: string) => {
     setSelectedApplication(applicationId);
@@ -541,12 +532,6 @@ export default function SpecialistDashboard() {
                                 className="bg-gray-100 text-gray-600 px-3 py-1 rounded text-sm hover:bg-gray-200 whitespace-nowrap cursor-pointer"
                               >
                                 {language === 'ru' ? 'Детали' : 'Деталдар'}
-                              </button>
-                              <button
-                                onClick={() => handleCalculatorClick(application.id)}
-                                className="border border-blue-600 text-blue-600 bg-white px-3 py-1 rounded text-sm hover:bg-blue-50 whitespace-nowrap cursor-pointer"
-                              >
-                                {language === 'ru' ? 'Калькулятор' : 'Эсептөөч'}
                               </button>
                             </div>
                           </td>
@@ -1644,195 +1629,6 @@ export default function SpecialistDashboard() {
           </div>
         )}
 
-        {/* Calculator Modal */}
-        {showCalculatorModal && calculatorApplication && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-bold text-gray-900">
-                    {language === 'ru' ? 'Калькулятор пособия' : 'Жөлөкпул эсептөөчү'}
-                  </h3>
-                  <button
-                    onClick={() => setShowCalculatorModal(false)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <i className="ri-close-line text-xl"></i>
-                  </button>
-                </div>
-              </div>
-
-              <div className="p-6">
-                {/* Application Info */}
-                <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                  <h4 className="text-lg font-semibold mb-3">
-                    {language === 'ru' ? 'Информация о заявке' : 'Арыз тууралуу маалымат'}
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <span className="text-sm text-gray-600">
-                        {language === 'ru' ? 'Номер заявки:' : 'Арыз номуру:'}
-                      </span>
-                      <p className="font-medium">{calculatorApplication.id}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-600">
-                        {language === 'ru' ? 'Заявитель:' : 'Арыз берүүчү:'}
-                      </span>
-                      <p className="font-medium">{calculatorApplication.familyHead}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-600">
-                        {language === 'ru' ? 'Количество детей:' : 'Балалардын саны:'}
-                      </span>
-                      <p className="font-medium">{calculatorApplication.childrenCount}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-600">
-                        {language === 'ru' ? 'Регион:' : 'Аймак:'}
-                      </span>
-                      <p className="font-medium">{calculatorApplication.region}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Income Calculation */}
-                <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-                  <h4 className="text-lg font-semibold mb-4">
-                    {language === 'ru' ? 'Расчет дохода семьи' : 'Үй-бүлөнүн киреше эсеби'}
-                  </h4>
-                  
-                  <div className="space-y-4">
-                    {/* Salary */}
-                    <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                      <span className="text-gray-700">
-                        {language === 'ru' ? 'Зарплата (месяц):' : 'Айлык акы:'}
-                      </span>
-                      <span className="font-semibold">45,000 сом</span>
-                    </div>
-                    
-                    {/* Additional Income */}
-                    <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                      <span className="text-gray-700">
-                        {language === 'ru' ? 'Дополнительный доход:' : 'Кошумча киреше:'}
-                      </span>
-                      <span className="font-semibold">8,500 сом</span>
-                    </div>
-                    
-                    {/* Total Monthly Income */}
-                    <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                      <span className="text-gray-700 font-medium">
-                        {language === 'ru' ? 'Общий месячный доход:' : 'Жалпы айлык киреше:'}
-                      </span>
-                      <span className="font-bold text-lg">53,500 сом</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Benefit Calculation */}
-                <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-                  <h4 className="text-lg font-semibold mb-4">
-                    {language === 'ru' ? 'Расчет пособия' : 'Жөлөкпул эсеби'}
-                  </h4>
-                  
-                  <div className="space-y-4">
-                    {/* Base Amount */}
-                    <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                      <span className="text-gray-700">
-                        {language === 'ru' ? 'Базовый размер на ребенка:' : 'Балага базалык өлчөм:'}
-                      </span>
-                      <span className="font-semibold">1,200 сом</span>
-                    </div>
-                    
-                    {/* Regional Coefficient */}
-                    <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                      <span className="text-gray-700">
-                        {language === 'ru' ? 'Региональный коэффициент:' : 'Аймактык коэффициент:'}
-                      </span>
-                      <span className="font-semibold">1.2</span>
-                    </div>
-                    
-                    {/* Number of Children */}
-                    <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                      <span className="text-gray-700">
-                        {language === 'ru' ? 'Количество детей:' : 'Балалардын саны:'}
-                      </span>
-                      <span className="font-semibold">{calculatorApplication.childrenCount}</span>
-                    </div>
-                    
-                    {/* Total Monthly Benefit */}
-                    <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                      <span className="text-gray-700 font-medium">
-                        {language === 'ru' ? 'Месячное пособие:' : 'Айлык жөлөкпул:'}
-                      </span>
-                      <span className="font-bold text-lg text-green-600">
-                        {calculatorApplication.childrenCount * 1200 * 1.2} сом
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Eligibility Check */}
-                <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-                  <h4 className="text-lg font-semibold mb-4">
-                    {language === 'ru' ? 'Проверка права на пособие' : 'Жөлөкпулга укук текшерүү'}
-                  </h4>
-                  
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-3">
-                      <i className="ri-check-line text-green-600 text-xl"></i>
-                      <span className="text-gray-700">
-                        {language === 'ru' ? 'Доход семьи не превышает установленный лимит' : 'Үй-бүлөнүн кирешеси белгиленген чектен ашпайт'}
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <i className="ri-check-line text-green-600 text-xl"></i>
-                      <span className="text-gray-700">
-                        {language === 'ru' ? 'Все документы предоставлены' : 'Бардык документтер тапшырылган'}
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <i className="ri-check-line text-green-600 text-xl"></i>
-                      <span className="text-gray-700">
-                        {language === 'ru' ? 'Заявитель является гражданином КР' : 'Арыз берүүчү КР жарандыгы'}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <i className="ri-checkbox-circle-line text-green-600 text-2xl"></i>
-                      <div>
-                        <h5 className="font-semibold text-green-800">
-                          {language === 'ru' ? 'Право на пособие подтверждено' : 'Жөлөкпулга укук ырасталды'}
-                        </h5>
-                        <p className="text-sm text-green-700">
-                          {language === 'ru' ? 'Семья имеет право на получение пособия' : 'Үй-бүлө жөлөкпул алууга укуктуу'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row justify-end gap-3">
-                  <button
-                    onClick={() => setShowCalculatorModal(false)}
-                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-                  >
-                    {language === 'ru' ? 'Закрыть' : 'Жабуу'}
-                  </button>
-                  <Link
-                    href="/citizen/calculator"
-                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-center"
-                  >
-                    {language === 'ru' ? 'Открыть полный калькулятор' : 'Толук эсептөөчү ачуу'}
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Schedule Inspection Modal */}
         <Modal

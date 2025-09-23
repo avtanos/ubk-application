@@ -44,10 +44,10 @@ export default function SpecialistLayout({ children }: SpecialistLayoutProps) {
             </div>
 
             <div className="flex items-center space-x-3">
-              <Link href="/citizen/calculator" className="px-3 py-1.5 text-sm border border-red-600 text-red-600 bg-white rounded-md hover:bg-red-50 transition-colors flex items-center">
+              {/* <Link href="/citizen/calculator" className="px-3 py-1.5 text-sm border border-red-600 text-red-600 bg-white rounded-md hover:bg-red-50 transition-colors flex items-center">
                 <i className="ri-calculator-line mr-1.5"></i>
                 <span className="hidden sm:inline">Калькулятор</span>
-              </Link>
+              </Link> */}
               <Link href="/citizen/new-application" className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center">
                 <i className="ri-file-add-line mr-1.5"></i>
                 <span className="hidden sm:inline">Форма заявки</span>

@@ -612,13 +612,6 @@ export default function DashboardPage() {
           >
             Детали
           </button>
-          <button 
-            // onClick={() => handleCalcDetails(row)}
-            className="btn-secondary text-xs px-2 py-1"
-            title="Открыть калькулятор"
-          >
-            Калькулятор
-          </button>
         </div>
       )
     }
