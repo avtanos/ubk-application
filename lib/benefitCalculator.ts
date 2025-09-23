@@ -6,6 +6,15 @@ export interface FamilyMember {
   age: number;
   relation: string;
   income: number;
+  // Поля для студентов
+  isStudent?: boolean;
+  educationData?: {
+    scholarshipAmount?: number;
+    tuitionFeeYearly?: number;
+    tuitionFeeMonthly?: number;
+    fundingSource: 'government' | 'parents' | 'grant' | 'other';
+    isFullTime: boolean;
+  };
 }
 
 // Новые интерфейсы для учета ЛПХ
@@ -49,6 +58,11 @@ export interface BenefitCalculation {
   livestockMRSEquivalent: number;
   livestockPerPerson: number;
   assetsCheck: boolean;
+  // Поля для студентов
+  studentIncome: number;
+  studentExpenses: number;
+  eligibleStudents: number;
+  totalFamilyMembers: number; // общее количество членов семьи с учетом студентов
 }
 
 export interface ExternalCheckResult {
@@ -160,6 +174,46 @@ function checkHouseholdAssets(assets: HouseholdAssets): boolean {
 }
 
 // Enhanced benefit calculation engine with regional coefficients and household farming
+// Функция для расчета доходов студентов
+function calculateStudentIncome(familyMembers: FamilyMember[]): {
+  studentIncome: number;
+  studentExpenses: number;
+  eligibleStudents: number;
+} {
+  let studentIncome = 0;
+  let studentExpenses = 0;
+  let eligibleStudents = 0;
+
+  familyMembers.forEach(member => {
+    if (member.isStudent && member.educationData) {
+      const { educationData } = member;
+      
+      // Проверяем возраст: студенты до 21 года включаются в состав семьи
+      if (member.age <= 21 && educationData.isFullTime) {
+        eligibleStudents++;
+        
+        // Стипендия считается доходом семьи
+        if (educationData.scholarshipAmount) {
+          studentIncome += educationData.scholarshipAmount;
+        }
+        
+        // Грант или государственное финансирование тоже считается доходом
+        if (educationData.fundingSource === 'government' || educationData.fundingSource === 'grant') {
+          // Здесь можно добавить логику для расчета дохода от гранта
+          // Пока что считаем только стипендию
+        }
+      }
+      
+      // Расходы на обучение фиксируются для аналитики, но не уменьшают доход
+      if (educationData.tuitionFeeMonthly) {
+        studentExpenses += educationData.tuitionFeeMonthly;
+      }
+    }
+  });
+
+  return { studentIncome, studentExpenses, eligibleStudents };
+}
+
 export function calculateBenefit(
   familyMembers: FamilyMember[],
   regionId: string,
@@ -173,7 +227,20 @@ export function calculateBenefit(
     throw new Error('Invalid region');
   }
 
-  const childrenUnder16 = familyMembers.filter(member => member.age < 16).length;
+  // Рассчитываем доходы студентов
+  const { studentIncome, studentExpenses, eligibleStudents } = calculateStudentIncome(familyMembers);
+  
+  // Фильтруем членов семьи с учетом студентов
+  const eligibleFamilyMembers = familyMembers.filter(member => {
+    if (member.isStudent && member.educationData) {
+      // Студенты до 21 года с очным обучением включаются в состав семьи
+      return member.age <= 21 && member.educationData.isFullTime;
+    }
+    // Остальные члены семьи включаются по обычным правилам
+    return true;
+  });
+
+  const childrenUnder16 = eligibleFamilyMembers.filter(member => member.age < 16).length;
   
   if (childrenUnder16 === 0) {
     return {
@@ -190,6 +257,10 @@ export function calculateBenefit(
       livestockMRSEquivalent: 0,
       livestockPerPerson: 0,
       assetsCheck: false,
+      studentIncome,
+      studentExpenses,
+      eligibleStudents,
+      totalFamilyMembers: eligibleFamilyMembers.length,
       reason: 'No children under 16 years old'
     };
   }
@@ -211,6 +282,10 @@ export function calculateBenefit(
       livestockMRSEquivalent: 0,
       livestockPerPerson: 0,
       assetsCheck: false,
+      studentIncome,
+      studentExpenses,
+      eligibleStudents,
+      totalFamilyMembers: eligibleFamilyMembers.length,
       reason: 'Family has significant assets (car, tractor, truck) that exclude them from benefits'
     };
   }
@@ -240,13 +315,17 @@ export function calculateBenefit(
       livestockMRSEquivalent: totalMRS,
       livestockPerPerson,
       assetsCheck: true,
+      studentIncome,
+      studentExpenses,
+      eligibleStudents,
+      totalFamilyMembers: eligibleFamilyMembers.length,
       reason: `Livestock per person (${livestockPerPerson.toFixed(1)} MRS) exceeds maximum limit (${MAX_MRS_PER_PERSON} MRS)`
     };
   }
 
-  // Общий доход семьи с учетом ЛПХ
-  const totalFamilyIncome = totalIncome + totalHouseholdIncome;
-  const perCapitaIncome = familyMembers.length > 0 ? totalFamilyIncome / familyMembers.length : 0;
+  // Общий доход семьи с учетом ЛПХ и доходов студентов
+  const totalFamilyIncome = totalIncome + totalHouseholdIncome + studentIncome;
+  const perCapitaIncome = eligibleFamilyMembers.length > 0 ? totalFamilyIncome / eligibleFamilyMembers.length : 0;
   
   // Check eligibility - per capita income must be below GMD threshold
   const eligible = perCapitaIncome < GMD_THRESHOLD;
@@ -266,6 +345,10 @@ export function calculateBenefit(
       livestockMRSEquivalent: totalMRS,
       livestockPerPerson,
       assetsCheck: true,
+      studentIncome,
+      studentExpenses,
+      eligibleStudents,
+      totalFamilyMembers: eligibleFamilyMembers.length,
       reason: `Per capita income (${Math.round(perCapitaIncome)} сом) exceeds GMD threshold (${GMD_THRESHOLD} сом)`
     };
   }
@@ -300,7 +383,11 @@ export function calculateBenefit(
     totalHouseholdIncome: Math.round(totalHouseholdIncome),
     livestockMRSEquivalent: totalMRS,
     livestockPerPerson,
-    assetsCheck: true
+    assetsCheck: true,
+    studentIncome,
+    studentExpenses,
+    eligibleStudents,
+    totalFamilyMembers: eligibleFamilyMembers.length
   };
 }
 

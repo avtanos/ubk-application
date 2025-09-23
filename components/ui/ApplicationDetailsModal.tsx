@@ -6,9 +6,10 @@ import StatusBadge from './StatusBadge';
 import IncomeAnalysisModal from './IncomeAnalysisModal';
 import ExternalDataViewer from './ExternalDataViewer';
 import ScheduleInspectionForm from './ScheduleInspectionForm';
-import { Application, FamilyMember, Income, Document, InspectionResult } from '@/lib/types';
+import { Application, FamilyMember, Income, Document, InspectionResult, StudentEducation } from '@/lib/types';
 import { externalApiService } from '@/lib/externalApiService';
 import { calculateBenefit, calculatePerCapitaIncome } from '@/lib/benefitCalculator';
+import StudentList from './StudentList';
 
 interface ApplicationDetailsModalProps {
   application: Application | null;
@@ -17,7 +18,7 @@ interface ApplicationDetailsModalProps {
 }
 
 export default function ApplicationDetailsModal({ application, isOpen, onClose }: ApplicationDetailsModalProps) {
-  const [activeTab, setActiveTab] = useState<'applicant' | 'family' | 'identity' | 'addresses' | 'income' | 'property' | 'compensations' | 'inspection' | 'history'>('applicant');
+  const [activeTab, setActiveTab] = useState<'applicant' | 'family' | 'students' | 'identity' | 'addresses' | 'income' | 'property' | 'compensations' | 'inspection' | 'history'>('applicant');
   const [isIncomeAnalysisOpen, setIsIncomeAnalysisOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [externalData, setExternalData] = useState<any>(null);
@@ -25,6 +26,7 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
   const [benefitCalculation, setBenefitCalculation] = useState<any>(null);
   const [homeVisitRequired, setHomeVisitRequired] = useState<boolean | undefined>(undefined);
   const [isScheduleInspectionOpen, setIsScheduleInspectionOpen] = useState(false);
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
 
   // Закрытие выпадающего меню при клике вне его
   useEffect(() => {
@@ -50,6 +52,8 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
       calculateBenefitData();
       // Инициализируем состояние homeVisitRequired
       setHomeVisitRequired((application as any).homeVisitRequired);
+      // Инициализируем данные о членах семьи
+      setFamilyMembers((application as any).familyMembers || []);
     }
   }, [isOpen, application]);
 
@@ -104,12 +108,20 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
         return total + Object.values(monthIncomes).reduce((sum: number, income: any) => sum + income, 0);
       }, 0);
       
-      // Преобразуем членов семьи в нужный формат
+      // Преобразуем членов семьи в нужный формат с учетом студентов
       const formattedFamilyMembers = familyMembers.map((member: any) => ({
         name: member.fullName || 'Не указано',
         age: member.age || 0,
         relation: member.relation || member.type || 'other',
-        income: member.monthlyIncome || 0
+        income: member.monthlyIncome || 0,
+        isStudent: member.isStudent || false,
+        educationData: member.educationData ? {
+          scholarshipAmount: member.educationData.scholarshipAmount || 0,
+          tuitionFeeYearly: member.educationData.tuitionFeeYearly || 0,
+          tuitionFeeMonthly: member.educationData.tuitionFeeMonthly || 0,
+          fundingSource: member.educationData.fundingSource || 'parents',
+          isFullTime: member.educationData.isFullTime || false
+        } : undefined
       }));
       
       // Преобразуем земельные участки
@@ -154,6 +166,27 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
     } catch (error) {
       console.error('Ошибка расчета пособия:', error);
     }
+  };
+
+  // Функции для работы со студентами
+  const handleUpdateStudent = (memberId: number, educationData: StudentEducation) => {
+    setFamilyMembers(prev => prev.map(member => 
+      member.id === memberId 
+        ? { ...member, isStudent: true, educationData }
+        : member
+    ));
+    // Пересчитываем пособие после обновления данных о студенте
+    calculateBenefitData();
+  };
+
+  const handleRemoveStudent = (memberId: number) => {
+    setFamilyMembers(prev => prev.map(member => 
+      member.id === memberId 
+        ? { ...member, isStudent: false, educationData: undefined }
+        : member
+    ));
+    // Пересчитываем пособие после удаления студента
+    calculateBenefitData();
   };
 
   if (!application) return null;
@@ -438,6 +471,7 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
   const tabs = [
     { id: 'applicant', label: 'Заявитель', icon: 'ri-user-line' },
     { id: 'family', label: 'Семья', icon: 'ri-group-line' },
+    { id: 'students', label: 'Обучающиеся', icon: 'ri-graduation-cap-line' },
     { id: 'identity', label: 'Документы', icon: 'ri-id-card-line' },
     { id: 'addresses', label: 'Адреса и контакты', icon: 'ri-map-pin-line' },
     { id: 'income', label: 'Все доходы', icon: 'ri-money-dollar-circle-line' },
@@ -767,6 +801,57 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
                             </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {activeTab === 'students' && (
+            <div className="space-y-6">
+              <StudentList
+                familyMembers={familyMembers}
+                onUpdateStudent={handleUpdateStudent}
+                onRemoveStudent={handleRemoveStudent}
+              />
+              
+              {/* Информация о расчете с учетом студентов */}
+              {benefitCalculation && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="text-lg font-semibold text-blue-900 mb-3">
+                    Расчет пособия с учетом обучающихся
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <span className="text-blue-700">Доходы студентов:</span>
+                      <p className="font-medium text-blue-900">
+                        {benefitCalculation.studentIncome ? 
+                          `${benefitCalculation.studentIncome.toLocaleString()} сом/мес` : 
+                          '0 сом/мес'
+                        }
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-blue-700">Расходы на обучение:</span>
+                      <p className="font-medium text-blue-900">
+                        {benefitCalculation.studentExpenses ? 
+                          `${benefitCalculation.studentExpenses.toLocaleString()} сом/мес` : 
+                          '0 сом/мес'
+                        }
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-blue-700">Студенты в составе семьи:</span>
+                      <p className="font-medium text-blue-900">
+                        {benefitCalculation.eligibleStudents || 0} чел.
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-blue-700">Общий состав семьи:</span>
+                      <p className="font-medium text-blue-900">
+                        {benefitCalculation.totalFamilyMembers || 0} чел.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

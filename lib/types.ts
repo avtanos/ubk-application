@@ -164,6 +164,26 @@ export interface FamilyMember {
   disabilityFlag: boolean;
   // Новое поле
   occupation?: string; // род занятий
+  // Поля для обучения студентов
+  isStudent?: boolean; // является ли студентом
+  educationData?: StudentEducation; // данные об обучении
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Данные об обучении студента
+export interface StudentEducation {
+  id: number;
+  familyMemberId: number;
+  institutionName: string; // где обучается
+  startDate: string; // с какого времени
+  endDate?: string; // до какого времени (если известно)
+  scholarshipAmount?: number; // размер стипендии (бюджет)
+  tuitionFeeYearly?: number; // сумма за обучение в год (коммерческая)
+  tuitionFeeMonthly?: number; // сумма за обучение в месяц (автоматический расчет)
+  fundingSource: 'government' | 'parents' | 'grant' | 'other'; // источник финансирования
+  isFullTime: boolean; // очное обучение
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
