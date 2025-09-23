@@ -48,9 +48,8 @@ class ExternalApiService {
     }
 
     // Для демонстрации используем моковые данные вместо реальных API вызовов
-    if (process.env.NODE_ENV === 'development') {
-      return this.getMockData<T>(serviceId, params);
-    }
+    // Включаем моковые данные для всех окружений, так как реальные API недоступны
+    return this.getMockData<T>(serviceId, params);
 
     try {
       const url = new URL(endpoint, service.baseUrl);
