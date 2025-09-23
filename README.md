@@ -68,10 +68,16 @@ npm run export
 ├── components/            # React компоненты
 │   ├── layout/           # Лейауты и сайдбары
 │   └── ui/               # UI компоненты
+│       ├── InspectionCalendar.tsx      # Календарь проверок
+│       ├── ScheduleInspectionForm.tsx  # Форма планирования проверок
+│       ├── InspectionReportForm.tsx    # Форма акта проверки
+│       └── ApplicationSelector.tsx     # Выбор заявки для проверки
 ├── lib/                  # Утилиты и API
 │   ├── api/              # API сервисы
 │   ├── types.ts          # TypeScript типы
 │   └── mockData.ts       # Тестовые данные
+├── database/             # Миграции базы данных
+│   └── migrations/       # SQL миграции
 └── .github/workflows/    # GitHub Actions
 ```
 
@@ -91,6 +97,13 @@ npm run export
 - Обработка заявлений
 - Система статусов
 - Уведомления
+
+### Выездные проверки
+- Планирование проверок
+- Календарь проверок
+- Создание актов проверок
+- Интеграция с внешними системами
+- Мобильная оптимизация для полевой работы
 
 ## 📄 Лицензия
 
