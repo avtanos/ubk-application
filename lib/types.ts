@@ -292,6 +292,7 @@ export interface Application {
   paymentStatus?: PaymentStatus;
   notes?: string;
   inspectionRequired: boolean;
+  homeVisitRequired?: boolean; // Требуется ли визит на дом
   inspectionDate?: string;
   inspectionResult?: InspectionResult;
   // Новое поле
@@ -491,6 +492,9 @@ export type ApplicationStatus =
   | 'SUBMITTED' 
   | 'UNDER_REVIEW' 
   | 'PENDING_APPROVAL'
+  | 'INSPECTION_ASSIGNED'    // Назначена выездная проверка
+  | 'INSPECTION_IN_PROGRESS' // Выездная проверка в процессе
+  | 'INSPECTION_COMPLETED'   // Выездная проверка завершена
   | 'APPROVED' 
   | 'REJECTED' 
   | 'PAYMENT_PROCESSING' 
@@ -503,6 +507,171 @@ export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 export type PaymentStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 
 export type DocumentStatus = 'UPLOADED' | 'VERIFIED' | 'REJECTED' | 'EXPIRED';
+
+// Статусы проверок
+export type InspectionStatus = 
+  | 'ASSIGNED'      // Назначена
+  | 'PREPARATION'   // Подготовка
+  | 'IN_PROGRESS'   // В процессе
+  | 'COMPLETED'     // Завершена
+  | 'CANCELLED'     // Отменена
+  | 'REPEAT';       // Повторная
+
+// Типы проверок
+export type InspectionType = 
+  | 'PRIMARY'       // Первичная
+  | 'REPEAT'        // Повторная
+  | 'COMPLAINT';    // По жалобе
+
+// Члены семьи для акта проверки
+export interface InspectionFamilyMember {
+  id: number;
+  fullName: string;
+  gender: 'M' | 'F';
+  birthDate: string;
+  pin: string;
+  document: string;
+  relation: string;
+  citizenship: string;
+  specialStatus?: string; // инвалид, пенсионер, студент и т.д.
+}
+
+// Выездная проверка
+export interface Inspection {
+  id: number;
+  applicationId: number;
+  inspectionNumber: string;
+  status: InspectionStatus;
+  type: InspectionType;
+  priority: Priority;
+  assignedDate: string;
+  scheduledDate?: string;
+  scheduledTime?: string;
+  inspectorId: number;
+  inspectorName: string;
+  address: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  
+  // Связанные данные
+  application?: Application;
+  report?: InspectionReport;
+}
+
+// Акт выездной проверки
+export interface InspectionReport {
+  id: number;
+  inspectionId: number;
+  applicationId: number;
+  reportNumber: string;
+  reportDate: string;
+  visitDate: string;
+  visitTime: string;
+  livingAddress: string;
+  registrationAddress: string;
+  regionalStatus: 'HIGH_MOUNTAIN' | 'REMOTE' | 'BORDER' | 'OTHER';
+  regionalStatusOther?: string;
+  
+  // Данные о заявителе
+  applicantFullName: string;
+  applicantPin: string;
+  applicantBirthDate: string;
+  identityDocument: {
+    series: string;
+    number: string;
+    issuedBy: string;
+  };
+  contactPhone: string;
+  
+  // Состав семьи (фактически проживающих)
+  actualFamilyMembers: InspectionFamilyMember[];
+  
+  // Жилищные условия
+  housingConditions: {
+    type: 'HOUSE' | 'APARTMENT' | 'RENTAL' | 'DORMITORY' | 'OTHER';
+    typeOther?: string;
+    ownership: 'OWNED' | 'RENTED' | 'TEMPORARY';
+    area: number;
+    roomsCount: number;
+    utilities: {
+      waterSupply: boolean;
+      electricity: boolean;
+      heating: 'CENTRAL' | 'STOVE' | 'NONE';
+    };
+    sanitaryConditions: string;
+    generalAssessment: string;
+  };
+  
+  // Доходы и источники средств
+  incomeSources: {
+    mainIncome: string;
+    additionalIncome: string;
+    supportingDocuments: string[];
+  };
+  
+  // Земельные участки и имущество
+  property: {
+    landPlot: {
+      exists: boolean;
+      type?: 'HOUSEHOLD' | 'AGRICULTURAL';
+      area?: number; // в сотках
+      usage?: string;
+    };
+    livestock: {
+      cattle: number;
+      smallCattle: number;
+      other: string;
+    };
+    vehicles: {
+      hasVehicle: boolean;
+      makeModel?: string;
+    };
+    realEstate: string;
+    bankDeposits: {
+      hasDeposits: boolean;
+      amount?: number;
+    };
+  };
+  
+  // Выводы специалиста
+  specialistConclusions: {
+    familyCompositionMatches: boolean;
+    livingConditions: string;
+    incomeLevel: string;
+    meetsCriteria: 'YES' | 'NO' | 'REQUIRES_ADDITIONAL_CHECK';
+    rejectionReason?: string;
+  };
+  
+  // Подписи
+  signatures: {
+    specialist: {
+      fullName: string;
+      position: string;
+      signature: string;
+    };
+    supervisor?: {
+      fullName: string;
+      signature: string;
+    };
+    applicant: {
+      fullName: string;
+      signature: string;
+    };
+  };
+  
+  // Приложения
+  attachments: {
+    hasPhotos: boolean;
+    hasDocumentCopies: boolean;
+    hasOtherMaterials: boolean;
+  };
+  
+  // Метаданные
+  status: 'DRAFT' | 'COMPLETED' | 'APPROVED' | 'REJECTED';
+  createdAt: string;
+  updatedAt: string;
+}
 
 export type InspectionResult = {
   id: number;
@@ -553,4 +722,15 @@ export interface PaymentFilters {
   amountMax?: number;
   search?: string;
   bankCode?: string;
+}
+
+export interface InspectionFilters {
+  status?: InspectionStatus[];
+  type?: InspectionType[];
+  priority?: Priority[];
+  dateFrom?: string;
+  dateTo?: string;
+  inspectorId?: number;
+  search?: string;
+  regionCode?: string;
 }

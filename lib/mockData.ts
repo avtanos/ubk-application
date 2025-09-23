@@ -450,3 +450,343 @@ export const externalIntegrations = [
 
 export const GMD_THRESHOLD = 6000; // Гарантированный минимальный доход (устанавливается ежегодно Кабмином)
 export const BASE_BENEFIT_PER_CHILD = 1200; // Base amount: 1,200 soms per child under 16
+
+// Тестовые данные для выездных проверок
+export const mockInspections = [
+  {
+    id: 1,
+    applicationId: 1,
+    inspectionNumber: 'INS-2024-001',
+    status: 'ASSIGNED' as const,
+    type: 'PRIMARY' as const,
+    priority: 'HIGH' as const,
+    assignedDate: '2024-01-15T09:00:00Z',
+    scheduledDate: '2024-01-20',
+    scheduledTime: '10:00',
+    inspectorId: 1,
+    inspectorName: 'Нурбек Жумабеков',
+    address: 'ул. Чуй, 123, кв. 45, Бишкек',
+    notes: 'Заявка с высоким риском, требуется детальная проверка',
+    createdAt: '2024-01-15T09:00:00Z',
+    updatedAt: '2024-01-15T09:00:00Z',
+    application: {
+      id: 1,
+      applicationNumber: 'APP-2024-001',
+      applicant: {
+        id: 1,
+        fullName: 'Айбек Кыдыров',
+        pin: '12345678901234',
+        birthDate: '1985-03-15',
+        age: 39,
+        genderCode: 'M' as const,
+        citizenshipCode: 'KG',
+        language: 'ru' as const,
+        isActive: true,
+        createdAt: '2024-01-10T08:00:00Z',
+        updatedAt: '2024-01-10T08:00:00Z'
+      },
+      status: 'INSPECTION_ASSIGNED' as const,
+      priority: 'HIGH' as const,
+      riskScore: 85,
+      submittedAt: '2024-01-10T08:00:00Z',
+    inspectionRequired: true,
+    homeVisitRequired: true,
+    createdAt: '2024-01-10T08:00:00Z',
+    updatedAt: '2024-01-15T09:00:00Z'
+    }
+  },
+  {
+    id: 2,
+    applicationId: 2,
+    inspectionNumber: 'INS-2024-002',
+    status: 'IN_PROGRESS' as const,
+    type: 'REPEAT' as const,
+    priority: 'MEDIUM' as const,
+    assignedDate: '2024-01-12T10:00:00Z',
+    scheduledDate: '2024-01-18',
+    scheduledTime: '14:00',
+    inspectorId: 2,
+    inspectorName: 'Айгуль Токтосунова',
+    address: 'ул. Московская, 45, кв. 12, Бишкек',
+    notes: 'Повторная проверка по жалобе',
+    createdAt: '2024-01-12T10:00:00Z',
+    updatedAt: '2024-01-18T14:00:00Z',
+    application: {
+      id: 2,
+      applicationNumber: 'APP-2024-002',
+      applicant: {
+        id: 2,
+        fullName: 'Нургуль Асанова',
+        pin: '23456789012345',
+        birthDate: '1990-07-22',
+        age: 34,
+        genderCode: 'F' as const,
+        citizenshipCode: 'KG',
+        language: 'ru' as const,
+        isActive: true,
+        createdAt: '2024-01-08T10:00:00Z',
+        updatedAt: '2024-01-12T10:00:00Z'
+      },
+      status: 'INSPECTION_IN_PROGRESS' as const,
+      priority: 'MEDIUM' as const,
+      riskScore: 65,
+      submittedAt: '2024-01-08T10:00:00Z',
+      inspectionRequired: true,
+      homeVisitRequired: true,
+      createdAt: '2024-01-08T10:00:00Z',
+      updatedAt: '2024-01-18T14:00:00Z'
+    }
+  },
+  {
+    id: 3,
+    applicationId: 3,
+    inspectionNumber: 'INS-2024-003',
+    status: 'COMPLETED' as const,
+    type: 'PRIMARY' as const,
+    priority: 'LOW' as const,
+    assignedDate: '2024-01-10T08:00:00Z',
+    scheduledDate: '2024-01-15',
+    scheduledTime: '09:00',
+    inspectorId: 3,
+    inspectorName: 'Марат Беков',
+    address: 'ул. Ленина, 78, кв. 23, Бишкек',
+    notes: 'Проверка завершена успешно',
+    createdAt: '2024-01-10T08:00:00Z',
+    updatedAt: '2024-01-15T16:00:00Z',
+    application: {
+      id: 3,
+      applicationNumber: 'APP-2024-003',
+      applicant: {
+        id: 3,
+        fullName: 'Марат Беков',
+        pin: '34567890123456',
+        birthDate: '1978-11-05',
+        age: 45,
+        genderCode: 'M' as const,
+        citizenshipCode: 'KG',
+        language: 'ru' as const,
+        isActive: true,
+        createdAt: '2024-01-05T12:00:00Z',
+        updatedAt: '2024-01-15T16:00:00Z'
+      },
+      status: 'INSPECTION_COMPLETED' as const,
+      priority: 'LOW' as const,
+      riskScore: 35,
+      submittedAt: '2024-01-05T12:00:00Z',
+      inspectionRequired: true,
+      homeVisitRequired: false,
+      createdAt: '2024-01-05T12:00:00Z',
+      updatedAt: '2024-01-15T16:00:00Z'
+    },
+    report: {
+      id: 1,
+      inspectionId: 3,
+      applicationId: 3,
+      reportNumber: 'RPT-2024-001',
+      reportDate: '2024-01-15',
+      visitDate: '2024-01-15',
+      visitTime: '09:00',
+      livingAddress: 'ул. Ленина, 78, кв. 23, Бишкек',
+      registrationAddress: 'ул. Ленина, 78, кв. 23, Бишкек',
+      regionalStatus: 'OTHER' as const,
+      applicantFullName: 'Марат Беков',
+      applicantPin: '34567890123456',
+      applicantBirthDate: '1978-11-05',
+      identityDocument: {
+        series: 'ID',
+        number: '1234567',
+        issuedBy: 'МВД КР'
+      },
+      contactPhone: '+996 555 123 456',
+      actualFamilyMembers: [
+        {
+          id: 1,
+          fullName: 'Марат Беков',
+          gender: 'M' as const,
+          birthDate: '1978-11-05',
+          pin: '34567890123456',
+          document: 'Паспорт ID1234567',
+          relation: 'Заявитель',
+          citizenship: 'KG',
+          specialStatus: 'Пенсионер'
+        },
+        {
+          id: 2,
+          fullName: 'Айгуль Бекова',
+          gender: 'F' as const,
+          birthDate: '1982-04-12',
+          pin: '45678901234567',
+          document: 'Паспорт ID2345678',
+          relation: 'Супруга',
+          citizenship: 'KG',
+          specialStatus: 'Работает'
+        }
+      ],
+      housingConditions: {
+        type: 'APARTMENT' as const,
+        ownership: 'OWNED' as const,
+        area: 65.5,
+        roomsCount: 3,
+        utilities: {
+          waterSupply: true,
+          electricity: true,
+          heating: 'CENTRAL' as const
+        },
+        sanitaryConditions: 'Хорошие санитарные условия',
+        generalAssessment: 'Жилье в хорошем состоянии'
+      },
+      incomeSources: {
+        mainIncome: 'Пенсия 15000 сом, зарплата супруги 25000 сом',
+        additionalIncome: 'Подработка 5000 сом',
+        supportingDocuments: ['Справка о доходах', 'Справка из Соцфонда']
+      },
+      property: {
+        landPlot: {
+          exists: true,
+          type: 'HOUSEHOLD' as const,
+          area: 6,
+          usage: 'Огород'
+        },
+        livestock: {
+          cattle: 0,
+          smallCattle: 2,
+          other: 'Куры 10 штук'
+        },
+        vehicles: {
+          hasVehicle: true,
+          makeModel: 'ВАЗ 2107'
+        },
+        realEstate: 'Нет дополнительной недвижимости',
+        bankDeposits: {
+          hasDeposits: false,
+          amount: 0
+        }
+      },
+      specialistConclusions: {
+        familyCompositionMatches: true,
+        livingConditions: 'Удовлетворительные жилищные условия',
+        incomeLevel: 'Доходы соответствуют заявленным',
+        meetsCriteria: 'YES' as const,
+        rejectionReason: ''
+      },
+      signatures: {
+        specialist: {
+          fullName: 'Марат Беков',
+          position: 'Специалист по выездным проверкам',
+          signature: 'М.Беков'
+        },
+        supervisor: {
+          fullName: 'Нурбек Жумабеков',
+          signature: 'Н.Жумабеков'
+        },
+        applicant: {
+          fullName: 'Марат Беков',
+          signature: 'М.Беков'
+        }
+      },
+      attachments: {
+        hasPhotos: true,
+        hasDocumentCopies: true,
+        hasOtherMaterials: false
+      },
+      status: 'COMPLETED' as const,
+      createdAt: '2024-01-15T16:00:00Z',
+      updatedAt: '2024-01-15T16:00:00Z'
+    }
+  },
+  {
+    id: 4,
+    applicationId: 4,
+    inspectionNumber: 'INS-2024-004',
+    status: 'CANCELLED' as const,
+    type: 'PRIMARY' as const,
+    priority: 'MEDIUM' as const,
+    assignedDate: '2024-01-14T11:00:00Z',
+    scheduledDate: '2024-01-19',
+    scheduledTime: '11:00',
+    inspectorId: 4,
+    inspectorName: 'Нургуль Асанова',
+    address: 'ул. Ибраимова, 12, кв. 8, Бишкек',
+    notes: 'Проверка отменена по просьбе заявителя',
+    createdAt: '2024-01-14T11:00:00Z',
+    updatedAt: '2024-01-16T14:00:00Z',
+    application: {
+      id: 4,
+      applicationNumber: 'APP-2024-004',
+      applicant: {
+        id: 4,
+        fullName: 'Айгуль Токтосунова',
+        pin: '45678901234567',
+        birthDate: '1987-09-18',
+        age: 36,
+        genderCode: 'F' as const,
+        citizenshipCode: 'KG',
+        language: 'ru' as const,
+        isActive: true,
+        createdAt: '2024-01-12T14:00:00Z',
+        updatedAt: '2024-01-16T14:00:00Z'
+      },
+      status: 'CANCELLED' as const,
+      priority: 'MEDIUM' as const,
+      riskScore: 55,
+      submittedAt: '2024-01-12T14:00:00Z',
+      inspectionRequired: true,
+      homeVisitRequired: true,
+      createdAt: '2024-01-12T14:00:00Z',
+      updatedAt: '2024-01-16T14:00:00Z'
+    }
+  },
+  {
+    id: 5,
+    applicationId: 5,
+    inspectionNumber: 'INS-2024-005',
+    status: 'ASSIGNED' as const,
+    type: 'COMPLAINT' as const,
+    priority: 'URGENT' as const,
+    assignedDate: '2024-01-18T15:00:00Z',
+    scheduledDate: '2024-01-22',
+    scheduledTime: '13:00',
+    inspectorId: 1,
+    inspectorName: 'Нурбек Жумабеков',
+    address: 'ул. Ахунбаева, 34, кв. 15, Бишкек',
+    notes: 'Проверка по жалобе - срочная',
+    createdAt: '2024-01-18T15:00:00Z',
+    updatedAt: '2024-01-18T15:00:00Z',
+    application: {
+      id: 5,
+      applicationNumber: 'APP-2024-005',
+      applicant: {
+        id: 5,
+        fullName: 'Эркин Садыков',
+        pin: '56789012345678',
+        birthDate: '1992-12-03',
+        age: 31,
+        genderCode: 'M' as const,
+        citizenshipCode: 'KG',
+        language: 'ru' as const,
+        isActive: true,
+        createdAt: '2024-01-16T16:00:00Z',
+        updatedAt: '2024-01-18T15:00:00Z'
+      },
+      status: 'INSPECTION_ASSIGNED' as const,
+      priority: 'URGENT' as const,
+      riskScore: 95,
+      submittedAt: '2024-01-16T16:00:00Z',
+      inspectionRequired: true,
+      homeVisitRequired: true,
+      createdAt: '2024-01-16T16:00:00Z',
+      updatedAt: '2024-01-18T15:00:00Z'
+    }
+  }
+];
+
+// Тестовые данные для статистики проверок
+export const mockInspectionStats = {
+  total: 5,
+  assigned: 2,
+  inProgress: 1,
+  completed: 1,
+  cancelled: 1,
+  averageDuration: 2.5,
+  successRate: 80
+};

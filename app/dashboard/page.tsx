@@ -541,7 +541,7 @@ export default function DashboardPage() {
       )
     },
     ...(activeTab === 'queue' ? [{
-      key: 'priority',
+      key: 'priorityEdit',
       label: 'Приоритет',
       filterable: true,
       filterType: 'select',
@@ -551,7 +551,7 @@ export default function DashboardPage() {
         { value: 'HIGH', label: 'Высокий' },
         { value: 'URGENT', label: 'Срочный' }
       ],
-      render: (value: string) => {
+      render: (value: string, row: Application) => {
         const priorityMap: { [key: string]: { label: string; color: string } } = {
           'LOW': { label: 'Низкий', color: 'text-green-600 bg-green-100' },
           'MEDIUM': { label: 'Средний', color: 'text-yellow-600 bg-yellow-100' },
@@ -561,7 +561,7 @@ export default function DashboardPage() {
         return (
           <select 
             value={value}
-            onChange={(e) => handlePriorityChange(parseInt((row as any).id), e.target.value as any)}
+            onChange={(e) => handlePriorityChange(parseInt(row.id), e.target.value as any)}
             className={`text-sm border border-neutral-300 rounded px-2 py-1 ${priorityMap[value as keyof typeof priorityMap]?.color || 'text-gray-600 bg-gray-100'}`}
           >
             <option value="LOW">Низкий</option>

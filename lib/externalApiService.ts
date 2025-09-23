@@ -47,6 +47,11 @@ class ExternalApiService {
       };
     }
 
+    // Для демонстрации используем моковые данные вместо реальных API вызовов
+    if (process.env.NODE_ENV === 'development') {
+      return this.getMockData<T>(serviceId, params);
+    }
+
     try {
       const url = new URL(endpoint, service.baseUrl);
       
@@ -88,6 +93,300 @@ class ExternalApiService {
         timestamp: new Date().toISOString()
       };
     }
+  }
+
+  // Моковые данные для демонстрации
+  private async getMockData<T>(serviceId: string, params: Record<string, any>): Promise<ExternalServiceResponse<T>> {
+    // Имитируем задержку сети
+    await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500));
+
+    const mockData: Record<string, any> = {
+      msek: {
+        isSuccess: true,
+        data: {
+          organizationName: 'МСЭК г. Бишкек',
+          examinationDate: '2024-01-15',
+          examinationType: 'Первичное',
+          disabilityGroup: 'III группа',
+          timeOfDisability: '2024-01-15',
+          from: '2024-01-15',
+          to: '2025-01-15',
+          reExamination: false,
+          statusCode: 'ACTIVE'
+        },
+        timestamp: new Date().toISOString()
+      },
+      grs_passport: {
+        isSuccess: true,
+        data: {
+          pin: '12345678901234',
+          surname: 'Иванов',
+          name: 'Иван',
+          patronymic: 'Иванович',
+          nationality: 'Кыргыз',
+          dateOfBirth: '1990-01-01',
+          passportSeries: 'ID',
+          passportNumber: '1234567',
+          voidStatus: 'Действителен',
+          issuedDate: '2020-01-01',
+          expiredDate: '2030-01-01',
+          passportAuthority: 'ОВД г. Бишкек',
+          familyStatus: 'Женат',
+          addressRegion: 'г. Бишкек',
+          addressLocality: 'г. Бишкек',
+          addressStreet: 'ул. Чуй',
+          addressHouse: '123',
+          addressBuilding: '',
+          addressApartment: '45'
+        },
+        timestamp: new Date().toISOString()
+      },
+      grs_address: {
+        isSuccess: true,
+        data: {
+          pin: '12345678901234',
+          state: 'г. Бишкек',
+          stateId: '1',
+          region: 'Центральный район',
+          regionId: '1',
+          district: 'Центральный айыл аймак',
+          districtId: '1',
+          city: 'г. Бишкек',
+          cityId: '1',
+          street: 'ул. Манаса',
+          streetId: '1',
+          house: '45',
+          flat: '12'
+        },
+        timestamp: new Date().toISOString()
+      },
+      sf_pension: {
+        isSuccess: true,
+        data: {
+          isSuccess: true,
+          pinInfo: {
+            state: 'Активный',
+            pin: '12345678901234',
+            lastName: 'Иванов',
+            firstName: 'Иван',
+            fullName: 'Иванов Иван Иванович',
+            issuer: 'Социальный Фонд КР'
+          },
+          dossierInfo: []
+        },
+        timestamp: new Date().toISOString()
+      },
+      veterinary: {
+        isSuccess: true,
+        data: {
+          animals: [
+            {
+              type: 1, // КРС
+              gender: 'f', // самка
+              age: 3.5
+            },
+            {
+              type: 1, // КРС
+              gender: 't', // самец
+              age: 2.0
+            },
+            {
+              type: 3, // МРС
+              gender: 'f', // самка
+              age: 1.5
+            },
+            {
+              type: 3, // МРС
+              gender: 'f', // самка
+              age: 2.5
+            },
+            {
+              type: 3, // МРС
+              gender: 't', // самец
+              age: 1.0
+            }
+          ]
+        },
+        timestamp: new Date().toISOString()
+      },
+      isrt_employment: {
+        isSuccess: true,
+        data: {
+          regStatus: -1,
+          registrationDate: null,
+          deRegistrationDate: null,
+          statusDate: null,
+          departmentName: 'Центр занятости г. Бишкек',
+          eligibleForBenefits: false
+        },
+        timestamp: new Date().toISOString()
+      },
+      gns_individual_entrepreneur: {
+        isSuccess: true,
+        data: {
+          tin: '12345678901234',
+          lastName: 'Иванов',
+          firstName: 'Иван',
+          middleName: 'Иванович',
+          rayonCode: '1',
+          registrationDate: '2020-01-01',
+          legalFormCode: 'ИП',
+          rayonName: 'Центральный район'
+        },
+        timestamp: new Date().toISOString()
+      },
+      grs_civil_registry: {
+        isSuccess: true,
+        data: {
+          pin: '12345678901234',
+          surname: 'Иванов',
+          name: 'Иван',
+          patronymic: 'Иванович',
+          maritalStatus: 'Женат',
+          maritalStatusId: '1',
+          nationality: 'Кыргыз',
+          nationalityId: '1',
+          citizenship: 'Кыргызстан',
+          citizenshipId: '1',
+          pinBlocked: false,
+          pinGenerationDate: '2020-01-01',
+          dateOfBirth: '1990-01-01'
+        },
+        timestamp: new Date().toISOString()
+      },
+      grs_vehicle: {
+        isSuccess: true,
+        data: [],
+        timestamp: new Date().toISOString()
+      },
+      sf_work_periods: {
+        isSuccess: true,
+        data: {
+          isSuccess: true,
+          workPeriods: [
+            {
+              organizationName: 'ООО "Айболит"',
+              periodFrom: '2020-01-15',
+              periodTo: '2023-12-31',
+              position: 'Врач-терапевт',
+              salary: 45000,
+              contributionAmount: 5400
+            },
+            {
+              organizationName: 'Городская больница №1',
+              periodFrom: '2018-06-01',
+              periodTo: '2019-12-31',
+              position: 'Медицинская сестра',
+              salary: 25000,
+              contributionAmount: 3000
+            },
+            {
+              organizationName: 'Частная клиника "Здоровье"',
+              periodFrom: '2017-03-01',
+              periodTo: '2018-05-31',
+              position: 'Младший медицинский персонал',
+              salary: 18000,
+              contributionAmount: 2160
+            }
+          ]
+        },
+        timestamp: new Date().toISOString()
+      },
+      gns_patent: {
+        isSuccess: true,
+        data: [
+          {
+            pin: '12345678901234',
+            fullName: 'Иванов Иван Иванович',
+            gkedCode: '47.11.1',
+            dateFrom: '2023-01-01',
+            dateTo: '2024-12-31',
+            status: 'Действующий'
+          },
+          {
+            pin: '12345678901234',
+            fullName: 'Иванов Иван Иванович',
+            gkedCode: '47.19.1',
+            dateFrom: '2022-06-01',
+            dateTo: '2023-05-31',
+            status: 'Завершен'
+          }
+        ],
+        timestamp: new Date().toISOString()
+      },
+      cadastre: {
+        isSuccess: true,
+        data: {
+          pin: '12345678901234',
+          properties: [
+            {
+              type: 'Жилой дом',
+              address: 'г. Бишкек, ул. Манаса, д. 45',
+              area: 120.5,
+              value: 2500000,
+              ownershipType: 'Частная собственность'
+            },
+            {
+              type: 'Земельный участок',
+              address: 'г. Бишкек, ул. Манаса, д. 45',
+              area: 600.0,
+              value: 1800000,
+              ownershipType: 'Частная собственность'
+            },
+            {
+              type: 'Квартира',
+              address: 'г. Бишкек, ул. Чуй, д. 123, кв. 45',
+              area: 65.0,
+              value: 3200000,
+              ownershipType: 'Частная собственность'
+            }
+          ]
+        },
+        timestamp: new Date().toISOString()
+      },
+      gkdo_vov: {
+        isSuccess: true,
+        data: {
+          pin: '12345678901234',
+          veteranType: 'VOV' as const,
+          status: 'Не является ветераном',
+          benefits: []
+        },
+        timestamp: new Date().toISOString()
+      },
+      gkdo_chernobyl: {
+        isSuccess: true,
+        data: {
+          pin: '12345678901234',
+          veteranType: 'CHERNOBYL' as const,
+          status: 'Не является ветераном',
+          benefits: []
+        },
+        timestamp: new Date().toISOString()
+      },
+      gkdo_afghan: {
+        isSuccess: true,
+        data: {
+          pin: '12345678901234',
+          veteranType: 'AFGHAN' as const,
+          status: 'Не является ветераном',
+          benefits: []
+        },
+        timestamp: new Date().toISOString()
+      }
+    };
+
+    const serviceData = mockData[serviceId];
+    if (serviceData) {
+      return serviceData as ExternalServiceResponse<T>;
+    }
+
+    // Если сервис не найден в моковых данных, возвращаем ошибку
+    return {
+      isSuccess: false,
+      errorMessage: `Сервис ${serviceId} временно недоступен`,
+      timestamp: new Date().toISOString()
+    };
   }
 
   private generateRequestId(): string {

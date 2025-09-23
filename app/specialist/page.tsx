@@ -11,7 +11,10 @@ import NavigationTabs from '@/components/ui/NavigationTabs';
 import DataTable from '@/components/ui/DataTable';
 import StatusBadge from '@/components/ui/StatusBadge';
 import Modal from '@/components/ui/Modal';
+import ScheduleInspectionForm from '@/components/ui/ScheduleInspectionForm';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { ApplicationStatus } from '@/lib/types';
+import inspectionService from '@/lib/api/inspectionService';
 
 export default function SpecialistDashboard() {
   const [language, setLanguage] = useState('ru');
@@ -85,6 +88,27 @@ export default function SpecialistDashboard() {
   const handleInspectionClick = (applicationId: string) => {
     setSelectedApplication(applicationId);
     setShowInspectionModal(true);
+  };
+
+  const handleScheduleInspection = async (applicationId: string) => {
+    const application = enhancedApplications.find(app => app.id === applicationId);
+    setSelectedApplication(application);
+    setShowScheduleModal(true);
+  };
+
+  const handleScheduleInspectionSubmit = async (formData: any) => {
+    try {
+      await inspectionService.createInspection({
+        ...formData,
+        applicationId: selectedApplication?.id || 0
+      });
+      setShowScheduleModal(false);
+      setSelectedApplication(null);
+      // Обновить статус заявления
+      // await updateApplicationStatus(selectedApplication, 'INSPECTION_ASSIGNED');
+    } catch (error) {
+      console.error('Ошибка создания проверки:', error);
+    }
   };
 
   const handleCalculatorClick = (applicationId: string) => {
@@ -502,6 +526,14 @@ export default function SpecialistDashboard() {
                                   className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 whitespace-nowrap cursor-pointer"
                                 >
                                   {language === 'ru' ? 'Решение' : 'Чечим'}
+                                </button>
+                              )}
+                              {application.status === 'pending' && application.riskScore > 70 && (application as any).homeVisitRequired && (
+                                <button
+                                  onClick={() => handleScheduleInspection(application.id)}
+                                  className="bg-orange-600 text-white px-3 py-1 rounded text-sm hover:bg-orange-700 whitespace-nowrap cursor-pointer"
+                                >
+                                  {language === 'ru' ? 'Назначить проверку' : 'Текшерүү тапшыр'}
                                 </button>
                               )}
                               <button
@@ -1801,6 +1833,27 @@ export default function SpecialistDashboard() {
             </div>
           </div>
         )}
+
+        {/* Schedule Inspection Modal */}
+        <Modal
+          isOpen={showScheduleModal}
+          onClose={() => setShowScheduleModal(false)}
+          title={language === 'ru' ? 'Планирование выездной проверки' : 'Текшерүүнү пландоо'}
+          size="large"
+        >
+          {selectedApplication && (
+            <ScheduleInspectionForm
+              applicationId={selectedApplication.id}
+              applicantName={selectedApplication.applicantName || ''}
+              address={selectedApplication.address || ''}
+              onSubmit={handleScheduleInspectionSubmit}
+              onCancel={() => {
+                setShowScheduleModal(false);
+                setSelectedApplication(null);
+              }}
+            />
+          )}
+        </Modal>
       </div>
     </div>
   );
