@@ -30,11 +30,11 @@ export default function AnalyticsPage() {
       icon: <i className="ri-eye-line"></i>
     },
     {
-      title: 'Обработка платежа',
+      title: 'Отказано',
       value: '156',
-      change: '+18%',
-      changeType: 'positive' as const,
-      icon: <i className="ri-bank-card-line"></i>
+      change: '-3%',
+      changeType: 'negative' as const,
+      icon: <i className="ri-close-line"></i>
     }
   ];
 
@@ -55,21 +55,21 @@ export default function AnalyticsPage() {
     { name: 'Отклонено', value: 156, color: '#ef4444' }
   ];
 
-  const processingTimeData = [
-    { day: 'Пн', avgTime: 2.5 },
-    { day: 'Вт', avgTime: 2.8 },
-    { day: 'Ср', avgTime: 2.2 },
-    { day: 'Чт', avgTime: 3.1 },
-    { day: 'Пт', avgTime: 2.9 },
-    { day: 'Сб', avgTime: 2.4 },
-    { day: 'Вс', avgTime: 2.6 }
+  const inspectionData = [
+    { day: 'Пн', scheduled: 8, completed: 7, pending: 1 },
+    { day: 'Вт', scheduled: 12, completed: 10, pending: 2 },
+    { day: 'Ср', scheduled: 6, completed: 6, pending: 0 },
+    { day: 'Чт', scheduled: 15, completed: 12, pending: 3 },
+    { day: 'Пт', scheduled: 9, completed: 8, pending: 1 },
+    { day: 'Сб', scheduled: 4, completed: 4, pending: 0 },
+    { day: 'Вс', scheduled: 2, completed: 2, pending: 0 }
   ];
 
-  const specialistPerformance = [
-    { name: 'Нурбек Жумабеков', processed: 145, avgTime: 2.3, accuracy: 94, payments: 89 },
-    { name: 'Айгуль Токтосунова', processed: 132, avgTime: 2.5, accuracy: 92, payments: 78 },
-    { name: 'Марат Беков', processed: 128, avgTime: 2.8, accuracy: 89, payments: 72 },
-    { name: 'Айжан Кыдырова', processed: 115, avgTime: 2.4, accuracy: 96, payments: 68 }
+  const bulkProcessingData = [
+    { operation: 'Одобрить', count: 45, success: 42, failed: 3 },
+    { operation: 'Отклонить', count: 12, success: 12, failed: 0 },
+    { operation: 'Назначить проверку', count: 28, success: 25, failed: 3 },
+    { operation: 'Отправить на доработку', count: 18, success: 18, failed: 0 }
   ];
 
   return (
@@ -165,36 +165,39 @@ export default function AnalyticsPage() {
 
       {/* Charts Row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Processing Time */}
+        {/* Field Inspections */}
         <div className="card">
           <div className="mb-6">
-            <h3 className="text-lg font-semibold text-neutral-900">Время обработки</h3>
-            <p className="text-neutral-600 mt-1">Среднее время обработки по дням недели</p>
+            <h3 className="text-lg font-semibold text-neutral-900">Выездные проверки</h3>
+            <p className="text-neutral-600 mt-1">Запланированные и выполненные проверки по дням недели</p>
           </div>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={processingTimeData}>
+            <BarChart data={inspectionData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="day" />
               <YAxis />
               <Tooltip />
-              <Bar dataKey="avgTime" fill="#8b5cf6" name="Часы" />
+              <Bar dataKey="scheduled" fill="#3b82f6" name="Запланировано" />
+              <Bar dataKey="completed" fill="#10b981" name="Выполнено" />
+              <Bar dataKey="pending" fill="#f59e0b" name="Ожидает" />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Specialist Performance */}
+        {/* Bulk Processing */}
         <div className="card">
           <div className="mb-6">
-            <h3 className="text-lg font-semibold text-neutral-900">Производительность специалистов</h3>
-            <p className="text-neutral-600 mt-1">Обработано заявок за период</p>
+            <h3 className="text-lg font-semibold text-neutral-900">Массовая обработка</h3>
+            <p className="text-neutral-600 mt-1">Статистика массовых операций за период</p>
           </div>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={specialistPerformance} layout="horizontal">
+            <BarChart data={bulkProcessingData} layout="horizontal">
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis type="number" />
-              <YAxis dataKey="name" type="category" width={120} />
+              <YAxis dataKey="operation" type="category" width={140} />
               <Tooltip />
-              <Bar dataKey="processed" fill="#06b6d4" name="Обработано" />
+              <Bar dataKey="success" fill="#10b981" name="Успешно" />
+              <Bar dataKey="failed" fill="#ef4444" name="Ошибки" />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -219,25 +222,25 @@ export default function AnalyticsPage() {
               <span className="font-semibold text-purple-600">82 заявки</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-neutral-600">Назначено платежей</span>
-              <span className="font-semibold text-orange-600">307</span>
+              <span className="text-neutral-600">Проведено проверок</span>
+              <span className="font-semibold text-orange-600">49</span>
             </div>
           </div>
         </div>
 
-        {/* Top Performers */}
+        {/* Bulk Operations Summary */}
         <div className="card">
-          <h3 className="text-lg font-semibold text-neutral-900 mb-4">Лучшие специалисты</h3>
+          <h3 className="text-lg font-semibold text-neutral-900 mb-4">Массовые операции</h3>
           <div className="space-y-3">
-            {specialistPerformance.slice(0, 3).map((specialist, index) => (
+            {bulkProcessingData.map((operation, index) => (
               <div key={index} className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
                 <div>
-                  <p className="font-medium text-neutral-900">{specialist.name}</p>
-                  <p className="text-sm text-neutral-600">{specialist.processed} заявок, {specialist.payments} платежей</p>
+                  <p className="font-medium text-neutral-900">{operation.operation}</p>
+                  <p className="text-sm text-neutral-600">{operation.count} операций</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-semibold text-green-600">{specialist.accuracy}%</p>
-                  <p className="text-xs text-neutral-600">{specialist.avgTime}ч</p>
+                  <p className="text-sm font-semibold text-green-600">{operation.success} успешно</p>
+                  <p className="text-xs text-neutral-600">{operation.failed} ошибок</p>
                 </div>
               </div>
             ))}
@@ -265,8 +268,8 @@ export default function AnalyticsPage() {
             <div className="flex items-center space-x-3">
               <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
               <div>
-                <p className="text-sm font-medium text-neutral-900">Рост платежей</p>
-                <p className="text-xs text-neutral-600">+18% за месяц</p>
+                <p className="text-sm font-medium text-neutral-900">Рост проверок</p>
+                <p className="text-xs text-neutral-600">+15% за месяц</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
