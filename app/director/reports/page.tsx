@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import DirectorLayout from '@/components/layout/DirectorLayout';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export default function ReportsPage() {
   const [language, setLanguage] = useState('ru');
   const [isClient, setIsClient] = useState(false);
-  const [selectedReport, setSelectedReport] = useState('summary');
+  const [selectedReport, setSelectedReport] = useState('applications');
   const [selectedPeriod, setSelectedPeriod] = useState('month');
   const [selectedRegion, setSelectedRegion] = useState('all');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -18,10 +18,22 @@ export default function ReportsPage() {
 
   const reportTypes = [
     {
-      id: 'summary',
-      name: language === 'ru' ? 'Сводный отчет' : 'Жыйынтык отчет',
-      description: language === 'ru' ? 'Общая статистика по программе УБК' : 'УБК программасы боюнча жалпы статистика',
-      icon: 'ri-file-chart-line'
+      id: 'applications',
+      name: language === 'ru' ? 'Отчет по заявлениям' : 'Арыздар боюнча отчет',
+      description: language === 'ru' ? 'Статистика по заявлениям и их обработке' : 'Арыздар жана аларды иштетүү боюнча статистика',
+      icon: 'ri-file-list-3-line'
+    },
+    {
+      id: 'payments',
+      name: language === 'ru' ? 'Отчет по платежам' : 'Төлөмдөр боюнча отчет',
+      description: language === 'ru' ? 'Сводка по всем выплатам за период' : 'Мерзүм боюнча бардык төлөмдөр боюнча жыйынтык',
+      icon: 'ri-bank-card-line'
+    },
+    {
+      id: 'invoices',
+      name: language === 'ru' ? 'Отчет по накладным' : 'Накладнойлор боюнча отчет',
+      description: language === 'ru' ? 'Статистика по накладным и их утверждению' : 'Накладнойлор жана аларды бекитүү боюнча статистика',
+      icon: 'ri-file-paper-line'
     },
     {
       id: 'regional',
@@ -29,36 +41,52 @@ export default function ReportsPage() {
       description: language === 'ru' ? 'Детализация по областям и районам' : 'Облустар жана райондор боюнча деталдаштыруу',
       icon: 'ri-map-pin-line'
     },
-    {
-      id: 'financial',
-      name: language === 'ru' ? 'Финансовый отчет' : 'Каржылык отчет',
-      description: language === 'ru' ? 'Расходы и использование бюджета' : 'Чыгымдар жана бюджетти колдонуу',
-      icon: 'ri-money-dollar-circle-line'
-    },
-    {
-      id: 'performance',
-      name: language === 'ru' ? 'Отчет по эффективности' : 'Эффективдүүлүк боюнча отчет',
-      description: language === 'ru' ? 'Показатели работы специалистов' : 'Адистердин иш көрсөткүчтөрү',
-      icon: 'ri-bar-chart-line'
-    },
-    {
-      id: 'demographics',
-      name: language === 'ru' ? 'Демографический отчет' : 'Демографиялык отчет',
-      description: language === 'ru' ? 'Анализ получателей по категориям' : 'Алуучулардын категориялар боюнча анализ',
-      icon: 'ri-user-line'
-    }
   ];
 
   // Mock data for reports
-  const summaryData = {
+  const applicationsData = {
     totalApplications: 2456,
     approvedApplications: 1234,
     rejectedApplications: 156,
     pendingApplications: 89,
+    inReviewApplications: 67,
+    draftApplications: 45,
+    paymentProcessingApplications: 234,
     totalAmount: 15200000,
     averageAmount: 4200,
     averageProcessingTime: 12,
     efficiency: 88.5
+  };
+
+  const paymentsData = {
+    totalPayments: 1234,
+    completedPayments: 1150,
+    pendingPayments: 84,
+    failedPayments: 12,
+    totalAmount: 15200000,
+    averageAmount: 12300,
+    paymentMethods: {
+      bankTransfer: 1100,
+      cash: 134
+    }
+  };
+
+  const invoicesData = {
+    totalInvoices: 45,
+    pendingInvoices: 12,
+    approvedInvoices: 28,
+    rejectedInvoices: 5,
+    totalAmount: 15200000,
+    averageAmount: 337778,
+    byRegion: [
+      { region: 'Чуйская обл.', count: 12, amount: 4500000 },
+      { region: 'Ошская обл.', count: 10, amount: 3800000 },
+      { region: 'Нарынская обл.', count: 8, amount: 3200000 },
+      { region: 'Баткенская обл.', count: 7, amount: 2800000 },
+      { region: 'Иссык-Кульская обл.', count: 5, amount: 2500000 },
+      { region: 'Джалал-Абадская обл.', count: 2, amount: 2200000 },
+      { region: 'Таласская обл.', count: 1, amount: 1800000 }
+    ]
   };
 
   const regionalData = [
@@ -80,21 +108,7 @@ export default function ReportsPage() {
     { month: 'Июн', budget: 5000000, spent: 5000000, remaining: 0 }
   ];
 
-  const performanceData = [
-    { specialist: 'Айжан Кыдырова', region: 'Чуйская обл.', applications: 45, approved: 38, rejected: 7, avgTime: 9, efficiency: 84 },
-    { specialist: 'Марат Беков', region: 'Ошская обл.', applications: 42, approved: 36, rejected: 6, avgTime: 10, efficiency: 86 },
-    { specialist: 'Гүлнара Осмонова', region: 'Нарынская обл.', applications: 38, approved: 34, rejected: 4, avgTime: 8, efficiency: 89 },
-    { specialist: 'Айбек Кыдыров', region: 'Баткенская обл.', applications: 35, approved: 30, rejected: 5, avgTime: 11, efficiency: 86 },
-    { specialist: 'Нургуль Асанова', region: 'Иссык-Кульская обл.', applications: 32, approved: 28, rejected: 4, avgTime: 10, efficiency: 88 },
-    { specialist: 'Эркин Садыков', region: 'Джалал-Абадская обл.', applications: 28, approved: 24, rejected: 4, avgTime: 12, efficiency: 86 }
-  ];
 
-  const demographicData = [
-    { category: language === 'ru' ? 'Семьи с 1 ребенком' : '1 балалуу үй-бүлөлөр', count: 320, percentage: 26 },
-    { category: language === 'ru' ? 'Семьи с 2 детьми' : '2 балалуу үй-бүлөлөр', count: 450, percentage: 36 },
-    { category: language === 'ru' ? 'Семьи с 3 детьми' : '3 балалуу үй-бүлөлөр', count: 280, percentage: 23 },
-    { category: language === 'ru' ? 'Семьи с 4+ детьми' : '4+ балалуу үй-бүлөлөр', count: 184, percentage: 15 }
-  ];
 
   const handleGenerateReport = async () => {
     setIsGenerating(true);
@@ -113,24 +127,24 @@ export default function ReportsPage() {
 
   const renderReportContent = () => {
     switch (selectedReport) {
-      case 'summary':
+      case 'applications':
         return (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="bg-blue-50 p-6 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">{summaryData.totalApplications.toLocaleString()}</div>
+                <div className="text-2xl font-bold text-blue-600">{applicationsData.totalApplications.toLocaleString()}</div>
                 <div className="text-sm text-blue-800">{language === 'ru' ? 'Всего заявлений' : 'Жалпы арыздар'}</div>
               </div>
               <div className="bg-green-50 p-6 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">{summaryData.approvedApplications.toLocaleString()}</div>
+                <div className="text-2xl font-bold text-green-600">{applicationsData.approvedApplications.toLocaleString()}</div>
                 <div className="text-sm text-green-800">{language === 'ru' ? 'Утверждено' : 'Бектирилди'}</div>
               </div>
               <div className="bg-red-50 p-6 rounded-lg">
-                <div className="text-2xl font-bold text-red-600">{summaryData.rejectedApplications.toLocaleString()}</div>
+                <div className="text-2xl font-bold text-red-600">{applicationsData.rejectedApplications.toLocaleString()}</div>
                 <div className="text-sm text-red-800">{language === 'ru' ? 'Отказано' : 'Четке кагылды'}</div>
               </div>
               <div className="bg-purple-50 p-6 rounded-lg">
-                <div className="text-2xl font-bold text-purple-600">{summaryData.totalAmount.toLocaleString()} сом</div>
+                <div className="text-2xl font-bold text-purple-600">{applicationsData.totalAmount.toLocaleString()} сом</div>
                 <div className="text-sm text-purple-800">{language === 'ru' ? 'Общая сумма' : 'Жалпы сумма'}</div>
               </div>
             </div>
@@ -142,16 +156,28 @@ export default function ReportsPage() {
                 </h3>
                 <div className="space-y-3">
                   <div className="flex justify-between">
+                    <span>{language === 'ru' ? 'Черновик' : 'Долбоор'}</span>
+                    <span className="font-semibold text-gray-600">{applicationsData.draftApplications}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>{language === 'ru' ? 'Подана' : 'Берилди'}</span>
+                    <span className="font-semibold text-blue-600">{applicationsData.pendingApplications}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>{language === 'ru' ? 'На рассмотрении' : 'Карап жатат'}</span>
+                    <span className="font-semibold text-yellow-600">{applicationsData.inReviewApplications}</span>
+                  </div>
+                  <div className="flex justify-between">
                     <span>{language === 'ru' ? 'Утверждено' : 'Бектирилди'}</span>
-                    <span className="font-semibold text-green-600">{summaryData.approvedApplications}</span>
+                    <span className="font-semibold text-green-600">{applicationsData.approvedApplications}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>{language === 'ru' ? 'Отказано' : 'Четке кагылды'}</span>
-                    <span className="font-semibold text-red-600">{summaryData.rejectedApplications}</span>
+                    <span className="font-semibold text-red-600">{applicationsData.rejectedApplications}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>{language === 'ru' ? 'Ожидают утверждения' : 'Бектириүү күтүүдө'}</span>
-                    <span className="font-semibold text-yellow-600">{summaryData.pendingApplications}</span>
+                    <span>{language === 'ru' ? 'Обработка платежа' : 'Төлөмдү иштетүү'}</span>
+                    <span className="font-semibold text-purple-600">{applicationsData.paymentProcessingApplications}</span>
                   </div>
                 </div>
               </div>
@@ -163,17 +189,133 @@ export default function ReportsPage() {
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span>{language === 'ru' ? 'Средняя сумма пособия' : 'Орточо жөлөкпул суммасы'}</span>
-                    <span className="font-semibold">{summaryData.averageAmount.toLocaleString()} сом</span>
+                    <span className="font-semibold">{applicationsData.averageAmount.toLocaleString()} сом</span>
                   </div>
                   <div className="flex justify-between">
                     <span>{language === 'ru' ? 'Среднее время обработки' : 'Орточо иштетүү убактысы'}</span>
-                    <span className="font-semibold">{summaryData.averageProcessingTime} {language === 'ru' ? 'дней' : 'күн'}</span>
+                    <span className="font-semibold">{applicationsData.averageProcessingTime} {language === 'ru' ? 'дней' : 'күн'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>{language === 'ru' ? 'Общая эффективность' : 'Жалпы эффективдүүлүк'}</span>
-                    <span className="font-semibold text-green-600">{summaryData.efficiency}%</span>
+                    <span className="font-semibold text-green-600">{applicationsData.efficiency}%</span>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'payments':
+        return (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="bg-blue-50 p-6 rounded-lg">
+                <div className="text-2xl font-bold text-blue-600">{paymentsData.totalPayments.toLocaleString()}</div>
+                <div className="text-sm text-blue-800">{language === 'ru' ? 'Всего платежей' : 'Жалпы төлөмдөр'}</div>
+              </div>
+              <div className="bg-green-50 p-6 rounded-lg">
+                <div className="text-2xl font-bold text-green-600">{paymentsData.completedPayments.toLocaleString()}</div>
+                <div className="text-sm text-green-800">{language === 'ru' ? 'Завершено' : 'Аякталды'}</div>
+              </div>
+              <div className="bg-yellow-50 p-6 rounded-lg">
+                <div className="text-2xl font-bold text-yellow-600">{paymentsData.pendingPayments.toLocaleString()}</div>
+                <div className="text-sm text-yellow-800">{language === 'ru' ? 'В обработке' : 'Иштетүүдө'}</div>
+              </div>
+              <div className="bg-red-50 p-6 rounded-lg">
+                <div className="text-2xl font-bold text-red-600">{paymentsData.failedPayments.toLocaleString()}</div>
+                <div className="text-sm text-red-800">{language === 'ru' ? 'Неудачные' : 'Ийгиликсиз'}</div>
+              </div>
+            </div>
+            
+            <div className="grid lg:grid-cols-2 gap-6">
+              <div className="bg-white p-6 rounded-lg border">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  {language === 'ru' ? 'Финансовые показатели' : 'Финансылык көрсөткүчтөр'}
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span>{language === 'ru' ? 'Общая сумма выплат' : 'Жалпы төлөм суммасы'}</span>
+                    <span className="font-semibold text-green-600">{paymentsData.totalAmount.toLocaleString()} сом</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>{language === 'ru' ? 'Средняя сумма платежа' : 'Орточо төлөм суммасы'}</span>
+                    <span className="font-semibold">{paymentsData.averageAmount.toLocaleString()} сом</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white p-6 rounded-lg border">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  {language === 'ru' ? 'Способы оплаты' : 'Төлөм ыкмалары'}
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span>{language === 'ru' ? 'Банковский перевод' : 'Банктык которуу'}</span>
+                    <span className="font-semibold text-blue-600">{paymentsData.paymentMethods.bankTransfer}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>{language === 'ru' ? 'Наличные' : 'Накта акча'}</span>
+                    <span className="font-semibold text-green-600">{paymentsData.paymentMethods.cash}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'invoices':
+        return (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="bg-blue-50 p-6 rounded-lg">
+                <div className="text-2xl font-bold text-blue-600">{invoicesData.totalInvoices.toLocaleString()}</div>
+                <div className="text-sm text-blue-800">{language === 'ru' ? 'Всего накладных' : 'Жалпы накладнойлор'}</div>
+              </div>
+              <div className="bg-yellow-50 p-6 rounded-lg">
+                <div className="text-2xl font-bold text-yellow-600">{invoicesData.pendingInvoices.toLocaleString()}</div>
+                <div className="text-sm text-yellow-800">{language === 'ru' ? 'Ожидают утверждения' : 'Бектириүү күтүүдө'}</div>
+              </div>
+              <div className="bg-green-50 p-6 rounded-lg">
+                <div className="text-2xl font-bold text-green-600">{invoicesData.approvedInvoices.toLocaleString()}</div>
+                <div className="text-sm text-green-800">{language === 'ru' ? 'Утверждено' : 'Бектирилди'}</div>
+              </div>
+              <div className="bg-red-50 p-6 rounded-lg">
+                <div className="text-2xl font-bold text-red-600">{invoicesData.rejectedInvoices.toLocaleString()}</div>
+                <div className="text-sm text-red-800">{language === 'ru' ? 'Отклонено' : 'Четке кагылды'}</div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-xl shadow-sm p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                {language === 'ru' ? 'Накладные по регионам' : 'Аймактар боюнча накладнойлор'}
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                        {language === 'ru' ? 'Регион' : 'Аймак'}
+                      </th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                        {language === 'ru' ? 'Количество' : 'Саны'}
+                      </th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                        {language === 'ru' ? 'Сумма' : 'Сумма'}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invoicesData.byRegion.map((region, index) => (
+                      <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
+                        <td className="py-3 px-4 font-medium text-gray-900">{region.region}</td>
+                        <td className="py-3 px-4">{region.count}</td>
+                        <td className="py-3 px-4 font-semibold text-green-600">
+                          {region.amount.toLocaleString()} сом
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -238,117 +380,8 @@ export default function ReportsPage() {
           </div>
         );
 
-      case 'financial':
-        return (
-          <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                {language === 'ru' ? 'Финансовые показатели' : 'Финансылык көрсөткүчтөр'}
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-blue-50 p-6 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">15.2M сом</div>
-                  <div className="text-sm text-blue-800">{language === 'ru' ? 'Общая сумма выплат' : 'Жалпы төлөм суммасы'}</div>
-                </div>
-                <div className="bg-green-50 p-6 rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">4,200 сом</div>
-                  <div className="text-sm text-green-800">{language === 'ru' ? 'Средняя сумма пособия' : 'Орточо жөлөкпул суммасы'}</div>
-                </div>
-                <div className="bg-purple-50 p-6 rounded-lg">
-                  <div className="text-2xl font-bold text-purple-600">1,234</div>
-                  <div className="text-sm text-purple-800">{language === 'ru' ? 'Активных получателей' : 'Активдүү алуучулар'}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
 
-      case 'performance':
-        return (
-          <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                {language === 'ru' ? 'Эффективность специалистов' : 'Адистердин эффективдүүлүгү'}
-              </h3>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                        {language === 'ru' ? 'Специалист' : 'Адис'}
-                      </th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                        {language === 'ru' ? 'Регион' : 'Аймак'}
-                      </th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                        {language === 'ru' ? 'Заявлений' : 'Арыздар'}
-                      </th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                        {language === 'ru' ? 'Утверждено' : 'Бектирилди'}
-                      </th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                        {language === 'ru' ? 'Ср. время' : 'Орт. убакыт'}
-                      </th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                        {language === 'ru' ? 'Эффективность' : 'Эффективдүүлүк'}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {performanceData.map((specialist, index) => (
-                      <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
-                        <td className="py-3 px-4 font-medium text-gray-900">{specialist.specialist}</td>
-                        <td className="py-3 px-4 text-gray-600">{specialist.region}</td>
-                        <td className="py-3 px-4">{specialist.applications}</td>
-                        <td className="py-3 px-4 text-green-600 font-semibold">{specialist.approved}</td>
-                        <td className="py-3 px-4">{specialist.avgTime} {language === 'ru' ? 'дней' : 'күн'}</td>
-                        <td className="py-3 px-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            specialist.efficiency >= 90 ? 'bg-green-100 text-green-800' :
-                            specialist.efficiency >= 80 ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-red-100 text-red-800'
-                          }`}>
-                            {specialist.efficiency}%
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        );
 
-      case 'demographics':
-        return (
-          <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                {language === 'ru' ? 'Распределение по количеству детей' : 'Балдардын саны боюнча бөлүштүрүү'}
-              </h3>
-              <ResponsiveContainer width="100%" height={400}>
-                <PieChart>
-                  <Pie
-                    data={demographicData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percentage }) => `${name} ${percentage}%`}
-                    outerRadius={120}
-                    fill="#8884d8"
-                    dataKey="count"
-                  >
-                    {demographicData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={['#3B82F6', '#10B981', '#F59E0B', '#EF4444'][index]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        );
 
       default:
         return null;

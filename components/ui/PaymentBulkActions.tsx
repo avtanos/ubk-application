@@ -14,6 +14,8 @@ interface PaymentBulkActionsProps {
   onBulkAction: (action: string, paymentIds: string[]) => void;
   onSelectAll: () => void;
   onDeselectAll: () => void;
+  onExportInvoice?: () => void;
+  onSubmitInvoice?: () => void;
   totalPayments: number;
   isAllSelected: boolean;
 }
@@ -23,6 +25,8 @@ export default function PaymentBulkActions({
   onBulkAction,
   onSelectAll,
   onDeselectAll,
+  onExportInvoice,
+  onSubmitInvoice,
   totalPayments,
   isAllSelected
 }: PaymentBulkActionsProps) {
@@ -126,6 +130,30 @@ export default function PaymentBulkActions({
             {getActionButton('process', 'Обработать', 'ri-play-line', 'bg-green-600 hover:bg-green-700 text-white')}
             {getActionButton('approve', 'Утвердить', 'ri-check-line', 'bg-blue-600 hover:bg-blue-700 text-white')}
             {getActionButton('export', 'Экспорт', 'ri-download-line', 'bg-purple-600 hover:bg-purple-700 text-white')}
+            {onExportInvoice && (
+              <button
+                onClick={onExportInvoice}
+                disabled={selectedPayments.length === 0}
+                className={`bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  selectedPayments.length === 0 ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              >
+                <i className="ri-file-download-line mr-2"></i>
+                Выгрузить накладную (№8)
+              </button>
+            )}
+            {onSubmitInvoice && (
+              <button
+                onClick={onSubmitInvoice}
+                disabled={selectedPayments.length === 0}
+                className={`bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  selectedPayments.length === 0 ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              >
+                <i className="ri-send-plane-line mr-2"></i>
+                Отправить на утверждение
+              </button>
+            )}
             {getActionButton('cancel', 'Отменить', 'ri-close-line', 'bg-red-600 hover:bg-red-700 text-white')}
           </div>
         </div>

@@ -11,6 +11,8 @@ import BulkPaymentForm from '@/components/ui/BulkPaymentForm';
 import SchedulePaymentsForm from '@/components/ui/SchedulePaymentsForm';
 import RetryFailedPaymentsForm from '@/components/ui/RetryFailedPaymentsForm';
 import NotifyRecipientsForm from '@/components/ui/NotifyRecipientsForm';
+import InvoiceExportModal from '@/components/ui/InvoiceExportModal';
+import InvoiceSubmissionModal from '@/components/ui/InvoiceSubmissionModal';
 
 export default function PaymentsPage() {
   const [selectedPayment, setSelectedPayment] = useState<any>(null);
@@ -21,6 +23,8 @@ export default function PaymentsPage() {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showRetryModal, setShowRetryModal] = useState(false);
   const [showNotifyModal, setShowNotifyModal] = useState(false);
+  const [showInvoiceExportModal, setShowInvoiceExportModal] = useState(false);
+  const [showInvoiceSubmissionModal, setShowInvoiceSubmissionModal] = useState(false);
 
   const metrics = [
     {
@@ -286,6 +290,36 @@ export default function PaymentsPage() {
     setShowNotifyModal(false);
   };
 
+  const handleExportInvoice = () => {
+    if (selectedPayments.length === 0) {
+      alert('Выберите выплаты для экспорта накладной');
+      return;
+    }
+    setShowInvoiceExportModal(true);
+  };
+
+  const handleSubmitInvoice = () => {
+    if (selectedPayments.length === 0) {
+      alert('Выберите выплаты для отправки на утверждение');
+      return;
+    }
+    setShowInvoiceSubmissionModal(true);
+  };
+
+  const handleInvoiceExportComplete = () => {
+    setShowInvoiceExportModal(false);
+    setSelectedPayments([]);
+    // Обновить список выплат
+    console.log('Накладная успешно экспортирована');
+  };
+
+  const handleInvoiceSubmissionComplete = () => {
+    setShowInvoiceSubmissionModal(false);
+    setSelectedPayments([]);
+    // Обновить список выплат
+    console.log('Накладная отправлена на утверждение');
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -325,6 +359,8 @@ export default function PaymentsPage() {
           onBulkAction={handleBulkAction}
           onSelectAll={handleSelectAll}
           onDeselectAll={handleDeselectAll}
+          onExportInvoice={handleExportInvoice}
+          onSubmitInvoice={handleSubmitInvoice}
           totalPayments={payments.length}
           isAllSelected={selectedPayments.length === payments.length && payments.length > 0}
         />
@@ -580,6 +616,38 @@ export default function PaymentsPage() {
       >
         <NotifyRecipientsForm onSubmit={handleNotifyRecipientsSubmit} />
       </Modal>
+
+      {/* Invoice Export Modal */}
+      <InvoiceExportModal
+        isOpen={showInvoiceExportModal}
+        onClose={() => setShowInvoiceExportModal(false)}
+        selectedPayments={selectedPayments}
+        onExportComplete={handleInvoiceExportComplete}
+      />
+
+      {/* Invoice Submission Modal */}
+      <InvoiceSubmissionModal
+        isOpen={showInvoiceSubmissionModal}
+        onClose={() => setShowInvoiceSubmissionModal(false)}
+        invoiceData={{
+          id: `INV-${Date.now()}`,
+          departmentName: 'Управление социального развития по Октябрьскому административному району города Бишкек',
+          purpose: 'На зачисление денежных средств на карточные счета получателей уй булоого комок в ЗАО «КИКБ»',
+          companyAccount: '1280190090000142',
+          valueDate: new Date().toISOString().split('T')[0],
+          totalAmount: selectedPayments.reduce((sum, p) => sum + p.amount, 0),
+          payments: selectedPayments.map((payment, index) => ({
+            number: index + 1,
+            fullName: payment.applicantName,
+            accountNumber: payment.bankAccount,
+            amount: payment.amount
+          })),
+          headName: 'Дурусалиев Т.Б.',
+          accountantName: 'Эгембаева Д.Н.'
+        }}
+        selectedPayments={selectedPayments}
+        onSubmitSuccess={handleInvoiceSubmissionComplete}
+      />
     </div>
   );
 }

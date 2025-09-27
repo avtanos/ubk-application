@@ -22,18 +22,11 @@ export default function DirectorLayout({ children, currentPage = 'main' }: Direc
       key: 'main'
     },
     {
-      name: 'Утверждение заявлений',
-      nameKy: 'Арыздарды бекитүү',
-      href: '/director/approvals',
-      icon: 'ri-checkbox-circle-line',
-      key: 'approvals'
-    },
-    {
-      name: 'Мониторинг',
-      nameKy: 'Мониторинг',
-      href: '/director/monitoring',
-      icon: 'ri-bar-chart-line',
-      key: 'monitoring'
+      name: 'Накладные',
+      nameKy: 'Накладкалар',
+      href: '/director/invoices',
+      icon: 'ri-file-list-line',
+      key: 'invoices'
     },
     {
       name: 'Отчеты',

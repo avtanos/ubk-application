@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   output: process.env.NODE_ENV === 'production' ? "export" : undefined,
   basePath: process.env.NODE_ENV === 'production' ? "/ubk-application" : undefined,
   assetPrefix: process.env.NODE_ENV === 'production' ? "/ubk-application" : undefined,
-  trailingSlash: true,
+  trailingSlash: false,
   images: {
     unoptimized: true,
   },

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import DirectorLayout from '@/components/layout/DirectorLayout';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
 export default function AnalyticsPage() {
   const [language, setLanguage] = useState('ru');
@@ -23,16 +23,16 @@ export default function AnalyticsPage() {
       color: 'blue'
     },
     {
-      id: 'approvals',
-      name: language === 'ru' ? 'Утверждений' : 'Бектирүүлөр',
-      icon: 'ri-checkbox-circle-line',
+      id: 'invoices',
+      name: language === 'ru' ? 'Накладные' : 'Накладнойлор',
+      icon: 'ri-file-paper-line',
       color: 'green'
     },
     {
-      id: 'rejections',
-      name: language === 'ru' ? 'Отказов' : 'Четке кагылгандар',
-      icon: 'ri-close-circle-line',
-      color: 'red'
+      id: 'payments',
+      name: language === 'ru' ? 'Платежи' : 'Төлөмдөр',
+      icon: 'ri-bank-card-line',
+      color: 'orange'
     },
     {
       id: 'amounts',
@@ -44,47 +44,31 @@ export default function AnalyticsPage() {
 
   // Mock data for analytics
   const applicationsTrend = [
-    { month: 'Янв', applications: 120, approved: 95, rejected: 25, pending: 15 },
-    { month: 'Фев', applications: 135, approved: 110, rejected: 25, pending: 12 },
-    { month: 'Мар', applications: 150, approved: 125, rejected: 25, pending: 18 },
-    { month: 'Апр', applications: 140, approved: 115, rejected: 25, pending: 16 },
-    { month: 'Май', applications: 160, approved: 130, rejected: 30, pending: 20 },
-    { month: 'Июн', applications: 180, approved: 145, rejected: 35, pending: 22 }
+    { month: 'Янв', applications: 120, approved: 95, rejected: 25, inReview: 15, draft: 8, paymentProcessing: 12 },
+    { month: 'Фев', applications: 135, approved: 110, rejected: 25, inReview: 12, draft: 6, paymentProcessing: 15 },
+    { month: 'Мар', applications: 150, approved: 125, rejected: 25, inReview: 18, draft: 10, paymentProcessing: 18 },
+    { month: 'Апр', applications: 140, approved: 115, rejected: 25, inReview: 16, draft: 7, paymentProcessing: 16 },
+    { month: 'Май', applications: 160, approved: 130, rejected: 30, inReview: 20, draft: 9, paymentProcessing: 20 },
+    { month: 'Июн', applications: 180, approved: 145, rejected: 35, inReview: 22, draft: 12, paymentProcessing: 25 }
   ];
 
-  const regionalComparison = [
-    { region: 'Чуйская обл.', applications: 450, approved: 380, rejected: 70, amount: 4500000, efficiency: 84 },
-    { region: 'Ошская обл.', applications: 380, approved: 320, rejected: 60, amount: 3800000, efficiency: 84 },
-    { region: 'Нарынская обл.', applications: 320, approved: 280, rejected: 40, amount: 3200000, efficiency: 88 },
-    { region: 'Баткенская обл.', applications: 280, approved: 240, rejected: 40, amount: 2800000, efficiency: 86 },
-    { region: 'Иссык-Кульская обл.', applications: 250, approved: 210, rejected: 40, amount: 2500000, efficiency: 84 },
-    { region: 'Джалал-Абадская обл.', applications: 220, approved: 180, rejected: 40, amount: 2200000, efficiency: 82 },
-    { region: 'Таласская обл.', applications: 180, approved: 150, rejected: 30, amount: 1800000, efficiency: 83 }
+
+  const invoicesTrend = [
+    { month: 'Янв', total: 8, pending: 2, approved: 5, rejected: 1 },
+    { month: 'Фев', total: 10, pending: 3, approved: 6, rejected: 1 },
+    { month: 'Мар', total: 12, pending: 2, approved: 8, rejected: 2 },
+    { month: 'Апр', total: 9, pending: 1, approved: 7, rejected: 1 },
+    { month: 'Май', total: 11, pending: 2, approved: 8, rejected: 1 },
+    { month: 'Июн', total: 13, pending: 3, approved: 9, rejected: 1 }
   ];
 
-  const demographicAnalysis = [
-    { ageGroup: language === 'ru' ? '0-3 года' : '0-3 жыл', count: 320, percentage: 26 },
-    { ageGroup: language === 'ru' ? '4-7 лет' : '4-7 жыл', count: 450, percentage: 36 },
-    { ageGroup: language === 'ru' ? '8-12 лет' : '8-12 жыл', count: 280, percentage: 23 },
-    { ageGroup: language === 'ru' ? '13-16 лет' : '13-16 жыл', count: 184, percentage: 15 }
-  ];
-
-  const efficiencyTrend = [
-    { month: 'Янв', efficiency: 79, avgTime: 15, satisfaction: 85 },
-    { month: 'Фев', efficiency: 81, avgTime: 14, satisfaction: 87 },
-    { month: 'Мар', efficiency: 83, avgTime: 13, satisfaction: 89 },
-    { month: 'Апр', efficiency: 85, avgTime: 12, satisfaction: 91 },
-    { month: 'Май', efficiency: 87, avgTime: 11, satisfaction: 93 },
-    { month: 'Июн', efficiency: 88, avgTime: 10, satisfaction: 95 }
-  ];
-
-  const budgetAnalysis = [
-    { month: 'Янв', budget: 5000000, spent: 4200000, utilization: 84 },
-    { month: 'Фев', budget: 5000000, spent: 4500000, utilization: 90 },
-    { month: 'Мар', budget: 5000000, spent: 4800000, utilization: 96 },
-    { month: 'Апр', budget: 5000000, spent: 4600000, utilization: 92 },
-    { month: 'Май', budget: 5000000, spent: 4900000, utilization: 98 },
-    { month: 'Июн', budget: 5000000, spent: 5000000, utilization: 100 }
+  const paymentsTrend = [
+    { month: 'Янв', total: 95, completed: 90, pending: 5, failed: 0 },
+    { month: 'Фев', total: 110, completed: 105, pending: 4, failed: 1 },
+    { month: 'Мар', total: 125, completed: 120, pending: 4, failed: 1 },
+    { month: 'Апр', total: 115, completed: 110, pending: 4, failed: 1 },
+    { month: 'Май', total: 130, completed: 125, pending: 4, failed: 1 },
+    { month: 'Июн', total: 145, completed: 140, pending: 4, failed: 1 }
   ];
 
   const getChartData = () => {
@@ -94,22 +78,31 @@ export default function AnalyticsPage() {
           month: item.month,
           value: item.applications,
           approved: item.approved,
+          rejected: item.rejected,
+          inReview: item.inReview,
+          draft: item.draft,
+          paymentProcessing: item.paymentProcessing
+        }));
+      case 'invoices':
+        return invoicesTrend.map(item => ({
+          month: item.month,
+          value: item.total,
+          pending: item.pending,
+          approved: item.approved,
           rejected: item.rejected
         }));
-      case 'approvals':
-        return applicationsTrend.map(item => ({
+      case 'payments':
+        return paymentsTrend.map(item => ({
           month: item.month,
-          value: item.approved
-        }));
-      case 'rejections':
-        return applicationsTrend.map(item => ({
-          month: item.month,
-          value: item.rejected
+          value: item.total,
+          completed: item.completed,
+          pending: item.pending,
+          failed: item.failed
         }));
       case 'amounts':
-        return regionalComparison.map(item => ({
-          region: item.region,
-          value: item.amount
+        return applicationsTrend.map(item => ({
+          month: item.month,
+          value: item.approved * 1200 // Сумма только по одобренным заявлениям
         }));
       default:
         return applicationsTrend;
@@ -125,19 +118,19 @@ export default function AnalyticsPage() {
           color: '#3B82F6',
           name: language === 'ru' ? 'Заявлений' : 'Арыздар'
         };
-      case 'approvals':
-        return {
-          type: 'area',
-          dataKey: 'value',
-          color: '#10B981',
-          name: language === 'ru' ? 'Утверждено' : 'Бектирилди'
-        };
-      case 'rejections':
+      case 'invoices':
         return {
           type: 'bar',
           dataKey: 'value',
-          color: '#EF4444',
-          name: language === 'ru' ? 'Отказано' : 'Четке кагылды'
+          color: '#10B981',
+          name: language === 'ru' ? 'Накладные' : 'Накладнойлор'
+        };
+      case 'payments':
+        return {
+          type: 'area',
+          dataKey: 'value',
+          color: '#F59E0B',
+          name: language === 'ru' ? 'Платежи' : 'Төлөмдөр'
         };
       case 'amounts':
         return {
@@ -192,6 +185,62 @@ export default function AnalyticsPage() {
                   strokeWidth={2}
                   name={language === 'ru' ? 'Отказано' : 'Четке кагылды'}
                 />
+                <Line 
+                  type="monotone" 
+                  dataKey="inReview" 
+                  stroke="#F59E0B" 
+                  strokeWidth={2}
+                  name={language === 'ru' ? 'На рассмотрении' : 'Карап жатат'}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="draft" 
+                  stroke="#6B7280" 
+                  strokeWidth={2}
+                  name={language === 'ru' ? 'Черновик' : 'Долбоор'}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="paymentProcessing" 
+                  stroke="#8B5CF6" 
+                  strokeWidth={2}
+                  name={language === 'ru' ? 'Обработка платежа' : 'Төлөмдү иштетүү'}
+                />
+              </>
+            )}
+            {selectedMetric === 'invoices' && (
+              <>
+                <Bar dataKey="pending" fill="#F59E0B" name={language === 'ru' ? 'Ожидают утверждения' : 'Бектириүү күтүүдө'} />
+                <Bar dataKey="approved" fill="#10B981" name={language === 'ru' ? 'Утверждено' : 'Бектирилди'} />
+                <Bar dataKey="rejected" fill="#EF4444" name={language === 'ru' ? 'Отклонено' : 'Четке кагылды'} />
+              </>
+            )}
+            {selectedMetric === 'payments' && (
+              <>
+                <Area 
+                  type="monotone" 
+                  dataKey="completed" 
+                  stroke="#10B981" 
+                  fill="#10B981"
+                  fillOpacity={0.3}
+                  name={language === 'ru' ? 'Завершено' : 'Аякталды'}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="pending" 
+                  stroke="#F59E0B" 
+                  fill="#F59E0B"
+                  fillOpacity={0.3}
+                  name={language === 'ru' ? 'В обработке' : 'Иштетүүдө'}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="failed" 
+                  stroke="#EF4444" 
+                  fill="#EF4444"
+                  fillOpacity={0.3}
+                  name={language === 'ru' ? 'Неудачные' : 'Ийгиликсиз'}
+                />
               </>
             )}
           </LineChart>
@@ -226,7 +275,7 @@ export default function AnalyticsPage() {
         <ResponsiveContainer width="100%" height={400}>
           <BarChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey={selectedMetric === 'amounts' ? 'region' : 'month'} angle={selectedMetric === 'amounts' ? -45 : 0} textAnchor={selectedMetric === 'amounts' ? 'end' : 'middle'} height={selectedMetric === 'amounts' ? 100 : 60} />
+            <XAxis dataKey="month" />
             <YAxis />
             <Tooltip formatter={(value) => selectedMetric === 'amounts' ? `${(value as number).toLocaleString()} сом` : value} />
             <Legend />
@@ -286,9 +335,6 @@ export default function AnalyticsPage() {
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="all">{language === 'ru' ? 'Все регионы' : 'Бардык аймактар'}</option>
-                {regionalComparison.map(region => (
-                  <option key={region.region} value={region.region}>{region.region}</option>
-                ))}
               </select>
             </div>
           </div>
@@ -329,143 +375,8 @@ export default function AnalyticsPage() {
           {renderChart()}
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* Efficiency Trend */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              {language === 'ru' ? 'Тренд эффективности' : 'Эффективдүүлүктүн тенденциясы'}
-            </h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={efficiencyTrend}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line 
-                  type="monotone" 
-                  dataKey="efficiency" 
-                  stroke="#3B82F6" 
-                  strokeWidth={2}
-                  name={language === 'ru' ? 'Эффективность (%)' : 'Эффективдүүлүк (%)'}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="avgTime" 
-                  stroke="#F59E0B" 
-                  strokeWidth={2}
-                  name={language === 'ru' ? 'Ср. время (дни)' : 'Орт. убакыт (күн)'}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="satisfaction" 
-                  stroke="#10B981" 
-                  strokeWidth={2}
-                  name={language === 'ru' ? 'Удовлетворенность (%)' : 'Канааттандыруу (%)'}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
 
-        </div>
 
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* Regional Comparison */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              {language === 'ru' ? 'Сравнение по регионам' : 'Аймактар боюнча салыштыруу'}
-            </h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={regionalComparison}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="region" angle={-45} textAnchor="end" height={100} />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="applications" fill="#3B82F6" name={language === 'ru' ? 'Заявлений' : 'Арыздар'} />
-                <Bar dataKey="approved" fill="#10B981" name={language === 'ru' ? 'Утверждено' : 'Бектирилди'} />
-                <Bar dataKey="rejected" fill="#EF4444" name={language === 'ru' ? 'Отказано' : 'Четке кагылды'} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Demographic Analysis */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              {language === 'ru' ? 'Демографический анализ' : 'Демографиялык анализ'}
-            </h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={demographicAnalysis}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ ageGroup, percentage }) => `${ageGroup} ${percentage}%`}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="count"
-                >
-                  {demographicAnalysis.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={['#3B82F6', '#10B981', '#F59E0B', '#EF4444'][index]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Key Insights */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            {language === 'ru' ? 'Ключевые инсайты' : 'Негизги инсайттар'}
-          </h3>
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="p-4 bg-green-50 rounded-lg">
-              <div className="flex items-center space-x-3 mb-2">
-                <i className="ri-trending-up-line text-2xl text-green-600"></i>
-                <h4 className="font-semibold text-green-800">
-                  {language === 'ru' ? 'Рост эффективности' : 'Эффективдүүлүктүн өсүшү'}
-                </h4>
-              </div>
-              <p className="text-sm text-green-700">
-                {language === 'ru' 
-                  ? 'Эффективность обработки заявлений выросла на 9% за последние 6 месяцев'
-                  : 'Арыздарды иштетүүнүн эффективдүүлүгү акыркы 6 айда 9% өстү'
-                }
-              </p>
-            </div>
-            <div className="p-4 bg-blue-50 rounded-lg">
-              <div className="flex items-center space-x-3 mb-2">
-                <i className="ri-user-heart-line text-2xl text-blue-600"></i>
-                <h4 className="font-semibold text-blue-800">
-                  {language === 'ru' ? 'Увеличение охвата' : 'Камтуунун кеңейиши'}
-                </h4>
-              </div>
-              <p className="text-sm text-blue-700">
-                {language === 'ru' 
-                  ? 'Количество получателей пособия увеличилось на 15% по сравнению с прошлым годом'
-                  : 'Жөлөкпул алуучулардын саны өткөн жылга салыштырганда 15% өстү'
-                }
-              </p>
-            </div>
-            <div className="p-4 bg-yellow-50 rounded-lg">
-              <div className="flex items-center space-x-3 mb-2">
-                <i className="ri-time-line text-2xl text-yellow-600"></i>
-                <h4 className="font-semibold text-yellow-800">
-                  {language === 'ru' ? 'Сокращение времени' : 'Убакытты кыскартуу'}
-                </h4>
-              </div>
-              <p className="text-sm text-yellow-700">
-                {language === 'ru' 
-                  ? 'Среднее время обработки заявления сократилось с 15 до 10 дней'
-                  : 'Арызды иштетүүнүн орточо убактысы 15 күндөн 10 күнгө кыскарды'
-                }
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
     </DirectorLayout>
   );

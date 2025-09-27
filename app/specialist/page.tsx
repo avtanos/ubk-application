@@ -15,6 +15,9 @@ import ScheduleInspectionForm from '@/components/ui/ScheduleInspectionForm';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { ApplicationStatus } from '@/lib/types';
 import inspectionService from '@/lib/api/inspectionService';
+import DecisionWithPaymentModal from '@/components/ui/DecisionWithPaymentModal';
+import { Application, BenefitAssignment } from '@/lib/types-updated';
+import { PaymentRecord } from '@/lib/api/paymentService';
 
 export default function SpecialistDashboard() {
   const [language, setLanguage] = useState('ru');
@@ -25,7 +28,7 @@ export default function SpecialistDashboard() {
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [selectedApplication, setSelectedApplication] = useState<string | null>(null);
+  const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [selectedApplications, setSelectedApplications] = useState<string[]>([]);
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
@@ -111,8 +114,11 @@ export default function SpecialistDashboard() {
 
 
   const handleDecisionClick = (applicationId: string) => {
-    setSelectedApplication(applicationId);
-    setShowDecisionModal(true);
+    const application = enhancedApplications.find(app => app.id === applicationId);
+    if (application) {
+      setSelectedApplication(application);
+      setShowDecisionModal(true);
+    }
   };
 
   const handleBulkAction = async (action: 'approve' | 'reject' | 'transfer') => {
@@ -140,6 +146,31 @@ export default function SpecialistDashboard() {
     alert(language === 'ru'
       ? `Успешно обработано ${selectedApplications.length} заявок`
       : `${selectedApplications.length} арыз ийгиликтүү иштетилди`);
+  };
+
+  const handleDecisionComplete = (
+    decision: 'approved' | 'rejected', 
+    payment?: PaymentRecord, 
+    assignment?: BenefitAssignment
+  ) => {
+    console.log('Решение принято:', decision);
+    if (payment && assignment) {
+      console.log('Выплата назначена:', payment);
+      console.log('Назначение пособия:', assignment);
+    }
+    
+    // Обновить статус заявки
+    if (selectedApplication) {
+      const updatedApplications = enhancedApplications.map(app => 
+        app.id === selectedApplication.id 
+          ? { ...app, status: decision === 'approved' ? 'APPROVED' : 'REJECTED' }
+          : app
+      );
+      // Здесь должна быть логика обновления состояния
+    }
+    
+    setSelectedApplication(null);
+    setShowDecisionModal(false);
   };
 
   const toggleApplicationSelection = (applicationId: string) => {
@@ -1650,6 +1681,19 @@ export default function SpecialistDashboard() {
             />
           )}
         </Modal>
+
+        {/* Decision with Payment Modal */}
+        {selectedApplication && (
+          <DecisionWithPaymentModal
+            isOpen={showDecisionModal}
+            onClose={() => {
+              setShowDecisionModal(false);
+              setSelectedApplication(null);
+            }}
+            application={selectedApplication}
+            onDecisionComplete={handleDecisionComplete}
+          />
+        )}
       </div>
     </div>
   );
