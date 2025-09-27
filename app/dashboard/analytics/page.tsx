@@ -10,47 +10,49 @@ export default function AnalyticsPage() {
   const metrics = [
     {
       title: 'Всего заявок',
-      value: '2,847',
-      change: '+12%',
+      value: '2,456',
+      change: '+8%',
       changeType: 'positive' as const,
       icon: <i className="ri-file-list-3-line"></i>
     },
     {
       title: 'Одобрено',
-      value: '2,156',
-      change: '+8%',
+      value: '1,234',
+      change: '+5%',
       changeType: 'positive' as const,
       icon: <i className="ri-check-line"></i>
     },
     {
-      title: 'В обработке',
-      value: '456',
-      change: '+15%',
+      title: 'На рассмотрении',
+      value: '234',
+      change: '+12%',
       changeType: 'positive' as const,
-      icon: <i className="ri-loader-line"></i>
+      icon: <i className="ri-eye-line"></i>
     },
     {
-      title: 'Отклонено',
-      value: '235',
-      change: '-3%',
-      changeType: 'negative' as const,
-      icon: <i className="ri-close-line"></i>
+      title: 'Обработка платежа',
+      value: '156',
+      change: '+18%',
+      changeType: 'positive' as const,
+      icon: <i className="ri-bank-card-line"></i>
     }
   ];
 
   const applicationsData = [
-    { month: 'Янв', applications: 240, approved: 180, rejected: 25 },
-    { month: 'Фев', applications: 280, approved: 210, rejected: 30 },
-    { month: 'Мар', applications: 320, approved: 250, rejected: 35 },
-    { month: 'Апр', applications: 290, approved: 220, rejected: 28 },
-    { month: 'Май', applications: 350, approved: 280, rejected: 40 },
-    { month: 'Июн', applications: 380, approved: 300, rejected: 45 }
+    { month: 'Янв', applications: 240, approved: 180, rejected: 25, inReview: 20, draft: 15 },
+    { month: 'Фев', applications: 280, approved: 210, rejected: 30, inReview: 25, draft: 15 },
+    { month: 'Мар', applications: 320, approved: 250, rejected: 35, inReview: 20, draft: 15 },
+    { month: 'Апр', applications: 290, approved: 220, rejected: 28, inReview: 22, draft: 20 },
+    { month: 'Май', applications: 350, approved: 280, rejected: 40, inReview: 15, draft: 15 },
+    { month: 'Июн', applications: 380, approved: 300, rejected: 45, inReview: 20, draft: 15 }
   ];
 
   const statusData = [
-    { name: 'Одобрено', value: 2156, color: '#10b981' },
-    { name: 'В обработке', value: 456, color: '#f59e0b' },
-    { name: 'Отклонено', value: 235, color: '#ef4444' }
+    { name: 'Одобрено', value: 1234, color: '#10b981' },
+    { name: 'На рассмотрении', value: 234, color: '#f59e0b' },
+    { name: 'Обработка платежа', value: 156, color: '#8b5cf6' },
+    { name: 'Черновик', value: 89, color: '#6b7280' },
+    { name: 'Отклонено', value: 156, color: '#ef4444' }
   ];
 
   const processingTimeData = [
@@ -64,10 +66,10 @@ export default function AnalyticsPage() {
   ];
 
   const specialistPerformance = [
-    { name: 'Нурбек Жумабеков', processed: 145, avgTime: 2.3, accuracy: 94 },
-    { name: 'Айгуль Токтосунова', processed: 132, avgTime: 2.5, accuracy: 92 },
-    { name: 'Марат Беков', processed: 128, avgTime: 2.8, accuracy: 89 },
-    { name: 'Айжан Кыдырова', processed: 115, avgTime: 2.4, accuracy: 96 }
+    { name: 'Нурбек Жумабеков', processed: 145, avgTime: 2.3, accuracy: 94, payments: 89 },
+    { name: 'Айгуль Токтосунова', processed: 132, avgTime: 2.5, accuracy: 92, payments: 78 },
+    { name: 'Марат Беков', processed: 128, avgTime: 2.8, accuracy: 89, payments: 72 },
+    { name: 'Айжан Кыдырова', processed: 115, avgTime: 2.4, accuracy: 96, payments: 68 }
   ];
 
   return (
@@ -126,6 +128,8 @@ export default function AnalyticsPage() {
               <Tooltip />
               <Line type="monotone" dataKey="applications" stroke="#3b82f6" strokeWidth={2} name="Заявки" />
               <Line type="monotone" dataKey="approved" stroke="#10b981" strokeWidth={2} name="Одобрено" />
+              <Line type="monotone" dataKey="inReview" stroke="#f59e0b" strokeWidth={2} name="На рассмотрении" />
+              <Line type="monotone" dataKey="draft" stroke="#6b7280" strokeWidth={2} name="Черновик" />
               <Line type="monotone" dataKey="rejected" stroke="#ef4444" strokeWidth={2} name="Отклонено" />
             </LineChart>
           </ResponsiveContainer>
@@ -204,19 +208,19 @@ export default function AnalyticsPage() {
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-neutral-600">Среднее время обработки</span>
-              <span className="font-semibold text-blue-600">2.6 часа</span>
+              <span className="font-semibold text-blue-600">2.5 часа</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-neutral-600">Процент одобрения</span>
-              <span className="font-semibold text-green-600">75.7%</span>
+              <span className="font-semibold text-green-600">50.2%</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-neutral-600">Заявок в день</span>
-              <span className="font-semibold text-purple-600">95 заявок</span>
+              <span className="font-semibold text-purple-600">82 заявки</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-neutral-600">Точность проверки</span>
-              <span className="font-semibold text-orange-600">92.8%</span>
+              <span className="text-neutral-600">Назначено платежей</span>
+              <span className="font-semibold text-orange-600">307</span>
             </div>
           </div>
         </div>
@@ -229,7 +233,7 @@ export default function AnalyticsPage() {
               <div key={index} className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
                 <div>
                   <p className="font-medium text-neutral-900">{specialist.name}</p>
-                  <p className="text-sm text-neutral-600">{specialist.processed} заявок</p>
+                  <p className="text-sm text-neutral-600">{specialist.processed} заявок, {specialist.payments} платежей</p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-semibold text-green-600">{specialist.accuracy}%</p>
@@ -248,14 +252,21 @@ export default function AnalyticsPage() {
               <div className="w-3 h-3 bg-green-500 rounded-full"></div>
               <div>
                 <p className="text-sm font-medium text-neutral-900">Рост заявок</p>
-                <p className="text-xs text-neutral-600">+12% за месяц</p>
+                <p className="text-xs text-neutral-600">+8% за месяц</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
               <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
               <div>
                 <p className="text-sm font-medium text-neutral-900">Улучшение времени</p>
-                <p className="text-xs text-neutral-600">-0.3ч за неделю</p>
+                <p className="text-xs text-neutral-600">-0.1ч за неделю</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+              <div>
+                <p className="text-sm font-medium text-neutral-900">Рост платежей</p>
+                <p className="text-xs text-neutral-600">+18% за месяц</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
@@ -263,13 +274,6 @@ export default function AnalyticsPage() {
               <div>
                 <p className="text-sm font-medium text-neutral-900">Стабильная точность</p>
                 <p className="text-xs text-neutral-600">92.8% без изменений</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-              <div>
-                <p className="text-sm font-medium text-neutral-900">Рост отклонений</p>
-                <p className="text-xs text-neutral-600">+2% за неделю</p>
               </div>
             </div>
           </div>
