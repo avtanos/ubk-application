@@ -378,48 +378,6 @@ export default function InspectionsPage() {
         />
       )}
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card">
-          <h3 className="text-lg font-semibold text-neutral-900 mb-4">Быстрые действия</h3>
-          <div className="space-y-3">
-            <button className="w-full btn-secondary text-left">
-              <i className="ri-route-line mr-2"></i>
-              Оптимизировать маршруты
-            </button>
-            <button className="w-full btn-warning text-left">
-              <i className="ri-notification-line mr-2"></i>
-              Отправить уведомления
-            </button>
-            <button className="w-full btn-info text-left">
-              <i className="ri-file-chart-line mr-2"></i>
-              Создать отчет
-            </button>
-          </div>
-        </div>
-
-        <div className="card">
-          <h3 className="text-lg font-semibold text-neutral-900 mb-4">Статистика проверок</h3>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-neutral-600">Проверок сегодня</span>
-              <span className="font-semibold text-blue-600">4 проверки</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-neutral-600">Среднее время проверки</span>
-              <span className="font-semibold text-green-600">1.5 часа</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-neutral-600">Успешных проверок</span>
-              <span className="font-semibold text-green-600">89%</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-neutral-600">Следующая проверка</span>
-              <span className="font-semibold text-purple-600">10:00</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Inspection Details Modal */}
       <InspectionDetailsModal

@@ -19,12 +19,6 @@ export default function AccountantSidebar({ isCollapsed = false, onToggle }: Acc
       href: '/accountant/payments'
     },
     {
-      id: 'transactions',
-      label: 'Транзакции',
-      icon: <i className="ri-exchange-line"></i>,
-      href: '/accountant/transactions'
-    },
-    {
       id: 'reconciliation',
       label: 'Сверка',
       icon: <i className="ri-check-double-line"></i>,

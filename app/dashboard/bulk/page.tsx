@@ -11,30 +11,30 @@ export default function BulkPage() {
 
   const metrics = [
     {
-      title: 'Готово к обработке',
-      value: '156',
-      change: '+8%',
+      title: 'Заявки к обработке',
+      value: '89',
+      change: '+12%',
       changeType: 'positive' as const,
       icon: <i className="ri-file-copy-line"></i>
     },
     {
-      title: 'В процессе',
-      value: '23',
-      change: '+3%',
+      title: 'Проверки назначены',
+      value: '34',
+      change: '+8%',
       changeType: 'positive' as const,
-      icon: <i className="ri-loader-line"></i>
+      icon: <i className="ri-search-line"></i>
     },
     {
-      title: 'Обработано',
-      value: '1,247',
-      change: '+15%',
+      title: 'Платежи назначены',
+      value: '156',
+      change: '+18%',
       changeType: 'positive' as const,
-      icon: <i className="ri-check-line"></i>
+      icon: <i className="ri-bank-card-line"></i>
     },
     {
-      title: 'Ошибки',
-      value: '12',
-      change: '-2%',
+      title: 'Ошибки обработки',
+      value: '8',
+      change: '-15%',
       changeType: 'negative' as const,
       icon: <i className="ri-error-warning-line"></i>
     }
@@ -55,38 +55,62 @@ export default function BulkPage() {
     },
     {
       id: 'BULK-002',
-      name: 'Обновление статусов',
-      type: 'status_update',
-      status: 'in_progress',
-      applicationsCount: 78,
-      processedCount: 34,
-      errorCount: 2,
+      name: 'Назначение выездных проверок',
+      type: 'inspection_assignment',
+      status: 'completed',
+      applicationsCount: 28,
+      processedCount: 28,
+      errorCount: 0,
       startTime: '2024-01-15 10:30',
-      endTime: null,
+      endTime: '2024-01-15 10:45',
       operator: 'Айгуль Токтосунова'
     },
     {
       id: 'BULK-003',
-      name: 'Экспорт данных',
-      type: 'export',
-      status: 'scheduled',
-      applicationsCount: 156,
-      processedCount: 0,
+      name: 'Отклонение заявок с недостатками',
+      type: 'rejection',
+      status: 'completed',
+      applicationsCount: 12,
+      processedCount: 12,
       errorCount: 0,
-      startTime: '2024-01-15 14:00',
-      endTime: null,
-      operator: 'Нурбек Жумабеков'
+      startTime: '2024-01-15 11:00',
+      endTime: '2024-01-15 11:08',
+      operator: 'Марат Беков'
     },
     {
       id: 'BULK-004',
-      name: 'Отправка уведомлений',
-      type: 'notification',
+      name: 'Назначение платежей',
+      type: 'payment_assignment',
+      status: 'in_progress',
+      applicationsCount: 67,
+      processedCount: 34,
+      errorCount: 2,
+      startTime: '2024-01-15 14:00',
+      endTime: null,
+      operator: 'Айжан Кыдырова'
+    },
+    {
+      id: 'BULK-005',
+      name: 'Отправка на доработку',
+      type: 'revision',
+      status: 'completed',
+      applicationsCount: 18,
+      processedCount: 18,
+      errorCount: 0,
+      startTime: '2024-01-15 15:30',
+      endTime: '2024-01-15 15:42',
+      operator: 'Нурбек Жумабеков'
+    },
+    {
+      id: 'BULK-006',
+      name: 'Обновление статусов проверок',
+      type: 'inspection_status',
       status: 'failed',
-      applicationsCount: 89,
-      processedCount: 23,
-      errorCount: 66,
-      startTime: '2024-01-15 11:00',
-      endTime: '2024-01-15 11:05',
+      applicationsCount: 23,
+      processedCount: 15,
+      errorCount: 8,
+      startTime: '2024-01-15 16:00',
+      endTime: '2024-01-15 16:12',
       operator: 'Айгуль Токтосунова'
     }
   ];
@@ -220,19 +244,19 @@ export default function BulkPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="flex justify-between items-center p-4 bg-blue-50 rounded-lg">
             <span className="text-neutral-600">Операций сегодня</span>
-            <span className="font-semibold text-blue-600">8 операций</span>
+            <span className="font-semibold text-blue-600">6 операций</span>
           </div>
           <div className="flex justify-between items-center p-4 bg-green-50 rounded-lg">
             <span className="text-neutral-600">Обработано заявок</span>
-            <span className="font-semibold text-green-600">1,247 заявок</span>
+            <span className="font-semibold text-green-600">193 заявки</span>
           </div>
           <div className="flex justify-between items-center p-4 bg-green-50 rounded-lg">
             <span className="text-neutral-600">Успешность</span>
-            <span className="font-semibold text-green-600">94%</span>
+            <span className="font-semibold text-green-600">92%</span>
           </div>
           <div className="flex justify-between items-center p-4 bg-purple-50 rounded-lg">
             <span className="text-neutral-600">Среднее время</span>
-            <span className="font-semibold text-purple-600">12 минут</span>
+            <span className="font-semibold text-purple-600">8 минут</span>
           </div>
         </div>
       </div>
@@ -327,7 +351,17 @@ export default function BulkPage() {
               <div>
                 <h3 className="font-semibold text-neutral-900 mb-3">Ошибки выполнения</h3>
                 <div className="space-y-2">
-                  {['APP-001: Недостаточно документов', 'APP-003: Некорректные данные'].map((error, index) => (
+                  {(selectedOperation.type === 'payment_assignment' ? [
+                    'APP-045: Недостаточно средств для платежа',
+                    'APP-067: Некорректные банковские реквизиты'
+                  ] : selectedOperation.type === 'inspection_status' ? [
+                    'INS-023: Проверка уже завершена',
+                    'INS-015: Инспектор недоступен',
+                    'INS-034: Некорректный адрес проверки'
+                  ] : [
+                    'APP-001: Недостаточно документов',
+                    'APP-003: Некорректные данные'
+                  ]).map((error, index) => (
                     <div key={index} className="p-3 bg-red-50 border border-red-200 rounded-lg">
                       <div className="flex items-center space-x-2">
                         <i className="ri-error-warning-line text-red-600"></i>

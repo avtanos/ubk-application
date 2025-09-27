@@ -18,6 +18,8 @@ export default function ReconciliationPage() {
   const [showExportModal, setShowExportModal] = useState(false);
   const [showDiscrepancyModal, setShowDiscrepancyModal] = useState(false);
   const [selectedDiscrepancy, setSelectedDiscrepancy] = useState<any>(null);
+  const [showDuplicateCheckModal, setShowDuplicateCheckModal] = useState(false);
+  const [duplicateResults, setDuplicateResults] = useState<any[]>([]);
 
   // Функции для массовых действий
   const handleSelectReconciliation = (reconciliation: any, checked: boolean) => {
@@ -75,6 +77,48 @@ export default function ReconciliationPage() {
 
   const handleExportReport = () => {
     setShowExportModal(true);
+  };
+
+  const handleCheckDuplicates = () => {
+    setShowDuplicateCheckModal(true);
+    // Имитация проверки дубликатов
+    const mockDuplicates = [
+      {
+        id: 'DUP-001',
+        applicantName: 'Айбек Кыдыров',
+        invoiceId: 'INV-2024-001',
+        duplicatePayments: [
+          { id: 'PAY-001', amount: 50000, date: '2024-01-15', status: 'completed' },
+          { id: 'PAY-045', amount: 50000, date: '2024-01-16', status: 'completed' }
+        ],
+        totalDuplicateAmount: 100000,
+        severity: 'high'
+      },
+      {
+        id: 'DUP-002',
+        applicantName: 'Нургуль Асанова',
+        invoiceId: 'INV-2024-002',
+        duplicatePayments: [
+          { id: 'PAY-002', amount: 75000, date: '2024-01-14', status: 'completed' },
+          { id: 'PAY-067', amount: 75000, date: '2024-01-15', status: 'processing' }
+        ],
+        totalDuplicateAmount: 150000,
+        severity: 'medium'
+      },
+      {
+        id: 'DUP-003',
+        applicantName: 'Марат Беков',
+        invoiceId: 'INV-2024-003',
+        duplicatePayments: [
+          { id: 'PAY-003', amount: 60000, date: '2024-01-13', status: 'completed' },
+          { id: 'PAY-089', amount: 60000, date: '2024-01-14', status: 'completed' },
+          { id: 'PAY-123', amount: 60000, date: '2024-01-15', status: 'pending' }
+        ],
+        totalDuplicateAmount: 180000,
+        severity: 'critical'
+      }
+    ];
+    setDuplicateResults(mockDuplicates);
   };
 
   // Функции для действий с расхождениями
@@ -478,6 +522,13 @@ export default function ReconciliationPage() {
               Проверить расхождения
             </button>
             <button 
+              onClick={handleCheckDuplicates}
+              className="w-full btn-danger text-left"
+            >
+              <i className="ri-file-copy-line mr-2"></i>
+              Проверить дубликаты выплат
+            </button>
+            <button 
               onClick={handleExportReport}
               className="w-full btn-info text-left"
             >
@@ -590,6 +641,132 @@ export default function ReconciliationPage() {
           discrepancy={selectedDiscrepancy} 
           onSubmit={handleDiscrepancyAction} 
         />
+      </Modal>
+
+      {/* Duplicate Check Modal */}
+      <Modal
+        isOpen={showDuplicateCheckModal}
+        onClose={() => {
+          setShowDuplicateCheckModal(false);
+          setDuplicateResults([]);
+        }}
+        title="Проверка дубликатов выплат"
+        size="large"
+      >
+        <div className="p-6">
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-neutral-900 mb-2">Результаты проверки дубликатов</h3>
+            <p className="text-neutral-600">Найдены дублирующиеся выплаты по заявителям в рамках накладных</p>
+          </div>
+
+          {duplicateResults.length === 0 ? (
+            <div className="text-center py-8">
+              <i className="ri-check-line text-4xl text-green-600 mb-4"></i>
+              <h3 className="text-lg font-semibold text-neutral-900 mb-2">Дубликаты не найдены</h3>
+              <p className="text-neutral-600">Все выплаты уникальны в рамках накладных</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {duplicateResults.map((duplicate) => (
+                <div key={duplicate.id} className="border border-red-200 rounded-lg p-4 bg-red-50">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h4 className="font-semibold text-neutral-900">{duplicate.applicantName}</h4>
+                      <p className="text-sm text-neutral-600">Накладная: {duplicate.invoiceId}</p>
+                    </div>
+                    <StatusBadge 
+                      status={
+                        duplicate.severity === 'critical' ? 'error' :
+                        duplicate.severity === 'high' ? 'error' : 'warning'
+                      }
+                      text={
+                        duplicate.severity === 'critical' ? 'Критический' :
+                        duplicate.severity === 'high' ? 'Высокий' : 'Средний'
+                      }
+                    />
+                  </div>
+
+                  <div className="mb-4">
+                    <h5 className="font-medium text-neutral-900 mb-2">Дублирующиеся выплаты:</h5>
+                    <div className="space-y-2">
+                      {duplicate.duplicatePayments.map((payment, index) => (
+                        <div key={index} className="flex items-center justify-between p-2 bg-white rounded border">
+                          <div className="flex items-center space-x-3">
+                            <span className="font-mono text-sm text-blue-600">{payment.id}</span>
+                            <span className="text-sm">{payment.amount.toLocaleString()} сом</span>
+                            <span className="text-xs text-neutral-600">{payment.date}</span>
+                          </div>
+                          <StatusBadge 
+                            status={
+                              payment.status === 'completed' ? 'success' :
+                              payment.status === 'processing' ? 'warning' : 'info'
+                            }
+                            text={
+                              payment.status === 'completed' ? 'Выплачено' :
+                              payment.status === 'processing' ? 'В обработке' : 'Ожидает'
+                            }
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm">
+                      <span className="text-neutral-600">Общая сумма дубликатов:</span>
+                      <span className="ml-2 font-semibold text-red-600">
+                        {duplicate.totalDuplicateAmount.toLocaleString()} сом
+                      </span>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button className="btn-warning text-sm">
+                        <i className="ri-pause-line mr-1"></i>
+                        Приостановить
+                      </button>
+                      <button className="btn-danger text-sm">
+                        <i className="ri-delete-bin-line mr-1"></i>
+                        Отменить дубликаты
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              <div className="border-t border-neutral-200 pt-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-semibold text-neutral-900">Сводка</h4>
+                    <p className="text-sm text-neutral-600">
+                      Найдено {duplicateResults.length} случаев дублирования выплат
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-neutral-600">Общая сумма дубликатов:</p>
+                    <p className="text-lg font-bold text-red-600">
+                      {duplicateResults.reduce((sum, dup) => sum + dup.totalDuplicateAmount, 0).toLocaleString()} сом
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4 border-t border-neutral-200">
+                <button
+                  onClick={() => {
+                    setShowDuplicateCheckModal(false);
+                    setDuplicateResults([]);
+                  }}
+                  className="btn-secondary"
+                >
+                  Закрыть
+                </button>
+                <button className="btn-primary">
+                  <i className="ri-download-line mr-2"></i>
+                  Экспорт отчета
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </Modal>
     </div>
   );

@@ -371,64 +371,6 @@ export default function PaymentsPage() {
         />
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card">
-          <h3 className="text-lg font-semibold text-neutral-900 mb-4">Быстрые действия</h3>
-          <div className="space-y-3">
-            <button 
-              onClick={handleBulkPayment}
-              className="w-full btn-success text-left"
-            >
-              <i className="ri-play-circle-line mr-2"></i>
-              Массовая выплата
-            </button>
-            <button 
-              onClick={handleSchedulePayments}
-              className="w-full btn-secondary text-left"
-            >
-              <i className="ri-calendar-line mr-2"></i>
-              Планировать выплаты
-            </button>
-            <button 
-              onClick={handleRetryFailed}
-              className="w-full btn-warning text-left"
-            >
-              <i className="ri-refresh-line mr-2"></i>
-              Повторить неудачные
-            </button>
-            <button 
-              onClick={handleNotifyRecipients}
-              className="w-full btn-info text-left"
-            >
-              <i className="ri-notification-line mr-2"></i>
-              Уведомить получателей
-            </button>
-          </div>
-        </div>
-
-        <div className="card">
-          <h3 className="text-lg font-semibold text-neutral-900 mb-4">Статистика выплат</h3>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-neutral-600">Выплат сегодня</span>
-              <span className="font-semibold text-green-600">23 выплаты</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-neutral-600">Сумма сегодня</span>
-              <span className="font-semibold text-blue-600">1,250,000 сом</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-neutral-600">Успешность</span>
-              <span className="font-semibold text-green-600">94.2%</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-neutral-600">Среднее время</span>
-              <span className="font-semibold text-purple-600">2.3 часа</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Payment Details Modal */}
       <Modal
