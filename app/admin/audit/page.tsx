@@ -192,10 +192,6 @@ export default function AuditPage() {
             <option value="90d">Последние 90 дней</option>
             <option value="1y">Последний год</option>
           </select>
-          <button className="btn-secondary">
-            <i className="ri-download-line mr-2"></i>
-            Экспорт логов
-          </button>
         </div>
       </div>
 
@@ -259,18 +255,6 @@ export default function AuditPage() {
                   </div>
                 </div>
                 
-                <div className="flex space-x-2 ml-4">
-                  <button className="btn-primary text-sm">
-                    <i className="ri-eye-line mr-1"></i>
-                    Просмотр
-                  </button>
-                  {activity.status === 'investigating' && (
-                    <button className="btn-success text-sm">
-                      <i className="ri-check-line mr-1"></i>
-                      Разрешить
-                    </button>
-                  )}
-                </div>
               </div>
             </div>
           ))}
@@ -291,52 +275,6 @@ export default function AuditPage() {
         />
       </div>
 
-      {/* Security Summary */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card">
-          <h3 className="text-lg font-semibold text-neutral-900 mb-4">Статистика безопасности</h3>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-neutral-600">Успешных входов</span>
-              <span className="font-semibold text-green-600">2,847</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-neutral-600">Неудачных попыток</span>
-              <span className="font-semibold text-red-600">156</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-neutral-600">Подозрительных действий</span>
-              <span className="font-semibold text-orange-600">23</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-neutral-600">Блокировок</span>
-              <span className="font-semibold text-red-600">8</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <h3 className="text-lg font-semibold text-neutral-900 mb-4">Быстрые действия</h3>
-          <div className="space-y-3">
-            <button className="w-full btn-primary text-left">
-              <i className="ri-search-line mr-2"></i>
-              Поиск по логам
-            </button>
-            <button className="w-full btn-secondary text-left">
-              <i className="ri-download-line mr-2"></i>
-              Экспорт отчета
-            </button>
-            <button className="w-full btn-warning text-left">
-              <i className="ri-alarm-warning-line mr-2"></i>
-              Настроить алерты
-            </button>
-            <button className="w-full btn-info text-left">
-              <i className="ri-settings-3-line mr-2"></i>
-              Настройки аудита
-            </button>
-          </div>
-        </div>
-      </div>
 
       {/* Activity Types */}
       <div className="card">

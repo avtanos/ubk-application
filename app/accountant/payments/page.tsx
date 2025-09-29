@@ -11,8 +11,6 @@ import BulkPaymentForm from '@/components/ui/BulkPaymentForm';
 import SchedulePaymentsForm from '@/components/ui/SchedulePaymentsForm';
 import RetryFailedPaymentsForm from '@/components/ui/RetryFailedPaymentsForm';
 import NotifyRecipientsForm from '@/components/ui/NotifyRecipientsForm';
-import InvoiceExportModal from '@/components/ui/InvoiceExportModal';
-import InvoiceSubmissionModal from '@/components/ui/InvoiceSubmissionModal';
 
 export default function PaymentsPage() {
   const [selectedPayment, setSelectedPayment] = useState<any>(null);
@@ -23,24 +21,16 @@ export default function PaymentsPage() {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showRetryModal, setShowRetryModal] = useState(false);
   const [showNotifyModal, setShowNotifyModal] = useState(false);
-  const [showInvoiceExportModal, setShowInvoiceExportModal] = useState(false);
-  const [showInvoiceSubmissionModal, setShowInvoiceSubmissionModal] = useState(false);
 
   const metrics = [
     {
-      title: 'Всего выплат',
-      value: '2,847',
-      change: { value: '+12%', type: 'positive' as const },
-      icon: <i className="ri-money-dollar-circle-line"></i>
-    },
-    {
-      title: 'В обработке',
+      title: 'На утверждении',
       value: '156',
       change: { value: '+8%', type: 'positive' as const },
-      icon: <i className="ri-loader-line"></i>
+      icon: <i className="ri-time-line"></i>
     },
     {
-      title: 'Выплачено',
+      title: 'Утверждено',
       value: '2,456',
       change: { value: '+15%', type: 'positive' as const },
       icon: <i className="ri-check-line"></i>
@@ -50,6 +40,12 @@ export default function PaymentsPage() {
       value: '235',
       change: { value: '-3%', type: 'negative' as const },
       icon: <i className="ri-close-line"></i>
+    },
+    {
+      title: 'Всего заявок',
+      value: '2,847',
+      change: { value: '+12%', type: 'positive' as const },
+      icon: <i className="ri-file-list-3-line"></i>
     }
   ];
 
@@ -57,50 +53,67 @@ export default function PaymentsPage() {
     {
       id: 'PAY-001',
       applicant: 'Айбек Кыдыров',
+      applicationId: 'APP-2024-001',
       amount: 50000,
       type: 'Единовременная выплата',
-      status: 'pending',
+      status: 'pending_approval',
+      specialistName: 'Айжан Кыдырова',
       createdDate: '2024-01-15',
-      scheduledDate: '2024-01-16',
+      submittedDate: '2024-01-15',
       bankAccount: '****1234',
-      bankName: 'ОАО "Демир Банк"'
+      bankName: 'ОАО "Демир Банк"',
+      workflowStatus: 'awaiting_accountant_approval'
     },
     {
       id: 'PAY-002',
       applicant: 'Нургуль Асанова',
+      applicationId: 'APP-2024-002',
       amount: 75000,
       type: 'Единовременная выплата',
-      status: 'processing',
+      status: 'approved',
+      specialistName: 'Айжан Кыдырова',
       createdDate: '2024-01-15',
-      scheduledDate: '2024-01-16',
+      submittedDate: '2024-01-15',
+      approvedDate: '2024-01-15',
       bankAccount: '****5678',
-      bankName: 'ОАО "РСК Банк"'
+      bankName: 'ОАО "РСК Банк"',
+      workflowStatus: 'approved_ready_for_reconciliation'
     },
     {
       id: 'PAY-003',
       applicant: 'Марат Беков',
+      applicationId: 'APP-2024-003',
       amount: 60000,
       type: 'Единовременная выплата',
-      status: 'completed',
+      status: 'approved',
+      specialistName: 'Айжан Кыдырова',
       createdDate: '2024-01-14',
-      scheduledDate: '2024-01-15',
+      submittedDate: '2024-01-14',
+      approvedDate: '2024-01-14',
       bankAccount: '****9012',
-      bankName: 'ОАО "Айыл Банк"'
+      bankName: 'ОАО "Айыл Банк"',
+      workflowStatus: 'approved_ready_for_reconciliation'
     },
     {
       id: 'PAY-004',
       applicant: 'Айгуль Токтосунова',
+      applicationId: 'APP-2024-004',
       amount: 80000,
       type: 'Единовременная выплата',
-      status: 'failed',
+      status: 'rejected',
+      specialistName: 'Айжан Кыдырова',
       createdDate: '2024-01-14',
-      scheduledDate: '2024-01-15',
+      submittedDate: '2024-01-14',
+      rejectedDate: '2024-01-14',
+      rejectionReason: 'Недостаточно документов',
       bankAccount: '****3456',
-      bankName: 'ОАО "Демир Банк"'
+      bankName: 'ОАО "Демир Банк"',
+      workflowStatus: 'rejected'
     },
     {
       id: 'PAY-005',
       applicant: 'Эркин Садыков',
+      applicationId: 'APP-2024-005',
       amount: 45000,
       type: 'Единовременная выплата',
       status: 'pending',
@@ -218,21 +231,13 @@ export default function PaymentsPage() {
       key: 'actions',
       label: 'Действия',
       render: (value: any, row: any) => (
-        <div className="flex space-x-2">
-          <button 
-            onClick={() => handleViewPayment(row)}
-            className="btn-primary text-xs px-3 py-1"
-          >
-            <i className="ri-eye-line mr-1"></i>
-            Просмотр
-          </button>
-          {row.status === 'pending' && (
-            <button className="btn-success text-xs px-3 py-1">
-              <i className="ri-play-line mr-1"></i>
-              Выплатить
-            </button>
-          )}
-        </div>
+        <button 
+          onClick={() => handleViewPayment(row)}
+          className="btn-primary text-xs px-3 py-1"
+        >
+          <i className="ri-eye-line mr-1"></i>
+          Просмотр
+        </button>
       )
     }
   ];
@@ -290,43 +295,14 @@ export default function PaymentsPage() {
     setShowNotifyModal(false);
   };
 
-  const handleExportInvoice = () => {
-    if (selectedPayments.length === 0) {
-      alert('Выберите выплаты для экспорта накладной');
-      return;
-    }
-    setShowInvoiceExportModal(true);
-  };
-
-  const handleSubmitInvoice = () => {
-    if (selectedPayments.length === 0) {
-      alert('Выберите выплаты для отправки на утверждение');
-      return;
-    }
-    setShowInvoiceSubmissionModal(true);
-  };
-
-  const handleInvoiceExportComplete = () => {
-    setShowInvoiceExportModal(false);
-    setSelectedPayments([]);
-    // Обновить список выплат
-    console.log('Накладная успешно экспортирована');
-  };
-
-  const handleInvoiceSubmissionComplete = () => {
-    setShowInvoiceSubmissionModal(false);
-    setSelectedPayments([]);
-    // Обновить список выплат
-    console.log('Накладная отправлена на утверждение');
-  };
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Управление выплатами</h1>
-          <p className="text-neutral-600 mt-1">Обработка и контроль выплат по заявкам</p>
+          <h1 className="text-2xl font-bold text-neutral-900">Выплаты</h1>
+          <p className="text-neutral-600 mt-1">Утверждение выплат по заявкам от Специалиста</p>
         </div>
 
       </div>
@@ -359,8 +335,6 @@ export default function PaymentsPage() {
           onBulkAction={handleBulkAction}
           onSelectAll={handleSelectAll}
           onDeselectAll={handleDeselectAll}
-          onExportInvoice={handleExportInvoice}
-          onSubmitInvoice={handleSubmitInvoice}
           totalPayments={payments.length}
           isAllSelected={selectedPayments.length === payments.length && payments.length > 0}
         />
@@ -559,37 +533,6 @@ export default function PaymentsPage() {
         <NotifyRecipientsForm onSubmit={handleNotifyRecipientsSubmit} />
       </Modal>
 
-      {/* Invoice Export Modal */}
-      <InvoiceExportModal
-        isOpen={showInvoiceExportModal}
-        onClose={() => setShowInvoiceExportModal(false)}
-        selectedPayments={selectedPayments}
-        onExportComplete={handleInvoiceExportComplete}
-      />
-
-      {/* Invoice Submission Modal */}
-      <InvoiceSubmissionModal
-        isOpen={showInvoiceSubmissionModal}
-        onClose={() => setShowInvoiceSubmissionModal(false)}
-        invoiceData={{
-          id: `INV-${Date.now()}`,
-          departmentName: 'Управление социального развития по Октябрьскому административному району города Бишкек',
-          purpose: 'На зачисление денежных средств на карточные счета получателей уй булоого комок в ЗАО «КИКБ»',
-          companyAccount: '1280190090000142',
-          valueDate: new Date().toISOString().split('T')[0],
-          totalAmount: selectedPayments.reduce((sum, p) => sum + p.amount, 0),
-          payments: selectedPayments.map((payment, index) => ({
-            number: index + 1,
-            fullName: payment.applicantName,
-            accountNumber: payment.bankAccount,
-            amount: payment.amount
-          })),
-          headName: 'Дурусалиев Т.Б.',
-          accountantName: 'Эгембаева Д.Н.'
-        }}
-        selectedPayments={selectedPayments}
-        onSubmitSuccess={handleInvoiceSubmissionComplete}
-      />
     </div>
   );
 }

@@ -20,19 +20,19 @@ export default function AccountantSidebar({ isCollapsed = false, onToggle }: Acc
     },
     {
       id: 'reconciliation',
-      label: 'Сверка',
+      label: 'Сверка по заявкам',
       icon: <i className="ri-check-double-line"></i>,
       href: '/accountant/reconciliation'
     },
     {
       id: 'registries',
-      label: 'Реестры',
+      label: 'Накладные',
       icon: <i className="ri-file-list-3-line"></i>,
       href: '/accountant/registries'
     },
     {
       id: 'reports',
-      label: 'Финансовые отчеты',
+      label: 'Отчеты',
       icon: <i className="ri-bar-chart-line"></i>,
       href: '/accountant/reports'
     }

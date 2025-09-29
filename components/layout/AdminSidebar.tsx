@@ -13,10 +13,10 @@ export default function AdminSidebar({ isCollapsed = false, onToggle }: AdminSid
 
   const navigationItems = [
     {
-      id: 'dashboard',
-      label: 'Обзор',
-      icon: <i className="ri-dashboard-line"></i>,
-      href: '/admin'
+      id: 'users',
+      label: 'Пользователи',
+      icon: <i className="ri-user-line"></i>,
+      href: '/admin/users'
     },
     {
       id: 'roles',
@@ -25,40 +25,10 @@ export default function AdminSidebar({ isCollapsed = false, onToggle }: AdminSid
       href: '/admin/roles'
     },
     {
-      id: 'analytics',
-      label: 'Аналитика',
-      icon: <i className="ri-bar-chart-line"></i>,
-      href: '/admin/analytics'
-    },
-    {
       id: 'audit',
       label: 'Аудит',
       icon: <i className="ri-file-search-line"></i>,
       href: '/admin/audit'
-    },
-    {
-      id: 'payments',
-      label: 'Выплаты',
-      icon: <i className="ri-money-dollar-circle-line"></i>,
-      href: '/admin/payments'
-    },
-    {
-      id: 'system',
-      label: 'Система',
-      icon: <i className="ri-settings-3-line"></i>,
-      href: '/admin/system'
-    },
-    {
-      id: 'backup',
-      label: 'Резервные копии',
-      icon: <i className="ri-database-line"></i>,
-      href: '/admin/backup'
-    },
-    {
-      id: 'settings',
-      label: 'Настройки',
-      icon: <i className="ri-settings-line"></i>,
-      href: '/admin/settings'
     }
   ];
 

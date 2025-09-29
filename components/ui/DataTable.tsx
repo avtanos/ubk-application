@@ -2,6 +2,14 @@
 
 import { ReactNode, useState, useMemo } from 'react';
 
+interface Action {
+  label: string;
+  icon?: string;
+  onClick: (row: any) => void;
+  className?: string;
+  condition?: (row: any) => boolean;
+}
+
 interface Column {
   key: string;
   label: string;
@@ -21,6 +29,10 @@ interface DataTableProps {
   searchable?: boolean;
   sortable?: boolean;
   filterable?: boolean;
+  actions?: Action[];
+  selectable?: boolean;
+  selectedItems?: any[];
+  onSelectionChange?: (items: any[]) => void;
 }
 
 export default function DataTable({ 
@@ -31,10 +43,35 @@ export default function DataTable({
   className = '',
   searchable = false,
   sortable = false,
-  filterable = false
+  filterable = false,
+  actions = [],
+  selectable = false,
+  selectedItems = [],
+  onSelectionChange
 }: DataTableProps) {
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+
+  // Обработка выбора элементов
+  const handleSelectItem = (item: any, isSelected: boolean) => {
+    if (!onSelectionChange) return;
+    
+    if (isSelected) {
+      onSelectionChange([...selectedItems, item]);
+    } else {
+      onSelectionChange(selectedItems.filter((selectedItem: any) => selectedItem.id !== item.id));
+    }
+  };
+
+  const handleSelectAll = () => {
+    if (!onSelectionChange) return;
+    onSelectionChange([...filteredData]);
+  };
+
+  const handleDeselectAll = () => {
+    if (!onSelectionChange) return;
+    onSelectionChange([]);
+  };
 
   // Фильтрация данных
   const filteredData = useMemo(() => {
@@ -130,6 +167,16 @@ export default function DataTable({
           <thead className="table-header">
             {/* Header Row */}
             <tr>
+              {selectable && (
+                <th className="table-header-cell w-12">
+                  <input
+                    type="checkbox"
+                    checked={selectedItems.length === filteredData.length && filteredData.length > 0}
+                    onChange={(e) => e.target.checked ? handleSelectAll() : handleDeselectAll()}
+                    className="w-4 h-4 text-blue-600 border-neutral-300 rounded focus:ring-blue-500"
+                  />
+                </th>
+              )}
               {columns.map((column) => (
                 <th key={column.key} className="table-header-cell">
                   <div className="flex items-center space-x-2">
@@ -156,6 +203,9 @@ export default function DataTable({
                   </div>
                 </th>
               ))}
+              {actions.length > 0 && (
+                <th className="table-header-cell w-32">Действия</th>
+              )}
             </tr>
             {/* Filter Row */}
             {filterable && (
@@ -213,6 +263,16 @@ export default function DataTable({
           <tbody className="table-body">
             {filteredData.map((row, index) => (
               <tr key={index} className="table-row">
+                {selectable && (
+                  <td className="table-cell">
+                    <input
+                      type="checkbox"
+                      checked={selectedItems.some((item: any) => item.id === row.id)}
+                      onChange={(e) => handleSelectItem(row, e.target.checked)}
+                      className="w-4 h-4 text-blue-600 border-neutral-300 rounded focus:ring-blue-500"
+                    />
+                  </td>
+                )}
                 {columns.map((column) => (
                   <td key={column.key} className="table-cell">
                     {column.render 
@@ -221,6 +281,27 @@ export default function DataTable({
                     }
                   </td>
                 ))}
+                {actions.length > 0 && (
+                  <td className="table-cell">
+                    <div className="flex space-x-2">
+                      {actions.map((action, actionIndex) => {
+                        if (action.condition && !action.condition(row)) {
+                          return null;
+                        }
+                        return (
+                          <button
+                            key={actionIndex}
+                            onClick={() => action.onClick(row)}
+                            className={`px-3 py-1 rounded text-sm font-medium transition-colors ${action.className || 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+                          >
+                            {action.icon && <i className={`${action.icon} mr-1`}></i>}
+                            {action.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -231,6 +312,37 @@ export default function DataTable({
       <div className="md:hidden space-y-3">
         {filteredData.map((row, index) => (
           <div key={index} className="bg-white border border-neutral-200 rounded-lg p-4 shadow-sm">
+            {(selectable || actions.length > 0) && (
+              <div className="flex justify-between items-center py-2 border-b border-neutral-100">
+                {selectable && (
+                  <input
+                    type="checkbox"
+                    checked={selectedItems.some((item: any) => item.id === row.id)}
+                    onChange={(e) => handleSelectItem(row, e.target.checked)}
+                    className="w-4 h-4 text-blue-600 border-neutral-300 rounded focus:ring-blue-500"
+                  />
+                )}
+                {actions.length > 0 && (
+                  <div className="flex space-x-2">
+                    {actions.map((action, actionIndex) => {
+                      if (action.condition && !action.condition(row)) {
+                        return null;
+                      }
+                      return (
+                        <button
+                          key={actionIndex}
+                          onClick={() => action.onClick(row)}
+                          className={`px-3 py-1 rounded text-sm font-medium transition-colors ${action.className || 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+                        >
+                          {action.icon && <i className={`${action.icon} mr-1`}></i>}
+                          {action.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
             {columns.map((column) => (
               <div key={column.key} className="flex justify-between items-center py-2 border-b border-neutral-100 last:border-b-0">
                 <span className="text-sm font-medium text-neutral-600">{column.label}:</span>

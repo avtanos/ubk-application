@@ -1,236 +1,252 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import MetricCard from '@/components/ui/MetricCard';
 import StatusBadge from '@/components/ui/StatusBadge';
 import DataTable from '@/components/ui/DataTable';
-import ReconciliationBulkActions from '@/components/ui/ReconciliationBulkActions';
 import Modal from '@/components/ui/Modal';
-import AutoReconciliationForm from '@/components/ui/AutoReconciliationForm';
-import DiscrepancyViewForm from '@/components/ui/DiscrepancyViewForm';
 
 export default function ReconciliationPage() {
   const [selectedPeriod, setSelectedPeriod] = useState('30d');
-  const [selectedReconciliations, setSelectedReconciliations] = useState<any[]>([]);
-  const [showAutoReconciliationModal, setShowAutoReconciliationModal] = useState(false);
-  const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [showCheckDiscrepanciesModal, setShowCheckDiscrepanciesModal] = useState(false);
-  const [showExportModal, setShowExportModal] = useState(false);
-  const [showDiscrepancyModal, setShowDiscrepancyModal] = useState(false);
-  const [selectedDiscrepancy, setSelectedDiscrepancy] = useState<any>(null);
-  const [showDuplicateCheckModal, setShowDuplicateCheckModal] = useState(false);
-  const [duplicateResults, setDuplicateResults] = useState<any[]>([]);
+  const [selectedDuplicates, setSelectedDuplicates] = useState<any[]>([]);
+  const [showDuplicateDetailsModal, setShowDuplicateDetailsModal] = useState(false);
+  const [selectedDuplicate, setSelectedDuplicate] = useState<any>(null);
+  const [showResolveModal, setShowResolveModal] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanProgress, setScanProgress] = useState(0);
+  const [duplicates, setDuplicates] = useState<any[]>([]);
 
-  // Функции для массовых действий
-  const handleSelectReconciliation = (reconciliation: any, checked: boolean) => {
+  // Функции для работы с дубликатами
+  const handleSelectDuplicate = (duplicate: any, checked: boolean) => {
     if (checked) {
-      setSelectedReconciliations([...selectedReconciliations, reconciliation]);
+      setSelectedDuplicates([...selectedDuplicates, duplicate]);
     } else {
-      setSelectedReconciliations(selectedReconciliations.filter(r => r.id !== reconciliation.id));
+      setSelectedDuplicates(selectedDuplicates.filter(d => d.id !== duplicate.id));
     }
   };
 
-  const handleSelectAll = () => {
-    setSelectedReconciliations([...reconciliations]);
+  const handleSelectAllDuplicates = () => {
+    setSelectedDuplicates([...duplicates]);
   };
 
-  const handleDeselectAll = () => {
-    setSelectedReconciliations([]);
+  const handleDeselectAllDuplicates = () => {
+    setSelectedDuplicates([]);
   };
 
-  const handleBulkAction = (action: string, reconciliationIds: string[]) => {
+  const handleBulkAction = (action: string, duplicateIds: string[]) => {
     switch (action) {
-      case 'export':
-        console.log('Экспорт сверок:', reconciliationIds);
-        alert(`Экспорт ${reconciliationIds.length} сверок...`);
-        break;
-      case 'rerun':
-        console.log('Повторный запуск сверок:', reconciliationIds);
-        alert(`Повторный запуск ${reconciliationIds.length} сверок...`);
-        break;
-      case 'approve':
-        console.log('Утверждение сверок:', reconciliationIds);
-        alert(`Утверждение ${reconciliationIds.length} сверок...`);
+      case 'resolve':
+        console.log('Разрешение дубликатов:', duplicateIds);
+        alert(`Разрешение ${duplicateIds.length} дубликатов...`);
         break;
       case 'cancel':
-        console.log('Отмена сверок:', reconciliationIds);
-        alert(`Отмена ${reconciliationIds.length} сверок...`);
+        console.log('Отмена дубликатов:', duplicateIds);
+        alert(`Отмена ${duplicateIds.length} дубликатов...`);
+        break;
+      case 'export':
+        console.log('Экспорт дубликатов:', duplicateIds);
+        alert(`Экспорт ${duplicateIds.length} дубликатов...`);
         break;
     }
     
     // Очищаем выбор после действия
-    setSelectedReconciliations([]);
+    setSelectedDuplicates([]);
   };
 
-  // Функции для быстрых действий
-  const handleAutoReconciliation = () => {
-    setShowAutoReconciliationModal(true);
+  // Функции для сканирования дубликатов
+  const handleStartScan = async () => {
+    setIsScanning(true);
+    setScanProgress(0);
+    
+    // Имитация процесса сканирования
+    for (let i = 0; i <= 100; i += 10) {
+      await new Promise(resolve => setTimeout(resolve, 200));
+      setScanProgress(i);
+    }
+    
+    setIsScanning(false);
+    // Обновляем список дубликатов после сканирования
+    setDuplicates(mockDuplicates);
   };
 
-  const handleScheduleReconciliations = () => {
-    setShowScheduleModal(true);
+  const handleViewDuplicateDetails = (duplicate: any) => {
+    setSelectedDuplicate(duplicate);
+    setShowDuplicateDetailsModal(true);
   };
 
-  const handleCheckDiscrepancies = () => {
-    setShowCheckDiscrepanciesModal(true);
+  const handleResolveDuplicate = (duplicate: any) => {
+    setSelectedDuplicate(duplicate);
+    setShowResolveModal(true);
   };
 
-  const handleExportReport = () => {
-    setShowExportModal(true);
+  const handleResolveSubmit = (formData: any) => {
+    console.log('Разрешение дубликата:', formData);
+    alert(`Дубликат ${formData.duplicateId} разрешен: ${formData.action}`);
+    setShowResolveModal(false);
+    setSelectedDuplicate(null);
   };
 
-  const handleCheckDuplicates = () => {
-    setShowDuplicateCheckModal(true);
-    // Имитация проверки дубликатов
-    const mockDuplicates = [
-      {
-        id: 'DUP-001',
-        applicantName: 'Айбек Кыдыров',
-        invoiceId: 'INV-2024-001',
-        duplicatePayments: [
-          { id: 'PAY-001', amount: 50000, date: '2024-01-15', status: 'completed' },
-          { id: 'PAY-045', amount: 50000, date: '2024-01-16', status: 'completed' }
-        ],
-        totalDuplicateAmount: 100000,
-        severity: 'high'
-      },
-      {
-        id: 'DUP-002',
-        applicantName: 'Нургуль Асанова',
-        invoiceId: 'INV-2024-002',
-        duplicatePayments: [
-          { id: 'PAY-002', amount: 75000, date: '2024-01-14', status: 'completed' },
-          { id: 'PAY-067', amount: 75000, date: '2024-01-15', status: 'processing' }
-        ],
-        totalDuplicateAmount: 150000,
-        severity: 'medium'
-      },
-      {
-        id: 'DUP-003',
-        applicantName: 'Марат Беков',
-        invoiceId: 'INV-2024-003',
-        duplicatePayments: [
-          { id: 'PAY-003', amount: 60000, date: '2024-01-13', status: 'completed' },
-          { id: 'PAY-089', amount: 60000, date: '2024-01-14', status: 'completed' },
-          { id: 'PAY-123', amount: 60000, date: '2024-01-15', status: 'pending' }
-        ],
-        totalDuplicateAmount: 180000,
-        severity: 'critical'
-      }
-    ];
-    setDuplicateResults(mockDuplicates);
-  };
+  // Мокап данные для дубликатов
+  const mockDuplicates = [
+    {
+      id: 'DUP-001',
+      applicantName: 'Айбек Кыдыров',
+      applicantPin: '12345678901234',
+      invoiceId: 'INV-2024-001',
+      applicationId: 'APP-2024-001',
+      duplicatePayments: [
+        { 
+          id: 'PAY-001', 
+          amount: 50000, 
+          date: '2024-01-15', 
+          status: 'completed',
+          bankTransactionId: 'TXN-001',
+          paymentMethod: 'bank_transfer'
+        },
+        { 
+          id: 'PAY-045', 
+          amount: 50000, 
+          date: '2024-01-16', 
+          status: 'completed',
+          bankTransactionId: 'TXN-045',
+          paymentMethod: 'bank_transfer'
+        }
+      ],
+      totalDuplicateAmount: 100000,
+      severity: 'high',
+      detectedDate: '2024-01-17',
+      status: 'pending'
+    },
+    {
+      id: 'DUP-002',
+      applicantName: 'Нургуль Асанова',
+      applicantPin: '12345678901235',
+      invoiceId: 'INV-2024-002',
+      applicationId: 'APP-2024-002',
+      duplicatePayments: [
+        { 
+          id: 'PAY-002', 
+          amount: 75000, 
+          date: '2024-01-14', 
+          status: 'completed',
+          bankTransactionId: 'TXN-002',
+          paymentMethod: 'bank_transfer'
+        },
+        { 
+          id: 'PAY-067', 
+          amount: 75000, 
+          date: '2024-01-15', 
+          status: 'processing',
+          bankTransactionId: 'TXN-067',
+          paymentMethod: 'bank_transfer'
+        }
+      ],
+      totalDuplicateAmount: 150000,
+      severity: 'medium',
+      detectedDate: '2024-01-16',
+      status: 'investigating'
+    },
+    {
+      id: 'DUP-003',
+      applicantName: 'Марат Беков',
+      applicantPin: '12345678901236',
+      invoiceId: 'INV-2024-003',
+      applicationId: 'APP-2024-003',
+      duplicatePayments: [
+        { 
+          id: 'PAY-003', 
+          amount: 60000, 
+          date: '2024-01-13', 
+          status: 'completed',
+          bankTransactionId: 'TXN-003',
+          paymentMethod: 'bank_transfer'
+        },
+        { 
+          id: 'PAY-089', 
+          amount: 60000, 
+          date: '2024-01-14', 
+          status: 'completed',
+          bankTransactionId: 'TXN-089',
+          paymentMethod: 'bank_transfer'
+        },
+        { 
+          id: 'PAY-123', 
+          amount: 60000, 
+          date: '2024-01-15', 
+          status: 'pending',
+          bankTransactionId: 'TXN-123',
+          paymentMethod: 'bank_transfer'
+        }
+      ],
+      totalDuplicateAmount: 180000,
+      severity: 'critical',
+      detectedDate: '2024-01-16',
+      status: 'pending'
+    },
+    {
+      id: 'DUP-004',
+      applicantName: 'Айгуль Токтоева',
+      applicantPin: '12345678901237',
+      invoiceId: 'INV-2024-004',
+      applicationId: 'APP-2024-004',
+      duplicatePayments: [
+        { 
+          id: 'PAY-004', 
+          amount: 45000, 
+          date: '2024-01-12', 
+          status: 'completed',
+          bankTransactionId: 'TXN-004',
+          paymentMethod: 'bank_transfer'
+        },
+        { 
+          id: 'PAY-156', 
+          amount: 45000, 
+          date: '2024-01-13', 
+          status: 'completed',
+          bankTransactionId: 'TXN-156',
+          paymentMethod: 'bank_transfer'
+        }
+      ],
+      totalDuplicateAmount: 90000,
+      severity: 'medium',
+      detectedDate: '2024-01-15',
+      status: 'resolved'
+    }
+  ];
 
-  // Функции для действий с расхождениями
-  const handleViewDiscrepancy = (discrepancy: any) => {
-    setSelectedDiscrepancy(discrepancy);
-    setShowDiscrepancyModal(true);
-  };
-
-  const handleResolveDiscrepancy = (discrepancy: any) => {
-    console.log('Разрешение расхождения:', discrepancy.id);
-    alert(`Расхождение ${discrepancy.id} разрешено`);
-  };
-
-  // Обработчики для форм
-  const handleAutoReconciliationSubmit = (formData: any) => {
-    console.log('Автоматическая сверка:', formData);
-    alert(`Запуск автоматической сверки для банков: ${formData.banks.join(', ')}`);
-    setShowAutoReconciliationModal(false);
-  };
-
-
-
-
-  const handleDiscrepancyAction = (formData: any) => {
-    console.log('Действие с расхождением:', formData);
-    alert(`Действие "${formData.action}" применено к расхождению ${formData.discrepancyId}`);
-    setShowDiscrepancyModal(false);
-    setSelectedDiscrepancy(null);
-  };
-
+  // Метрики для сверки
   const metrics = [
     {
-      title: 'Всего сверок',
+      title: 'Утвержденных выплат',
+      value: '2,456',
+      change: '+12%',
+      changeType: 'positive' as const,
+      icon: <i className="ri-money-dollar-circle-line"></i>
+    },
+    {
+      title: 'На проверке дубликатов',
       value: '156',
       change: '+8%',
       changeType: 'positive' as const,
-      icon: <i className="ri-check-double-line"></i>
+      icon: <i className="ri-search-line"></i>
     },
     {
-      title: 'Успешных',
-      value: '142',
-      change: '+12%',
+      title: 'Найдено дубликатов',
+      value: duplicates.length.toString(),
+      change: '+3',
+      changeType: 'positive' as const,
+      icon: <i className="ri-alert-line"></i>
+    },
+    {
+      title: 'Разрешенных дубликатов',
+      value: duplicates.filter(d => d.status === 'resolved').length.toString(),
+      change: '+2',
       changeType: 'positive' as const,
       icon: <i className="ri-check-line"></i>
-    },
-    {
-      title: 'С расхождениями',
-      value: '14',
-      change: '-3%',
-      changeType: 'negative' as const,
-      icon: <i className="ri-error-warning-line"></i>
-    },
-    {
-      title: 'В процессе',
-      value: '8',
-      change: '+2%',
-      changeType: 'positive' as const,
-      icon: <i className="ri-loader-line"></i>
     }
   ];
 
-  const reconciliations = [
-    {
-      id: 'REC-001',
-      bankName: 'ОАО "Демир Банк"',
-      period: '2024-01-01 - 2024-01-15',
-      status: 'completed',
-      totalTransactions: 1245,
-      matchedTransactions: 1240,
-      unmatchedTransactions: 5,
-      discrepancyAmount: 25000,
-      lastRun: '2024-01-15 18:00',
-      operator: 'Айжан Кыдырова'
-    },
-    {
-      id: 'REC-002',
-      bankName: 'ОАО "РСК Банк"',
-      period: '2024-01-01 - 2024-01-15',
-      status: 'completed',
-      totalTransactions: 890,
-      matchedTransactions: 885,
-      unmatchedTransactions: 5,
-      discrepancyAmount: 15000,
-      lastRun: '2024-01-15 17:30',
-      operator: 'Айжан Кыдырова'
-    },
-    {
-      id: 'REC-003',
-      bankName: 'ОАО "Айыл Банк"',
-      period: '2024-01-01 - 2024-01-15',
-      status: 'in_progress',
-      totalTransactions: 567,
-      matchedTransactions: 520,
-      unmatchedTransactions: 47,
-      discrepancyAmount: 0,
-      lastRun: '2024-01-15 16:45',
-      operator: 'Система'
-    },
-    {
-      id: 'REC-004',
-      bankName: 'ОАО "Демир Банк"',
-      period: '2023-12-16 - 2023-12-31',
-      status: 'discrepancy',
-      totalTransactions: 1156,
-      matchedTransactions: 1140,
-      unmatchedTransactions: 16,
-      discrepancyAmount: 45000,
-      lastRun: '2023-12-31 18:00',
-      operator: 'Айжан Кыдырова'
-    }
-  ];
-
+  // Колонки для таблицы дубликатов
   const columns = [
     {
       key: 'select',
@@ -238,120 +254,105 @@ export default function ReconciliationPage() {
       render: (value: any, row: any) => (
         <input
           type="checkbox"
-          checked={selectedReconciliations.some(r => r.id === row.id)}
-          onChange={(e) => handleSelectReconciliation(row, e.target.checked)}
+          checked={selectedDuplicates.some(d => d.id === row.id)}
+          onChange={(e) => handleSelectDuplicate(row, e.target.checked)}
           className="w-4 h-4 text-blue-600 border-neutral-300 rounded focus:ring-blue-500"
         />
       )
     },
     {
       key: 'id',
-      label: 'ID сверки',
+      label: 'ID дубликата',
       render: (value: string) => (
         <span className="font-mono text-sm text-blue-600">{value}</span>
       )
     },
     {
-      key: 'bankName',
-      label: 'Банк'
+      key: 'applicantName',
+      label: 'Заявитель',
+      render: (value: string, row: any) => (
+        <div>
+          <div className="font-medium">{value}</div>
+          <div className="text-xs text-gray-500 font-mono">{row.applicantPin}</div>
+        </div>
+      )
     },
     {
-      key: 'period',
-      label: 'Период'
+      key: 'invoiceId',
+      label: 'Накладная',
+      render: (value: string) => (
+        <span className="font-mono text-sm text-green-600">{value}</span>
+      )
+    },
+    {
+      key: 'duplicatePayments',
+      label: 'Количество дубликатов',
+      render: (value: any[]) => (
+        <span className="font-semibold text-red-600">{value.length}</span>
+      )
+    },
+    {
+      key: 'totalDuplicateAmount',
+      label: 'Сумма дубликатов',
+      render: (value: number) => (
+        <span className="font-semibold text-red-600">{value.toLocaleString()} сом</span>
+      )
+    },
+    {
+      key: 'severity',
+      label: 'Критичность',
+      render: (value: string) => (
+        <StatusBadge
+          status={
+            value === 'critical' ? 'error' :
+            value === 'high' ? 'error' :
+            value === 'medium' ? 'warning' : 'info'
+          }
+        >
+          {value === 'critical' ? 'Критический' :
+           value === 'high' ? 'Высокий' :
+           value === 'medium' ? 'Средний' : 'Низкий'}
+        </StatusBadge>
+      )
     },
     {
       key: 'status',
       label: 'Статус',
       render: (value: string) => (
-                <StatusBadge
+        <StatusBadge
           status={
-            value === 'completed' ? 'success' :
-            value === 'in_progress' ? 'warning' :
-            value === 'discrepancy' ? 'error' : 'info'
+            value === 'resolved' ? 'success' :
+            value === 'investigating' ? 'warning' :
+            value === 'pending' ? 'error' : 'info'
           }
         >
-          {value === 'completed' ? 'Завершена' :
-           value === 'in_progress' ? 'В процессе' :
-           value === 'discrepancy' ? 'Расхождения' : 'Ожидает'}
+          {value === 'resolved' ? 'Разрешено' :
+           value === 'investigating' ? 'Расследуется' :
+           value === 'pending' ? 'Ожидает' : 'Неизвестно'}
         </StatusBadge>
       )
     },
     {
-      key: 'totalTransactions',
-      label: 'Всего транзакций',
-      render: (value: number) => (
-        <span className="font-semibold">{value.toLocaleString()}</span>
-      )
-    },
-    {
-      key: 'matchedTransactions',
-      label: 'Совпало',
-      render: (value: number) => (
-        <span className="font-semibold text-green-600">{value.toLocaleString()}</span>
-      )
-    },
-    {
-      key: 'unmatchedTransactions',
-      label: 'Не совпало',
-      render: (value: number) => (
-        <span className="font-semibold text-red-600">{value.toLocaleString()}</span>
-      )
-    },
-    {
-      key: 'discrepancyAmount',
-      label: 'Сумма расхождений',
-      render: (value: number) => (
-        <span className="font-semibold text-orange-600">{value.toLocaleString()} сом</span>
+      key: 'detectedDate',
+      label: 'Обнаружено',
+      render: (value: string) => (
+        <span className="text-sm">{new Date(value).toLocaleDateString('ru-RU')}</span>
       )
     }
   ];
 
-  const discrepancies = [
-    {
-      id: 'DISC-001',
-      reconciliationId: 'REC-001',
-      transactionId: 'TXN-001',
-      bankAmount: 50000,
-      systemAmount: 50000,
-      difference: 0,
-      status: 'resolved',
-      description: 'Незначительное расхождение в комиссии',
-      resolvedBy: 'Айжан Кыдырова',
-      resolvedDate: '2024-01-15 18:30'
-    },
-    {
-      id: 'DISC-002',
-      reconciliationId: 'REC-001',
-      transactionId: 'TXN-002',
-      bankAmount: 75000,
-      systemAmount: 75000,
-      difference: 0,
-      status: 'pending',
-      description: 'Транзакция не найдена в банковской выписке',
-      resolvedBy: null,
-      resolvedDate: null
-    },
-    {
-      id: 'DISC-003',
-      reconciliationId: 'REC-002',
-      transactionId: 'TXN-003',
-      bankAmount: 60000,
-      systemAmount: 60000,
-      difference: 0,
-      status: 'investigating',
-      description: 'Дублирование транзакции',
-      resolvedBy: 'Айжан Кыдырова',
-      resolvedDate: null
-    }
-  ];
+  // Инициализация данных
+  useEffect(() => {
+    setDuplicates(mockDuplicates);
+  }, []);
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Сверка</h1>
-          <p className="text-neutral-600 mt-1">Сверка банковских операций с системными данными</p>
+          <h1 className="text-2xl font-bold text-neutral-900">Сверка по заявкам</h1>
+          <p className="text-neutral-600 mt-1">Проверка дубликатов утвержденных выплат</p>
         </div>
         <div className="flex space-x-3">
           <select 
@@ -365,14 +366,43 @@ export default function ReconciliationPage() {
             <option value="1y">Последний год</option>
           </select>
           <button 
-            onClick={handleAutoReconciliation}
-            className="btn-primary"
+            onClick={handleStartScan}
+            disabled={isScanning}
+            className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <i className="ri-play-line mr-2"></i>
-            Запустить сверку
+            {isScanning ? (
+              <>
+                <i className="ri-loader-line animate-spin mr-2"></i>
+                Сканирование... {scanProgress}%
+              </>
+            ) : (
+              <>
+                <i className="ri-search-line mr-2"></i>
+                Сканировать дубликаты
+              </>
+            )}
           </button>
         </div>
       </div>
+
+      {/* Progress Bar */}
+      {isScanning && (
+        <div className="card">
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold text-neutral-900">Сканирование в процессе</h3>
+            <p className="text-neutral-600">Проверка выплат на наличие дубликатов...</p>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2.5">
+            <div 
+              className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+              style={{ width: `${scanProgress}%` }}
+            ></div>
+          </div>
+          <div className="mt-2 text-sm text-gray-600">
+            {scanProgress}% завершено
+          </div>
+        </div>
+      )}
 
       {/* Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -388,111 +418,69 @@ export default function ReconciliationPage() {
         ))}
       </div>
 
-
-
-      {/* Reconciliations Table */}
+      {/* Duplicates Table */}
       <div className="card">
         <div className="mb-6">
-          <h3 className="text-lg font-semibold text-neutral-900">История сверок</h3>
-          <p className="text-neutral-600 mt-1">Все выполненные сверки с результатами</p>
+          <h3 className="text-lg font-semibold text-neutral-900">Обнаруженные дубликаты</h3>
+          <p className="text-neutral-600 mt-1">Список дублирующихся выплат, требующих внимания</p>
         </div>
         
         {/* Mass Actions */}
-        <ReconciliationBulkActions
-          selectedReconciliations={selectedReconciliations}
-          onBulkAction={handleBulkAction}
-          onSelectAll={handleSelectAll}
-          onDeselectAll={handleDeselectAll}
-          totalReconciliations={reconciliations.length}
-          isAllSelected={selectedReconciliations.length === reconciliations.length && reconciliations.length > 0}
-        />
+        {selectedDuplicates.length > 0 && (
+          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <span className="text-sm font-medium text-blue-900">
+                  Выбрано: {selectedDuplicates.length} дубликатов
+                </span>
+                <button
+                  onClick={handleDeselectAllDuplicates}
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                >
+                  Снять выделение
+                </button>
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => handleBulkAction('resolve', selectedDuplicates.map(d => d.id))}
+                  className="btn-success text-sm"
+                >
+                  <i className="ri-check-line mr-1"></i>
+                  Разрешить все
+                </button>
+                <button
+                  onClick={() => handleBulkAction('cancel', selectedDuplicates.map(d => d.id))}
+                  className="btn-danger text-sm"
+                >
+                  <i className="ri-close-line mr-1"></i>
+                  Отменить все
+                </button>
+                <button
+                  onClick={() => handleBulkAction('export', selectedDuplicates.map(d => d.id))}
+                  className="btn-info text-sm"
+                >
+                  <i className="ri-download-line mr-1"></i>
+                  Экспорт
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         
         <DataTable
-          data={reconciliations}
+          data={duplicates}
           columns={columns}
           searchable={true}
           sortable={true}
+          actions={[
+            {
+              label: 'Детали',
+              icon: 'ri-eye-line',
+              onClick: handleViewDuplicateDetails,
+              className: 'btn-primary text-sm'
+            }
+          ]}
         />
-      </div>
-
-      {/* Discrepancies */}
-      <div className="card">
-        <div className="mb-6">
-          <h3 className="text-lg font-semibold text-neutral-900">Расхождения</h3>
-          <p className="text-neutral-600 mt-1">Требуют внимания и разрешения</p>
-        </div>
-        <div className="space-y-4">
-          {discrepancies.map((discrepancy) => (
-            <div key={discrepancy.id} className="border border-neutral-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <h4 className="font-semibold text-neutral-900">Расхождение {discrepancy.id}</h4>
-                    <StatusBadge 
-                      status={
-                        discrepancy.status === 'resolved' ? 'success' :
-                        discrepancy.status === 'investigating' ? 'warning' : 'error'
-                      }
-                      text={
-                        discrepancy.status === 'resolved' ? 'Разрешено' :
-                        discrepancy.status === 'investigating' ? 'Расследуется' : 'Ожидает'
-                      }
-                    />
-                  </div>
-                  
-                  <p className="text-sm text-neutral-600 mb-3">{discrepancy.description}</p>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <span className="text-neutral-600">ID сверки:</span>
-                      <p className="font-mono text-blue-600">{discrepancy.reconciliationId}</p>
-                    </div>
-                    <div>
-                      <span className="text-neutral-600">ID транзакции:</span>
-                      <p className="font-mono text-green-600">{discrepancy.transactionId}</p>
-                    </div>
-                    <div>
-                      <span className="text-neutral-600">Сумма в банке:</span>
-                      <p className="text-neutral-900">{discrepancy.bankAmount.toLocaleString()} сом</p>
-                    </div>
-                    <div>
-                      <span className="text-neutral-600">Сумма в системе:</span>
-                      <p className="text-neutral-900">{discrepancy.systemAmount.toLocaleString()} сом</p>
-                    </div>
-                  </div>
-                  
-                  {discrepancy.resolvedBy && (
-                    <div className="mt-3">
-                      <span className="text-neutral-600 text-sm">Разрешено:</span>
-                      <span className="ml-2 text-sm font-medium text-neutral-900">
-                        {discrepancy.resolvedBy} - {discrepancy.resolvedDate}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex space-x-2 ml-4">
-                  <button 
-                    onClick={() => handleViewDiscrepancy(discrepancy)}
-                    className="btn-primary text-sm"
-                  >
-                    <i className="ri-eye-line mr-1"></i>
-                    Просмотр
-                  </button>
-                  {discrepancy.status !== 'resolved' && (
-                    <button 
-                      onClick={() => handleResolveDiscrepancy(discrepancy)}
-                      className="btn-success text-sm"
-                    >
-                      <i className="ri-check-line mr-1"></i>
-                      Разрешить
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* Quick Actions */}
@@ -501,61 +489,55 @@ export default function ReconciliationPage() {
           <h3 className="text-lg font-semibold text-neutral-900 mb-4">Быстрые действия</h3>
           <div className="space-y-3">
             <button 
-              onClick={handleAutoReconciliation}
-              className="w-full btn-primary text-left"
+              onClick={handleStartScan}
+              disabled={isScanning}
+              className="w-full btn-primary text-left disabled:opacity-50"
             >
-              <i className="ri-play-circle-line mr-2"></i>
-              Запустить автоматическую сверку
+              <i className="ri-search-line mr-2"></i>
+              Запустить сканирование дубликатов
             </button>
             <button 
-              onClick={handleScheduleReconciliations}
+              onClick={() => handleBulkAction('export', duplicates.map(d => d.id))}
               className="w-full btn-secondary text-left"
             >
-              <i className="ri-calendar-line mr-2"></i>
-              Настроить расписание сверок
+              <i className="ri-download-line mr-2"></i>
+              Экспорт всех дубликатов
             </button>
             <button 
-              onClick={handleCheckDiscrepancies}
+              onClick={() => setDuplicates(duplicates.filter(d => d.status !== 'resolved'))}
               className="w-full btn-warning text-left"
             >
-              <i className="ri-error-warning-line mr-2"></i>
-              Проверить расхождения
+              <i className="ri-eye-line mr-2"></i>
+              Показать только неразрешенные
             </button>
             <button 
-              onClick={handleCheckDuplicates}
-              className="w-full btn-danger text-left"
-            >
-              <i className="ri-file-copy-line mr-2"></i>
-              Проверить дубликаты выплат
-            </button>
-            <button 
-              onClick={handleExportReport}
+              onClick={() => setDuplicates(mockDuplicates)}
               className="w-full btn-info text-left"
             >
-              <i className="ri-download-line mr-2"></i>
-              Экспорт отчета сверки
+              <i className="ri-refresh-line mr-2"></i>
+              Обновить список
             </button>
           </div>
         </div>
 
         <div className="card">
-          <h3 className="text-lg font-semibold text-neutral-900 mb-4">Статистика сверок</h3>
+          <h3 className="text-lg font-semibold text-neutral-900 mb-4">Статистика дубликатов</h3>
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <span className="text-neutral-600">Сверок сегодня</span>
-              <span className="font-semibold text-blue-600">3 сверки</span>
+              <span className="text-neutral-600">Обнаружено сегодня</span>
+              <span className="font-semibold text-blue-600">2 дубликата</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-neutral-600">Успешных</span>
-              <span className="font-semibold text-green-600">2 сверки</span>
+              <span className="text-neutral-600">Критических</span>
+              <span className="font-semibold text-red-600">1 дубликат</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-neutral-600">С расхождениями</span>
-              <span className="font-semibold text-orange-600">1 сверка</span>
+              <span className="text-neutral-600">Разрешено</span>
+              <span className="font-semibold text-green-600">1 дубликат</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-neutral-600">Среднее время</span>
-              <span className="font-semibold text-purple-600">15 минут</span>
+              <span className="text-neutral-600">Общая сумма дубликатов</span>
+              <span className="font-semibold text-orange-600">520,000 сом</span>
             </div>
           </div>
         </div>
@@ -563,210 +545,173 @@ export default function ReconciliationPage() {
 
       {/* Modals */}
       <Modal
-        isOpen={showAutoReconciliationModal}
-        onClose={() => setShowAutoReconciliationModal(false)}
-        title="Автоматическая сверка"
-        size="large"
-      >
-        <AutoReconciliationForm onSubmit={handleAutoReconciliationSubmit} />
-      </Modal>
-
-      <Modal
-        isOpen={showScheduleModal}
-        onClose={() => setShowScheduleModal(false)}
-        title="Настройка расписания сверок"
-        size="large"
-      >
-        <div className="p-4">
-          <p className="text-neutral-600">Форма настройки расписания сверок будет реализована позже.</p>
-          <div className="flex justify-end mt-4">
-            <button
-              onClick={() => setShowScheduleModal(false)}
-              className="btn-secondary"
-            >
-              Закрыть
-            </button>
-          </div>
-        </div>
-      </Modal>
-
-      <Modal
-        isOpen={showCheckDiscrepanciesModal}
-        onClose={() => setShowCheckDiscrepanciesModal(false)}
-        title="Проверка расхождений"
-        size="large"
-      >
-        <div className="p-4">
-          <p className="text-neutral-600">Форма проверки расхождений будет реализована позже.</p>
-          <div className="flex justify-end mt-4">
-            <button
-              onClick={() => setShowCheckDiscrepanciesModal(false)}
-              className="btn-secondary"
-            >
-              Закрыть
-            </button>
-          </div>
-        </div>
-      </Modal>
-
-      <Modal
-        isOpen={showExportModal}
-        onClose={() => setShowExportModal(false)}
-        title="Экспорт отчета сверки"
-        size="large"
-      >
-        <div className="p-4">
-          <p className="text-neutral-600">Форма экспорта отчета будет реализована позже.</p>
-          <div className="flex justify-end mt-4">
-            <button
-              onClick={() => setShowExportModal(false)}
-              className="btn-secondary"
-            >
-              Закрыть
-            </button>
-          </div>
-        </div>
-      </Modal>
-
-      <Modal
-        isOpen={showDiscrepancyModal}
+        isOpen={showDuplicateDetailsModal}
         onClose={() => {
-          setShowDiscrepancyModal(false);
-          setSelectedDiscrepancy(null);
+          setShowDuplicateDetailsModal(false);
+          setSelectedDuplicate(null);
         }}
-        title="Просмотр расхождения"
+        title="Детали дубликата"
         size="large"
       >
-        <DiscrepancyViewForm 
-          discrepancy={selectedDiscrepancy} 
-          onSubmit={handleDiscrepancyAction} 
-        />
-      </Modal>
-
-      {/* Duplicate Check Modal */}
-      <Modal
-        isOpen={showDuplicateCheckModal}
-        onClose={() => {
-          setShowDuplicateCheckModal(false);
-          setDuplicateResults([]);
-        }}
-        title="Проверка дубликатов выплат"
-        size="large"
-      >
-        <div className="p-6">
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-neutral-900 mb-2">Результаты проверки дубликатов</h3>
-            <p className="text-neutral-600">Найдены дублирующиеся выплаты по заявителям в рамках накладных</p>
-          </div>
-
-          {duplicateResults.length === 0 ? (
-            <div className="text-center py-8">
-              <i className="ri-check-line text-4xl text-green-600 mb-4"></i>
-              <h3 className="text-lg font-semibold text-neutral-900 mb-2">Дубликаты не найдены</h3>
-              <p className="text-neutral-600">Все выплаты уникальны в рамках накладных</p>
+        {selectedDuplicate && (
+          <div className="p-6">
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+                Дубликат {selectedDuplicate.id}
+              </h3>
+              <p className="text-neutral-600">
+                Заявитель: {selectedDuplicate.applicantName} ({selectedDuplicate.applicantPin})
+              </p>
+              <p className="text-neutral-600">
+                Накладная: {selectedDuplicate.invoiceId}
+              </p>
             </div>
-          ) : (
-            <div className="space-y-6">
-              {duplicateResults.map((duplicate) => (
-                <div key={duplicate.id} className="border border-red-200 rounded-lg p-4 bg-red-50">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h4 className="font-semibold text-neutral-900">{duplicate.applicantName}</h4>
-                      <p className="text-sm text-neutral-600">Накладная: {duplicate.invoiceId}</p>
-                    </div>
-                    <StatusBadge 
-                      status={
-                        duplicate.severity === 'critical' ? 'error' :
-                        duplicate.severity === 'high' ? 'error' : 'warning'
-                      }
-                      text={
-                        duplicate.severity === 'critical' ? 'Критический' :
-                        duplicate.severity === 'high' ? 'Высокий' : 'Средний'
-                      }
-                    />
-                  </div>
 
-                  <div className="mb-4">
-                    <h5 className="font-medium text-neutral-900 mb-2">Дублирующиеся выплаты:</h5>
-                    <div className="space-y-2">
-                      {duplicate.duplicatePayments.map((payment, index) => (
-                        <div key={index} className="flex items-center justify-between p-2 bg-white rounded border">
-                          <div className="flex items-center space-x-3">
-                            <span className="font-mono text-sm text-blue-600">{payment.id}</span>
-                            <span className="text-sm">{payment.amount.toLocaleString()} сом</span>
-                            <span className="text-xs text-neutral-600">{payment.date}</span>
-                          </div>
-                          <StatusBadge 
-                            status={
-                              payment.status === 'completed' ? 'success' :
-                              payment.status === 'processing' ? 'warning' : 'info'
-                            }
-                            text={
-                              payment.status === 'completed' ? 'Выплачено' :
-                              payment.status === 'processing' ? 'В обработке' : 'Ожидает'
-                            }
-                          />
-                        </div>
-                      ))}
+            <div className="mb-6">
+              <h4 className="font-medium text-neutral-900 mb-3">Дублирующиеся выплаты:</h4>
+              <div className="space-y-3">
+                {selectedDuplicate.duplicatePayments.map((payment: any, index: number) => (
+                  <div key={index} className="border border-neutral-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center space-x-3">
+                        <span className="font-mono text-sm text-blue-600">{payment.id}</span>
+                        <span className="font-semibold">{payment.amount.toLocaleString()} сом</span>
+                        <span className="text-sm text-neutral-600">{payment.date}</span>
+                      </div>
+                      <StatusBadge 
+                        status={
+                          payment.status === 'completed' ? 'success' :
+                          payment.status === 'processing' ? 'warning' : 'info'
+                        }
+                        text={
+                          payment.status === 'completed' ? 'Выплачено' :
+                          payment.status === 'processing' ? 'В обработке' : 'Ожидает'
+                        }
+                      />
+                    </div>
+                    <div className="text-sm text-neutral-600">
+                      <div>Банковская транзакция: {payment.bankTransactionId}</div>
+                      <div>Способ оплаты: {payment.paymentMethod === 'bank_transfer' ? 'Банковский перевод' : payment.paymentMethod}</div>
                     </div>
                   </div>
+                ))}
+              </div>
+            </div>
 
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm">
-                      <span className="text-neutral-600">Общая сумма дубликатов:</span>
-                      <span className="ml-2 font-semibold text-red-600">
-                        {duplicate.totalDuplicateAmount.toLocaleString()} сом
-                      </span>
-                    </div>
-                    <div className="flex space-x-2">
-                      <button className="btn-warning text-sm">
-                        <i className="ri-pause-line mr-1"></i>
-                        Приостановить
-                      </button>
-                      <button className="btn-danger text-sm">
-                        <i className="ri-delete-bin-line mr-1"></i>
-                        Отменить дубликаты
-                      </button>
-                    </div>
-                  </div>
+            <div className="border-t border-neutral-200 pt-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-neutral-600">Общая сумма дубликатов:</span>
+                  <span className="ml-2 font-semibold text-red-600 text-lg">
+                    {selectedDuplicate.totalDuplicateAmount.toLocaleString()} сом
+                  </span>
                 </div>
-              ))}
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => {
+                      setShowDuplicateDetailsModal(false);
+                      handleResolveDuplicate(selectedDuplicate);
+                    }}
+                    className="btn-success"
+                  >
+                    <i className="ri-check-line mr-2"></i>
+                    Разрешить
+                  </button>
+                  <button
+                    onClick={() => setShowDuplicateDetailsModal(false)}
+                    className="btn-secondary"
+                  >
+                    Закрыть
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
 
-              <div className="border-t border-neutral-200 pt-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-semibold text-neutral-900">Сводка</h4>
-                    <p className="text-sm text-neutral-600">
-                      Найдено {duplicateResults.length} случаев дублирования выплат
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-neutral-600">Общая сумма дубликатов:</p>
-                    <p className="text-lg font-bold text-red-600">
-                      {duplicateResults.reduce((sum, dup) => sum + dup.totalDuplicateAmount, 0).toLocaleString()} сом
-                    </p>
-                  </div>
+      <Modal
+        isOpen={showResolveModal}
+        onClose={() => {
+          setShowResolveModal(false);
+          setSelectedDuplicate(null);
+        }}
+        title="Разрешение дубликата"
+        size="medium"
+      >
+        {selectedDuplicate && (
+          <div className="p-6">
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+                Разрешение дубликата {selectedDuplicate.id}
+              </h3>
+              <p className="text-neutral-600">
+                Заявитель: {selectedDuplicate.applicantName}
+              </p>
+              <p className="text-neutral-600">
+                Сумма дубликатов: {selectedDuplicate.totalDuplicateAmount.toLocaleString()} сом
+              </p>
+            </div>
+
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.target as HTMLFormElement);
+              handleResolveSubmit({
+                duplicateId: selectedDuplicate.id,
+                action: formData.get('action'),
+                comment: formData.get('comment')
+              });
+            }}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Действие
+                  </label>
+                  <select
+                    name="action"
+                    required
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Выберите действие</option>
+                    <option value="cancel_duplicates">Отменить дублирующиеся выплаты</option>
+                    <option value="keep_first">Оставить первую выплату</option>
+                    <option value="keep_last">Оставить последнюю выплату</option>
+                    <option value="manual_review">Требует ручной проверки</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Комментарий
+                  </label>
+                  <textarea
+                    name="comment"
+                    rows={3}
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Опишите причину и детали разрешения..."
+                  ></textarea>
                 </div>
               </div>
 
-              <div className="flex justify-end space-x-3 pt-4 border-t border-neutral-200">
+              <div className="flex justify-end space-x-3 mt-6">
                 <button
-                  onClick={() => {
-                    setShowDuplicateCheckModal(false);
-                    setDuplicateResults([]);
-                  }}
+                  type="button"
+                  onClick={() => setShowResolveModal(false)}
                   className="btn-secondary"
                 >
-                  Закрыть
+                  Отмена
                 </button>
-                <button className="btn-primary">
-                  <i className="ri-download-line mr-2"></i>
-                  Экспорт отчета
+                <button
+                  type="submit"
+                  className="btn-primary"
+                >
+                  <i className="ri-check-line mr-2"></i>
+                  Разрешить дубликат
                 </button>
               </div>
-            </div>
-          )}
-        </div>
+            </form>
+          </div>
+        )}
       </Modal>
     </div>
   );

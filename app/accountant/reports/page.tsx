@@ -5,11 +5,6 @@ import DataTable from '@/components/ui/DataTable';
 import StatusBadge from '@/components/ui/StatusBadge';
 import MetricCard from '@/components/ui/MetricCard';
 import ReportBulkActions from '@/components/ui/ReportBulkActions';
-import Modal from '@/components/ui/Modal';
-import CreateReportForm from '@/components/ui/CreateReportForm';
-import DuplicateTemplateForm from '@/components/ui/DuplicateTemplateForm';
-import ScheduleReportsForm from '@/components/ui/ScheduleReportsForm';
-import BulkExportForm from '@/components/ui/BulkExportForm';
 import { reportService } from '@/lib/api/reportService';
 import { Report, ReportType } from '@/lib/types';
 
@@ -19,10 +14,6 @@ export default function ReportsPage() {
   const [stats, setStats] = useState<any>(null);
   const [generating, setGenerating] = useState<string | null>(null);
   const [selectedReports, setSelectedReports] = useState<Report[]>([]);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
-  const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [showExportModal, setShowExportModal] = useState(false);
 
   useEffect(() => {
     loadReports();
@@ -143,77 +134,30 @@ export default function ReportsPage() {
     setSelectedReports([]);
   };
 
-  // Функции для быстрых действий
-  const handleCreateNewReport = () => {
-    setShowCreateModal(true);
-  };
 
-  const handleDuplicateTemplate = () => {
-    setShowDuplicateModal(true);
-  };
-
-  const handleScheduleReports = () => {
-    setShowScheduleModal(true);
-  };
-
-  const handleBulkExport = () => {
-    setShowExportModal(true);
-  };
-
-  const handleCreateCustomReport = (formData: any) => {
-    console.log('Создание пользовательского отчета:', formData);
-    alert(`Создание отчета: ${formData.title}`);
-    setShowCreateModal(false);
-  };
-
-  const handleDuplicateSelectedTemplate = (formData: any) => {
-    console.log('Дублирование шаблона:', formData);
-    alert(`Дублирование шаблона: ${formData.templateName}`);
-    setShowDuplicateModal(false);
-  };
-
-  const handleScheduleSelectedReports = (formData: any) => {
-    console.log('Настройка расписания:', formData);
-    alert(`Настройка расписания: ${formData.schedule}`);
-    setShowScheduleModal(false);
-  };
-
-  const handleBulkExportReports = (formData: any) => {
-    console.log('Массовый экспорт:', formData);
-    alert(`Массовый экспорт: ${formData.format} за период ${formData.period}`);
-    setShowExportModal(false);
-  };
-
-  const metrics = stats ? [
+  const metrics = [
     {
-      title: 'Всего отчетов',
-      value: stats.total.toString(),
-      change: '+3 за месяц',
+      title: 'Всего выплат',
+      value: '2,847',
+      change: '+12%',
       changeType: 'positive' as const,
-      icon: <i className="ri-file-chart-line text-4xl text-blue-600"></i>
+      icon: <i className="ri-money-dollar-circle-line text-4xl text-green-600"></i>
     },
     {
-      title: 'Завершено',
-      value: stats.byStatus.completed.toString(),
-      change: '+2 за неделю',
+      title: 'Накладных создано',
+      value: '156',
+      change: '+8%',
       changeType: 'positive' as const,
-      icon: <i className="ri-check-circle-line text-4xl text-green-600"></i>
+      icon: <i className="ri-file-list-3-line text-4xl text-blue-600"></i>
     },
     {
-      title: 'В генерации',
-      value: stats.byStatus.generating.toString(),
-      change: '0',
-      changeType: 'neutral' as const,
-      icon: <i className="ri-loader-line text-4xl text-yellow-600"></i>
+      title: 'Дубликатов найдено',
+      value: '23',
+      change: '-15%',
+      changeType: 'negative' as const,
+      icon: <i className="ri-alert-line text-4xl text-red-600"></i>
     },
-    {
-      title: 'За месяц',
-      value: stats.generatedThisMonth.toString(),
-      change: '+1 за неделю',
-      changeType: 'positive' as const,
-      icon: <i className="ri-calendar-line text-4xl text-purple-600"></i>
-    }
-  ] : [];
+  ];
 
   const columns = [
     {
@@ -315,22 +259,28 @@ export default function ReportsPage() {
 
   const reportTemplates = [
     {
-      type: 'financial_report' as ReportType,
-      title: 'Финансовый отчет',
-      description: 'Отчет по доходам и расходам за период',
+      type: 'payments_summary' as ReportType,
+      title: 'Отчет по выплатам',
+      description: 'Детальная сводка всех выплат с анализом дубликатов',
       icon: <i className="ri-money-dollar-circle-line text-2xl text-green-600"></i>
     },
     {
-      type: 'payments_summary' as ReportType,
-      title: 'Сводка платежей',
-      description: 'Отчет по всем выплатам за период',
-      icon: <i className="ri-bank-card-line text-2xl text-blue-600"></i>
+      type: 'invoices_report' as ReportType,
+      title: 'Отчет по накладным',
+      description: 'Статистика создания и утверждения накладных',
+      icon: <i className="ri-file-list-3-line text-2xl text-blue-600"></i>
     },
     {
-      type: 'applications_summary' as ReportType,
-      title: 'Сводка заявлений',
-      description: 'Статистика по заявлениям и их обработке',
-      icon: <i className="ri-file-list-3-line text-2xl text-purple-600"></i>
+      type: 'duplicates_analysis' as ReportType,
+      title: 'Анализ дубликатов',
+      description: 'Отчет по найденным и разрешенным дубликатам',
+      icon: <i className="ri-alert-line text-2xl text-red-600"></i>
+    },
+    {
+      type: 'financial_summary' as ReportType,
+      title: 'Финансовая сводка',
+      description: 'Общий финансовый отчет по всем операциям',
+      icon: <i className="ri-bar-chart-line text-2xl text-purple-600"></i>
     }
   ];
 
@@ -339,8 +289,8 @@ export default function ReportsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Финансовые отчеты</h1>
-          <p className="text-neutral-600 mt-1">Генерация и управление финансовыми отчетами</p>
+          <h1 className="text-2xl font-bold text-neutral-900">Отчеты</h1>
+          <p className="text-neutral-600 mt-1">Финансовые отчеты, аналитика выплат и накладных</p>
         </div>
         <button 
           onClick={loadReports}
@@ -368,10 +318,10 @@ export default function ReportsPage() {
       {/* Report Templates */}
       <div className="card">
         <div className="mb-6">
-          <h3 className="text-lg font-semibold text-neutral-900">Создать новый отчет</h3>
-          <p className="text-neutral-600 mt-1">Выберите тип отчета для генерации</p>
+          <h3 className="text-lg font-semibold text-neutral-900">Создать отчет</h3>
+          <p className="text-neutral-600 mt-1">Выберите тип отчета для анализа финансовых операций</p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {reportTemplates.map((template) => (
             <div 
               key={template.type}
@@ -408,7 +358,7 @@ export default function ReportsPage() {
       <div className="card">
         <div className="mb-6">
           <h3 className="text-lg font-semibold text-neutral-900">История отчетов</h3>
-          <p className="text-neutral-600 mt-1">Все созданные отчеты</p>
+          <p className="text-neutral-600 mt-1">Все созданные финансовые отчеты и аналитика</p>
         </div>
         
         {/* Mass Actions */}
@@ -436,103 +386,7 @@ export default function ReportsPage() {
         )}
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card">
-          <h3 className="text-lg font-semibold text-neutral-900 mb-4">Быстрые действия</h3>
-          <div className="space-y-3">
-            <button 
-              onClick={handleCreateNewReport}
-              className="w-full btn-primary text-left"
-            >
-              <i className="ri-add-circle-line mr-2"></i>
-              Создать новый отчет
-            </button>
-            <button 
-              onClick={handleDuplicateTemplate}
-              className="w-full btn-secondary text-left"
-            >
-              <i className="ri-file-copy-line mr-2"></i>
-              Дублировать шаблон
-            </button>
-            <button 
-              onClick={handleScheduleReports}
-              className="w-full btn-warning text-left"
-            >
-              <i className="ri-calendar-line mr-2"></i>
-              Настроить расписание
-            </button>
-            <button 
-              onClick={handleBulkExport}
-              className="w-full btn-info text-left"
-            >
-              <i className="ri-download-line mr-2"></i>
-              Массовый экспорт
-            </button>
-          </div>
-        </div>
 
-        <div className="card">
-          <h3 className="text-lg font-semibold text-neutral-900 mb-4">Статистика отчетов</h3>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-neutral-600">Создано сегодня</span>
-              <span className="font-semibold text-blue-600">
-                {stats?.generatedThisMonth || 0} отчетов
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-neutral-600">Автоматических</span>
-              <span className="font-semibold text-green-600">2 отчета</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-neutral-600">Скачано</span>
-              <span className="font-semibold text-purple-600">8 раз</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-neutral-600">Успешность</span>
-              <span className="font-semibold text-orange-600">95%</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Modals for Quick Actions */}
-      <Modal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        title="Создать новый отчет"
-        size="large"
-      >
-        <CreateReportForm onSubmit={handleCreateCustomReport} />
-      </Modal>
-
-      <Modal
-        isOpen={showDuplicateModal}
-        onClose={() => setShowDuplicateModal(false)}
-        title="Дублировать шаблон"
-        size="large"
-      >
-        <DuplicateTemplateForm onSubmit={handleDuplicateSelectedTemplate} />
-      </Modal>
-
-      <Modal
-        isOpen={showScheduleModal}
-        onClose={() => setShowScheduleModal(false)}
-        title="Настроить расписание"
-        size="large"
-      >
-        <ScheduleReportsForm onSubmit={handleScheduleSelectedReports} />
-      </Modal>
-
-      <Modal
-        isOpen={showExportModal}
-        onClose={() => setShowExportModal(false)}
-        title="Массовый экспорт"
-        size="large"
-      >
-        <BulkExportForm onSubmit={handleBulkExportReports} />
-      </Modal>
     </div>
   );
 }
