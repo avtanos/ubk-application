@@ -9,7 +9,8 @@ import ScheduleInspectionForm from './ScheduleInspectionForm';
 import { Application, FamilyMember, Income, Document, InspectionResult, StudentEducation } from '@/lib/types';
 import { externalApiService } from '@/lib/externalApiService';
 import { calculateBenefit, calculatePerCapitaIncome } from '@/lib/benefitCalculator';
-import StudentList from './StudentList';
+import { mockIncomeData } from '@/lib/mockData';
+import StudentListView from './StudentListView';
 
 interface ApplicationDetailsModalProps {
   application: Application | null;
@@ -18,7 +19,7 @@ interface ApplicationDetailsModalProps {
 }
 
 export default function ApplicationDetailsModal({ application, isOpen, onClose }: ApplicationDetailsModalProps) {
-  const [activeTab, setActiveTab] = useState<'applicant' | 'family' | 'students' | 'identity' | 'addresses' | 'income' | 'property' | 'compensations' | 'inspection' | 'history'>('applicant');
+  const [activeTab, setActiveTab] = useState<'applicant' | 'family' | 'identity' | 'addresses' | 'income' | 'inspection' | 'history'>('applicant');
   const [isIncomeAnalysisOpen, setIsIncomeAnalysisOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [externalData, setExternalData] = useState<any>(null);
@@ -168,26 +169,6 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
     }
   };
 
-  // Функции для работы со студентами
-  const handleUpdateStudent = (memberId: number, educationData: StudentEducation) => {
-    setFamilyMembers(prev => prev.map(member => 
-      member.id === memberId 
-        ? { ...member, isStudent: true, educationData }
-        : member
-    ));
-    // Пересчитываем пособие после обновления данных о студенте
-    calculateBenefitData();
-  };
-
-  const handleRemoveStudent = (memberId: number) => {
-    setFamilyMembers(prev => prev.map(member => 
-      member.id === memberId 
-        ? { ...member, isStudent: false, educationData: undefined }
-        : member
-    ));
-    // Пересчитываем пособие после удаления студента
-    calculateBenefitData();
-  };
 
   if (!application) return null;
 
@@ -395,83 +376,10 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
     setIsScheduleInspectionOpen(false);
   };
 
-  // Функция экспорта анализа доходов
-  const exportIncomeAnalysis = async () => {
-    try {
-      // Импортируем функцию анализа доходов
-      const { analyzeApplicationIncome } = await import('@/lib/incomeAnalysis');
-      
-      // Получаем данные анализа
-      const analysisResult = analyzeApplicationIncome(application);
-      
-      // Формируем данные для экспорта
-      const exportData = {
-        applicationId: application.id,
-        applicantName: (application as any).applicantName || (application as any).formData?.applicant?.fullName || 'Не указан',
-        analysisDate: new Date().toLocaleDateString('ru-RU'),
-        totalIncome: analysisResult.totalIncome,
-        familySize: analysisResult.analysis.familySize,
-        perCapitaIncome: analysisResult.analysis.perCapitaIncome,
-        stability: analysisResult.analysis.stability,
-        diversification: analysisResult.analysis.diversification,
-        gmdThreshold: 4500,
-        categories: analysisResult.categories.map((cat: any) => ({
-          name: cat.name,
-          amount: cat.amount,
-          percentage: cat.percentage,
-          subcategories: cat.subcategories
-        })),
-        recommendations: analysisResult.analysis.recommendations
-      };
-
-      // Создаем CSV контент
-      let csvContent = '8-категорийный анализ доходов\n\n';
-      csvContent += `Заявка: ${exportData.applicationId}\n`;
-      csvContent += `Заявитель: ${exportData.applicantName}\n`;
-      csvContent += `Дата анализа: ${exportData.analysisDate}\n\n`;
-      
-      csvContent += 'ОБЩИЕ ПОКАЗАТЕЛИ\n';
-      csvContent += `Общий доход семьи,сом,${exportData.totalIncome}\n`;
-      csvContent += `Размер семьи,человек,${exportData.familySize}\n`;
-      csvContent += `ССДС,сом,${exportData.perCapitaIncome}\n`;
-      csvContent += `Стабильность,${exportData.stability}\n`;
-      csvContent += `Диверсификация,${exportData.diversification}\n`;
-      csvContent += `Порог ГМД,сом,${exportData.gmdThreshold}\n\n`;
-      
-      csvContent += 'КАТЕГОРИИ ДОХОДОВ\n';
-      csvContent += 'Категория,Сумма (сом),Процент,Подкатегории\n';
-      exportData.categories.forEach((cat: any) => {
-        csvContent += `"${cat.name}","${cat.amount}","${cat.percentage}%","${cat.subcategories.join('; ')}"\n`;
-      });
-      
-      csvContent += '\nРЕКОМЕНДАЦИИ\n';
-      exportData.recommendations.forEach((rec: any, index: number) => {
-        csvContent += `${index + 1}.,${rec}\n`;
-      });
-
-      // Создаем и скачиваем файл
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `income_analysis_${application.id}_${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // Показываем уведомление об успехе
-      alert('Анализ доходов успешно экспортирован в CSV файл');
-    } catch (error) {
-      console.error('Ошибка при экспорте анализа:', error);
-      alert('Ошибка при экспорте анализа. Попробуйте еще раз.');
-    }
-  };
 
   const tabs = [
     { id: 'applicant', label: 'Заявитель', icon: 'ri-user-line' },
     { id: 'family', label: 'Семья', icon: 'ri-group-line' },
-    { id: 'students', label: 'Обучающиеся', icon: 'ri-graduation-cap-line' },
     { id: 'identity', label: 'Документы', icon: 'ri-id-card-line' },
     { id: 'addresses', label: 'Адреса и контакты', icon: 'ri-map-pin-line' },
     { id: 'income', label: 'Все доходы', icon: 'ri-money-dollar-circle-line' },
@@ -804,56 +712,6 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
             </div>
           )}
 
-          {activeTab === 'students' && (
-            <div className="space-y-6">
-              <StudentList
-                familyMembers={familyMembers}
-                onUpdateStudent={handleUpdateStudent}
-                onRemoveStudent={handleRemoveStudent}
-              />
-              
-              {/* Информация о расчете с учетом студентов */}
-              {benefitCalculation && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-blue-900 mb-3">
-                    Расчет пособия с учетом обучающихся
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <span className="text-blue-700">Доходы студентов:</span>
-                      <p className="font-medium text-blue-900">
-                        {benefitCalculation.studentIncome ? 
-                          `${benefitCalculation.studentIncome.toLocaleString()} сом/мес` : 
-                          '0 сом/мес'
-                        }
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-blue-700">Расходы на обучение:</span>
-                      <p className="font-medium text-blue-900">
-                        {benefitCalculation.studentExpenses ? 
-                          `${benefitCalculation.studentExpenses.toLocaleString()} сом/мес` : 
-                          '0 сом/мес'
-                        }
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-blue-700">Студенты в составе семьи:</span>
-                      <p className="font-medium text-blue-900">
-                        {benefitCalculation.eligibleStudents || 0} чел.
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-blue-700">Общий состав семьи:</span>
-                      <p className="font-medium text-blue-900">
-                        {benefitCalculation.totalFamilyMembers || 0} чел.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
 
           {activeTab === 'identity' && (
             <div className="space-y-6">
@@ -1033,14 +891,16 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
 
 
           {activeTab === 'income' && (
-            <div className="space-y-4 md:space-y-6">
-              {/* Расчет пособия */}
+            <div className="space-y-6">
+              {/* VIII. Совокупный доход и расчет ССДС */}
               {benefitCalculation && (
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 md:p-6">
-                  <h4 className="text-base md:text-lg font-semibold text-blue-900 mb-4">Расчет пособия</h4>
+                  <h4 className="text-base md:text-lg font-semibold text-blue-900 mb-4">
+                    VIII. Совокупный доход и расчет ССДС
+                  </h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="bg-white rounded-lg p-4">
-                      <div className="text-sm text-gray-600 mb-1">Среднедушевой доход</div>
+                      <div className="text-sm text-gray-600 mb-1">Среднедушевой доход (ССДС)</div>
                       <div className="text-xl font-bold text-blue-900">
                         {benefitCalculation?.perCapitaIncome ? Number(benefitCalculation.perCapitaIncome).toLocaleString() : '0'} сом
                       </div>
@@ -1058,6 +918,351 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
                   </div>
                 </div>
               )}
+
+              {/* I. Основной доход семьи */}
+              <div className="bg-white border border-neutral-200 rounded-lg p-4 md:p-6">
+                <h4 className="text-base md:text-lg font-semibold text-neutral-900 mb-4 md:mb-6">
+                  I. Основной доход семьи
+                </h4>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs md:text-sm">
+                    <thead>
+                      <tr className="border-b border-neutral-200">
+                        <th className="text-left py-2 md:py-3 font-medium text-neutral-700">Тип дохода</th>
+                        <th className="text-left py-2 md:py-3 font-medium text-neutral-700">Сумма</th>
+                        <th className="text-left py-2 md:py-3 font-medium text-neutral-700 hidden sm:table-cell">Источник</th>
+                        <th className="text-left py-2 md:py-3 font-medium text-neutral-700 hidden md:table-cell">Период</th>
+                        <th className="text-left py-2 md:py-3 font-medium text-neutral-700 hidden lg:table-cell">ПИН получателя</th>
+                        <th className="text-left py-2 md:py-3 font-medium text-neutral-700 hidden lg:table-cell">ФИО получателя</th>
+                        <th className="text-left py-2 md:py-3 font-medium text-neutral-700">Регулярный</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {mockIncomeData.primaryIncome.map((income: any, index: number) => (
+                        <tr key={income.id || index} className="border-b border-neutral-100">
+                          <td className="py-2 md:py-3">{getIncomeTypeText(income.type)}</td>
+                          <td className="py-2 md:py-3 font-medium">{income.amount ? Number(income.amount).toLocaleString() : '0'} сом</td>
+                          <td className="py-2 md:py-3 hidden sm:table-cell">{income.source || '-'}</td>
+                          <td className="py-2 md:py-3 hidden md:table-cell">{income.period || '-'}</td>
+                          <td className="py-2 md:py-3 hidden lg:table-cell font-mono text-xs">{income.recipientPin || '-'}</td>
+                          <td className="py-2 md:py-3 hidden lg:table-cell">{income.recipientFullName || '-'}</td>
+                          <td className="py-2 md:py-3">
+                            <span className={`px-2 py-1 text-xs rounded ${income.periodicity === 'M' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                              {income.periodicity === 'M' ? 'Да' : 'Нет'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* II. Обучение (студенты, учащиеся) */}
+              <div className="bg-white border border-neutral-200 rounded-lg p-4 md:p-6">
+                <h4 className="text-base md:text-lg font-semibold text-neutral-900 mb-4 md:mb-6">
+                  II. Обучение (студенты, учащиеся)
+                </h4>
+                <StudentListView familyMembers={familyMembers} />
+                
+                {/* Информация о расчете с учетом студентов */}
+                {benefitCalculation && (
+                  <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h5 className="text-lg font-semibold text-blue-900 mb-3">
+                      Расчет пособия с учетом обучающихся
+                    </h5>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <span className="text-blue-700">Доходы студентов:</span>
+                        <p className="font-medium text-blue-900">
+                          {benefitCalculation.studentIncome ? 
+                            `${benefitCalculation.studentIncome.toLocaleString()} сом/мес` : 
+                            '0 сом/мес'
+                          }
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-blue-700">Расходы на обучение:</span>
+                        <p className="font-medium text-blue-900">
+                          {benefitCalculation.studentExpenses ? 
+                            `${benefitCalculation.studentExpenses.toLocaleString()} сом/мес` : 
+                            '0 сом/мес'
+                          }
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-blue-700">Студенты в составе семьи:</span>
+                        <p className="font-medium text-blue-900">
+                          {benefitCalculation.eligibleStudents || 0} чел.
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-blue-700">Общий состав семьи:</span>
+                        <p className="font-medium text-blue-900">
+                          {benefitCalculation.totalFamilyMembers || 0} чел.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* III. Иные доходы семьи */}
+              <div className="bg-white border border-neutral-200 rounded-lg p-4 md:p-6">
+                <h4 className="text-base md:text-lg font-semibold text-neutral-900 mb-4 md:mb-6">
+                  III. Иные доходы семьи
+                </h4>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs md:text-sm">
+                    <thead>
+                      <tr className="border-b border-neutral-200">
+                        <th className="text-left py-2 md:py-3 font-medium text-neutral-700">Тип дохода</th>
+                        <th className="text-left py-2 md:py-3 font-medium text-neutral-700">Сумма</th>
+                        <th className="text-left py-2 md:py-3 font-medium text-neutral-700 hidden sm:table-cell">Источник</th>
+                        <th className="text-left py-2 md:py-3 font-medium text-neutral-700 hidden md:table-cell">Период</th>
+                        <th className="text-left py-2 md:py-3 font-medium text-neutral-700 hidden lg:table-cell">ПИН получателя</th>
+                        <th className="text-left py-2 md:py-3 font-medium text-neutral-700 hidden lg:table-cell">ФИО получателя</th>
+                        <th className="text-left py-2 md:py-3 font-medium text-neutral-700">Регулярный</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {mockIncomeData.otherIncome.map((income: any, index: number) => (
+                        <tr key={income.id || index} className="border-b border-neutral-100">
+                          <td className="py-2 md:py-3">{getIncomeTypeText(income.type)}</td>
+                          <td className="py-2 md:py-3 font-medium">{income.amount ? Number(income.amount).toLocaleString() : '0'} сом</td>
+                          <td className="py-2 md:py-3 hidden sm:table-cell">{income.source || '-'}</td>
+                          <td className="py-2 md:py-3 hidden md:table-cell">{income.period || '-'}</td>
+                          <td className="py-2 md:py-3 hidden lg:table-cell font-mono text-xs">{income.recipientPin || '-'}</td>
+                          <td className="py-2 md:py-3 hidden lg:table-cell">{income.recipientFullName || '-'}</td>
+                          <td className="py-2 md:py-3">
+                            <span className={`px-2 py-1 text-xs rounded ${income.periodicity === 'M' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                              {income.periodicity === 'M' ? 'Да' : 'Нет'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* IV. Предпринимательство */}
+              <div className="bg-white border border-neutral-200 rounded-lg p-4 md:p-6">
+                <h4 className="text-base md:text-lg font-semibold text-neutral-900 mb-4 md:mb-6">
+                  IV. Предпринимательство
+                </h4>
+                <div className="space-y-4">
+                  {mockIncomeData.entrepreneurship.map((business: any, index: number) => (
+                    <div key={business.id || index} className="border border-neutral-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h5 className="font-medium text-neutral-900">{business.businessName}</h5>
+                        <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                          {business.businessType === 'INDIVIDUAL' ? 'ИП' : 
+                           business.businessType === 'TRADE' ? 'Торговля' : 
+                           business.businessType}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <span className="text-neutral-500">Регистрационный номер:</span>
+                          <p className="font-medium">{business.registrationNumber || business.patentNumber || '-'}</p>
+                        </div>
+                        <div>
+                          <span className="text-neutral-500">Лицензия:</span>
+                          <p className="font-medium">{business.licenseNumber || '-'}</p>
+                        </div>
+                        <div>
+                          <span className="text-neutral-500">Адрес:</span>
+                          <p className="font-medium">{business.businessAddress || '-'}</p>
+                        </div>
+                        <div>
+                          <span className="text-neutral-500">Владелец:</span>
+                          <p className="font-medium">{business.ownerFullName || '-'}</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                        <div className="bg-green-50 rounded-lg p-3">
+                          <h6 className="font-medium text-green-900 mb-1">Задекларированный доход</h6>
+                          <div className="text-lg font-bold text-green-900">
+                            {business.declaredIncome ? Number(business.declaredIncome).toLocaleString() : '0'} сом/мес
+                          </div>
+                        </div>
+                        <div className="bg-blue-50 rounded-lg p-3">
+                          <h6 className="font-medium text-blue-900 mb-1">Нормативный доход</h6>
+                          <div className="text-lg font-bold text-blue-900">
+                            {business.normativeIncome ? Number(business.normativeIncome).toLocaleString() : '0'} сом/мес
+                          </div>
+                        </div>
+                        <div className="bg-yellow-50 rounded-lg p-3">
+                          <h6 className="font-medium text-yellow-900 mb-1">Уплачено налогов</h6>
+                          <div className="text-lg font-bold text-yellow-900">
+                            {business.taxAmount ? Number(business.taxAmount).toLocaleString() : '0'} сом/мес
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* V. Земельные участки */}
+              <div className="bg-white border border-neutral-200 rounded-lg p-4 md:p-6">
+                <h4 className="text-base md:text-lg font-semibold text-neutral-900 mb-4 md:mb-6">
+                  V. Земельные участки
+                </h4>
+                <div className="space-y-4">
+                  {mockIncomeData.landPlots.map((plot: any, index: number) => (
+                    <div key={plot.id || index} className="border border-neutral-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h5 className="font-medium text-neutral-900">
+                          {plot.type === 'irrigated' ? 'Орошаемый участок' : 'Богарный участок'}
+                        </h5>
+                        <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                          {plot.ownershipType === 'OWNED' ? 'Собственность' : 'Аренда'}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <span className="text-neutral-500">Площадь:</span>
+                          <p className="font-medium">{plot.area} га</p>
+                        </div>
+                        <div>
+                          <span className="text-neutral-500">Местоположение:</span>
+                          <p className="font-medium">{plot.location}</p>
+                        </div>
+                        <div>
+                          <span className="text-neutral-500">Использование:</span>
+                          <p className="font-medium">{plot.usage}</p>
+                        </div>
+                        <div>
+                          <span className="text-neutral-500">Владелец:</span>
+                          <p className="font-medium">{plot.ownerFullName}</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                        <div className="bg-green-50 rounded-lg p-3">
+                          <h6 className="font-medium text-green-900 mb-1">Нормативный доход</h6>
+                          <div className="text-lg font-bold text-green-900">
+                            {plot.normativeIncome ? Number(plot.normativeIncome).toLocaleString() : '0'} сом/мес
+                          </div>
+                        </div>
+                        <div className="bg-blue-50 rounded-lg p-3">
+                          <h6 className="font-medium text-blue-900 mb-1">Фактический доход</h6>
+                          <div className="text-lg font-bold text-blue-900">
+                            {plot.actualIncome ? Number(plot.actualIncome).toLocaleString() : '0'} сом/мес
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* VI. Подсобное хозяйство (животные, птица, пчёлы) */}
+              <div className="bg-white border border-neutral-200 rounded-lg p-4 md:p-6">
+                <h4 className="text-base md:text-lg font-semibold text-neutral-900 mb-4 md:mb-6">
+                  VI. Подсобное хозяйство (животные, птица, пчёлы)
+                </h4>
+                <div className="space-y-4">
+                  {mockIncomeData.livestock.details.map((animal: any, index: number) => (
+                    <div key={animal.id || index} className="border border-neutral-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h5 className="font-medium text-neutral-900">
+                          {animal.type === 'cow' ? 'Крупный рогатый скот' :
+                           animal.type === 'sheep' ? 'Мелкий рогатый скот' :
+                           animal.type === 'poultry' ? 'Птица' :
+                           animal.type === 'bees' ? 'Пчёлы' : animal.type}
+                        </h5>
+                        <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                          {animal.count} голов
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <span className="text-neutral-500">Количество:</span>
+                          <p className="font-medium">{animal.count} голов</p>
+                        </div>
+                        <div>
+                          <span className="text-neutral-500">Возраст:</span>
+                          <p className="font-medium">{animal.age}</p>
+                        </div>
+                        <div>
+                          <span className="text-neutral-500">Продуктивность:</span>
+                          <p className="font-medium">{animal.productivity}</p>
+                        </div>
+                        <div>
+                          <span className="text-neutral-500">Владелец:</span>
+                          <p className="font-medium">{animal.ownerFullName}</p>
+                        </div>
+                      </div>
+                      <div className="mt-4">
+                        <div className="bg-green-50 rounded-lg p-3">
+                          <h6 className="font-medium text-green-900 mb-1">Месячный доход</h6>
+                          <div className="text-lg font-bold text-green-900">
+                            {animal.monthlyIncome ? Number(animal.monthlyIncome).toLocaleString() : '0'} сом/мес
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* VII. Банковские вклады и сбережения */}
+              <div className="bg-white border border-neutral-200 rounded-lg p-4 md:p-6">
+                <h4 className="text-base md:text-lg font-semibold text-neutral-900 mb-4 md:mb-6">
+                  VII. Банковские вклады и сбережения
+                </h4>
+                <div className="space-y-4">
+                  {mockIncomeData.bankDeposits.map((deposit: any, index: number) => (
+                    <div key={deposit.id || index} className="border border-neutral-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h5 className="font-medium text-neutral-900">
+                          {deposit.depositType === 'SAVINGS' ? 'Сберегательный вклад' :
+                           deposit.depositType === 'TERM' ? 'Срочный вклад' :
+                           deposit.depositType === 'CURRENT' ? 'Текущий счет' :
+                           deposit.depositType === 'INVESTMENT' ? 'Инвестиционный вклад' : deposit.depositType}
+                        </h5>
+                        <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                          {deposit.bankCode}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <span className="text-neutral-500">Номер счета:</span>
+                          <p className="font-medium font-mono">{deposit.accountNumber}</p>
+                        </div>
+                        <div>
+                          <span className="text-neutral-500">Сумма вклада:</span>
+                          <p className="font-medium">{deposit.depositAmount ? Number(deposit.depositAmount).toLocaleString() : '0'} сом</p>
+                        </div>
+                        <div>
+                          <span className="text-neutral-500">Процентная ставка:</span>
+                          <p className="font-medium">{deposit.interestRate}% годовых</p>
+                        </div>
+                        <div>
+                          <span className="text-neutral-500">Владелец:</span>
+                          <p className="font-medium">{deposit.ownerFullName}</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                        <div className="bg-green-50 rounded-lg p-3">
+                          <h6 className="font-medium text-green-900 mb-1">Ежемесячные проценты</h6>
+                          <div className="text-lg font-bold text-green-900">
+                            {deposit.monthlyInterest ? Number(deposit.monthlyInterest).toLocaleString() : '0'} сом/мес
+                          </div>
+                        </div>
+                        <div className="bg-blue-50 rounded-lg p-3">
+                          <h6 className="font-medium text-blue-900 mb-1">Дата открытия</h6>
+                          <div className="text-lg font-bold text-blue-900">
+                            {deposit.openingDate ? new Date(deposit.openingDate).toLocaleDateString('ru-RU') : '-'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
               {/* 8-категорийный анализ доходов */}
               <div className="bg-white border border-neutral-200 rounded-lg p-4 md:p-6">
@@ -1086,16 +1291,6 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
                           >
                             <i className="ri-bar-chart-line mr-3"></i>
                             Показать анализ
-                          </button>
-                          <button
-                            onClick={() => {
-                              exportIncomeAnalysis();
-                              setIsDropdownOpen(false);
-                            }}
-                            className="flex items-center w-full px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-100"
-                          >
-                            <i className="ri-download-line mr-3"></i>
-                            Экспорт анализа
                           </button>
                         </div>
                       </div>
@@ -1299,8 +1494,10 @@ export default function ApplicationDetailsModal({ application, isOpen, onClose }
                 })()}
               </div>
 
+
             </div>
           )}
+
 
 
 

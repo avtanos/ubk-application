@@ -1,5 +1,6 @@
 
 import { regions, GMD_THRESHOLD, BASE_BENEFIT_PER_CHILD, externalIntegrations } from './mockData';
+import { BankDeposit, StudentEducationDetails, Entrepreneurship } from './types';
 
 export interface FamilyMember {
   name: string;
@@ -63,6 +64,13 @@ export interface BenefitCalculation {
   studentExpenses: number;
   eligibleStudents: number;
   totalFamilyMembers: number; // общее количество членов семьи с учетом студентов
+  // Поля для банковских вкладов (Раздел VII)
+  bankDepositIncome: number;
+  totalBankDeposits: number;
+  // Поля для предпринимательства (Раздел IV)
+  entrepreneurshipIncome: number;
+  declaredBusinessIncome: number;
+  normativeBusinessIncome: number;
 }
 
 export interface ExternalCheckResult {
@@ -150,6 +158,51 @@ function calculateLivestockIncome(livestock: Livestock): number {
   return totalMRS * MRS_MONTHLY_INCOME;
 }
 
+// Расчет дохода от банковских вкладов (Раздел VII)
+function calculateBankDepositIncome(bankDeposits: BankDeposit[]): { income: number; totalDeposits: number } {
+  let totalIncome = 0;
+  let totalDeposits = 0;
+  
+  bankDeposits.forEach(deposit => {
+    if (deposit.isActive) {
+      totalDeposits += deposit.depositAmount;
+      // Рассчитываем ежемесячные проценты
+      const monthlyRate = deposit.interestRate / 100 / 12;
+      const monthlyInterest = deposit.depositAmount * monthlyRate;
+      totalIncome += monthlyInterest;
+    }
+  });
+  
+  return { income: totalIncome, totalDeposits };
+}
+
+// Расчет дохода от предпринимательства (Раздел IV)
+function calculateEntrepreneurshipIncome(entrepreneurship: Entrepreneurship[]): { 
+  income: number; 
+  declaredIncome: number; 
+  normativeIncome: number 
+} {
+  let totalIncome = 0;
+  let totalDeclaredIncome = 0;
+  let totalNormativeIncome = 0;
+  
+  entrepreneurship.forEach(business => {
+    if (business.isActive) {
+      // Используем задекларированный доход, если есть, иначе нормативный
+      const businessIncome = business.declaredIncome > 0 ? business.declaredIncome : business.normativeIncome;
+      totalIncome += businessIncome;
+      totalDeclaredIncome += business.declaredIncome;
+      totalNormativeIncome += business.normativeIncome;
+    }
+  });
+  
+  return { 
+    income: totalIncome, 
+    declaredIncome: totalDeclaredIncome, 
+    normativeIncome: totalNormativeIncome 
+  };
+}
+
 // Расчет общего количества МРС
 function calculateTotalMRS(livestock: Livestock): number {
   return Object.entries(livestock).reduce((total, [type, count]) => {
@@ -220,7 +273,9 @@ export function calculateBenefit(
   totalIncome: number,
   landPlots: LandPlot[] = [],
   livestock: Livestock = { cows: 0, heifers: 0, bulls: 0, horses: 0, sheep: 0, goats: 0, pigs: 0, poultry: 0, other: 0 },
-  assets: HouseholdAssets = { hasCar: false, hasTractor: false, hasTruck: false }
+  assets: HouseholdAssets = { hasCar: false, hasTractor: false, hasTruck: false },
+  bankDeposits: BankDeposit[] = [],
+  entrepreneurship: Entrepreneurship[] = []
 ): BenefitCalculation {
   const region = regions.find(r => r.id === regionId);
   if (!region) {
@@ -261,6 +316,11 @@ export function calculateBenefit(
       studentExpenses,
       eligibleStudents,
       totalFamilyMembers: eligibleFamilyMembers.length,
+      bankDepositIncome: 0,
+      totalBankDeposits: 0,
+      entrepreneurshipIncome: 0,
+      declaredBusinessIncome: 0,
+      normativeBusinessIncome: 0,
       reason: 'No children under 16 years old'
     };
   }
@@ -286,6 +346,11 @@ export function calculateBenefit(
       studentExpenses,
       eligibleStudents,
       totalFamilyMembers: eligibleFamilyMembers.length,
+      bankDepositIncome: 0,
+      totalBankDeposits: 0,
+      entrepreneurshipIncome: 0,
+      declaredBusinessIncome: 0,
+      normativeBusinessIncome: 0,
       reason: 'Family has significant assets (car, tractor, truck) that exclude them from benefits'
     };
   }
@@ -293,7 +358,14 @@ export function calculateBenefit(
   // Расчет доходов от ЛПХ
   const landIncome = calculateLandIncome(landPlots);
   const livestockIncome = calculateLivestockIncome(livestock);
-  const totalHouseholdIncome = landIncome + livestockIncome;
+  
+  // Расчет доходов от банковских вкладов (Раздел VII)
+  const { income: bankDepositIncome, totalDeposits } = calculateBankDepositIncome(bankDeposits);
+  
+  // Расчет доходов от предпринимательства (Раздел IV)
+  const { income: entrepreneurshipIncome, declaredIncome, normativeIncome } = calculateEntrepreneurshipIncome(entrepreneurship);
+  
+  const totalHouseholdIncome = landIncome + livestockIncome + bankDepositIncome + entrepreneurshipIncome;
   
   // Расчет МРС на человека
   const totalMRS = calculateTotalMRS(livestock);
@@ -319,6 +391,11 @@ export function calculateBenefit(
       studentExpenses,
       eligibleStudents,
       totalFamilyMembers: eligibleFamilyMembers.length,
+      bankDepositIncome: Math.round(bankDepositIncome),
+      totalBankDeposits: Math.round(totalDeposits),
+      entrepreneurshipIncome: Math.round(entrepreneurshipIncome),
+      declaredBusinessIncome: Math.round(declaredIncome),
+      normativeBusinessIncome: Math.round(normativeIncome),
       reason: `Livestock per person (${livestockPerPerson.toFixed(1)} MRS) exceeds maximum limit (${MAX_MRS_PER_PERSON} MRS)`
     };
   }
@@ -349,6 +426,11 @@ export function calculateBenefit(
       studentExpenses,
       eligibleStudents,
       totalFamilyMembers: eligibleFamilyMembers.length,
+      bankDepositIncome: Math.round(bankDepositIncome),
+      totalBankDeposits: Math.round(totalDeposits),
+      entrepreneurshipIncome: Math.round(entrepreneurshipIncome),
+      declaredBusinessIncome: Math.round(declaredIncome),
+      normativeBusinessIncome: Math.round(normativeIncome),
       reason: `Per capita income (${Math.round(perCapitaIncome)} сом) exceeds GMD threshold (${GMD_THRESHOLD} сом)`
     };
   }
@@ -387,7 +469,13 @@ export function calculateBenefit(
     studentIncome,
     studentExpenses,
     eligibleStudents,
-    totalFamilyMembers: eligibleFamilyMembers.length
+    totalFamilyMembers: eligibleFamilyMembers.length,
+    // Новые поля для банковских вкладов и предпринимательства
+    bankDepositIncome: Math.round(bankDepositIncome),
+    totalBankDeposits: Math.round(totalDeposits),
+    entrepreneurshipIncome: Math.round(entrepreneurshipIncome),
+    declaredBusinessIncome: Math.round(declaredIncome),
+    normativeBusinessIncome: Math.round(normativeIncome)
   };
 }
 

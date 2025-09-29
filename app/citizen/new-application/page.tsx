@@ -36,7 +36,12 @@ import {
   contactTypeList,
   compensationReasonList,
   compensationTypeList,
-  refusalReasons
+  refusalReasons,
+  // Новые справочники для дополнительных разделов
+  bankDepositTypeList,
+  institutionTypeList,
+  fundingSourceList,
+  businessTypeList
 } from '@/lib/directories';
 import { 
   validatePin, 
@@ -187,6 +192,88 @@ export default function NewApplication() {
     periodTo?: string;
     sourceRef?: string;
   }>>([]);
+
+  // Банковские вклады (Раздел VII)
+  const [bankDeposits, setBankDeposits] = useState<Array<{
+    id: number;
+    bankCode: string;
+    depositType: 'SAVINGS' | 'TERM' | 'CURRENT' | 'INVESTMENT';
+    accountNumber: string;
+    depositAmount: number;
+    interestRate: number;
+    monthlyInterest: number;
+    openingDate: string;
+    maturityDate?: string;
+    isActive: boolean;
+    ownerPin?: string;
+    ownerFullName?: string;
+  }>>([{
+    id: 1,
+    bankCode: '',
+    depositType: 'SAVINGS',
+    accountNumber: '',
+    depositAmount: 0,
+    interestRate: 0,
+    monthlyInterest: 0,
+    openingDate: '',
+    maturityDate: '',
+    isActive: true,
+    ownerPin: '',
+    ownerFullName: ''
+  }]);
+
+  // Детальные данные об обучении студентов (Раздел II)
+  const [studentEducationDetails, setStudentEducationDetails] = useState<Array<{
+    id: number;
+    familyMemberId: number;
+    institutionName: string;
+    institutionType: 'UNIVERSITY' | 'COLLEGE' | 'TECHNICAL' | 'VOCATIONAL' | 'SCHOOL';
+    startDate: string;
+    endDate?: string;
+    currentYear: number;
+    isFullTime: boolean;
+    fundingSource: 'GOVERNMENT' | 'PARENTS' | 'GRANT' | 'LOAN' | 'OTHER';
+    scholarshipAmount: number;
+    tuitionFeeYearly: number;
+    tuitionFeeMonthly: number;
+    additionalExpenses: number;
+    isActive: boolean;
+  }>>([]);
+
+  // Предпринимательская деятельность (Раздел IV)
+  const [entrepreneurship, setEntrepreneurship] = useState<Array<{
+    id: number;
+    businessType: 'INDIVIDUAL' | 'PATENT' | 'TRADE' | 'SERVICE' | 'FARMING' | 'OTHER';
+    businessName?: string;
+    registrationNumber?: string;
+    patentNumber?: string;
+    licenseNumber?: string;
+    businessAddress?: string;
+    declaredIncome: number;
+    normativeIncome: number;
+    taxAmount: number;
+    periodFrom: string;
+    periodTo?: string;
+    isActive: boolean;
+    ownerPin?: string;
+    ownerFullName?: string;
+  }>>([{
+    id: 1,
+    businessType: 'INDIVIDUAL',
+    businessName: '',
+    registrationNumber: '',
+    patentNumber: '',
+    licenseNumber: '',
+    businessAddress: '',
+    declaredIncome: 0,
+    normativeIncome: 0,
+    taxAmount: 0,
+    periodFrom: '',
+    periodTo: '',
+    isActive: true,
+    ownerPin: '',
+    ownerFullName: ''
+  }]);
 
   // Адреса
   const [addresses, setAddresses] = useState<Array<{
@@ -1616,6 +1703,118 @@ export default function NewApplication() {
     setIncomes(prev => prev.filter(income => income.id !== id));
   };
 
+  // Функции для работы с банковскими вкладами (Раздел VII)
+  const addBankDeposit = () => {
+    const newId = Math.max(...bankDeposits.map(d => d.id), 0) + 1;
+    setBankDeposits(prev => [...prev, {
+      id: newId,
+      bankCode: '',
+      depositType: 'SAVINGS',
+      accountNumber: '',
+      depositAmount: 0,
+      interestRate: 0,
+      monthlyInterest: 0,
+      openingDate: '',
+      maturityDate: '',
+      isActive: true,
+      ownerPin: '',
+      ownerFullName: ''
+    }]);
+  };
+
+  const removeBankDeposit = (id: number) => {
+    setBankDeposits(prev => prev.filter(deposit => deposit.id !== id));
+  };
+
+  const updateBankDeposit = (id: number, field: string, value: any) => {
+    setBankDeposits(prev => prev.map(deposit => {
+      if (deposit.id === id) {
+        const updated = { ...deposit, [field]: value };
+        // Автоматический расчет ежемесячных процентов
+        if (field === 'depositAmount' || field === 'interestRate') {
+          const monthlyRate = updated.interestRate / 100 / 12;
+          updated.monthlyInterest = updated.depositAmount * monthlyRate;
+        }
+        return updated;
+      }
+      return deposit;
+    }));
+  };
+
+  // Функции для работы с детальными данными студентов (Раздел II)
+  const addStudentEducationDetail = (familyMemberId: number) => {
+    const newId = Math.max(...studentEducationDetails.map(s => s.id), 0) + 1;
+    setStudentEducationDetails(prev => [...prev, {
+      id: newId,
+      familyMemberId,
+      institutionName: '',
+      institutionType: 'UNIVERSITY',
+      startDate: '',
+      endDate: '',
+      currentYear: 1,
+      isFullTime: true,
+      fundingSource: 'GOVERNMENT',
+      scholarshipAmount: 0,
+      tuitionFeeYearly: 0,
+      tuitionFeeMonthly: 0,
+      additionalExpenses: 0,
+      isActive: true
+    }]);
+  };
+
+  const removeStudentEducationDetail = (id: number) => {
+    setStudentEducationDetails(prev => prev.filter(detail => detail.id !== id));
+  };
+
+  const updateStudentEducationDetail = (id: number, field: string, value: any) => {
+    setStudentEducationDetails(prev => prev.map(detail => {
+      if (detail.id === id) {
+        const updated = { ...detail, [field]: value };
+        // Автоматический расчет ежемесячной платы за обучение
+        if (field === 'tuitionFeeYearly') {
+          updated.tuitionFeeMonthly = updated.tuitionFeeYearly / 12;
+        }
+        return updated;
+      }
+      return detail;
+    }));
+  };
+
+  // Функции для работы с предпринимательством (Раздел IV)
+  const addEntrepreneurship = () => {
+    const newId = Math.max(...entrepreneurship.map(e => e.id), 0) + 1;
+    setEntrepreneurship(prev => [...prev, {
+      id: newId,
+      businessType: 'INDIVIDUAL',
+      businessName: '',
+      registrationNumber: '',
+      patentNumber: '',
+      licenseNumber: '',
+      businessAddress: '',
+      declaredIncome: 0,
+      normativeIncome: 0,
+      taxAmount: 0,
+      periodFrom: '',
+      periodTo: '',
+      isActive: true,
+      ownerPin: '',
+      ownerFullName: ''
+    }]);
+  };
+
+  const removeEntrepreneurship = (id: number) => {
+    setEntrepreneurship(prev => prev.filter(business => business.id !== id));
+  };
+
+  const updateEntrepreneurship = (id: number, field: string, value: any) => {
+    setEntrepreneurship(prev => prev.map(business => {
+      if (business.id === id) {
+        return { ...business, [field]: value };
+      }
+      return business;
+    }));
+  };
+
   // Функции для работы с земельными участками
   const addLandPlot = () => {
     const newId = Math.max(...landPlots.map(l => l.id), 0) + 1;
@@ -3003,6 +3202,136 @@ export default function NewApplication() {
                             />
                           </div>
 
+                          {/* Детальные данные для студентов */}
+                          {member.category === 'student' && (
+                            <>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  {language === 'ru' ? 'Учебное заведение' : 'Окуу жайы'} <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                  type="text"
+                                  value={member.institutionName || ''}
+                                  onChange={(e) => updateFamilyMember(member.id, 'institutionName', e.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                  placeholder={language === 'ru' ? 'Введите название учебного заведения' : 'Окуу жайынын атын киргизиңиз'}
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  {language === 'ru' ? 'Тип учебного заведения' : 'Окуу жайынын түрү'} <span className="text-red-500">*</span>
+                                </label>
+                                <select
+                                  value={member.institutionType || ''}
+                                  onChange={(e) => updateFamilyMember(member.id, 'institutionType', e.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                >
+                                  <option value="">{language === 'ru' ? 'Выберите тип' : 'Түрүн тандаңыз'}</option>
+                                  {institutionTypeList.map(type => (
+                                    <option key={type.id} value={type.id}>
+                                      {type.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  {language === 'ru' ? 'Курс/Год обучения' : 'Курс/Окуу жылы'} <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                  type="number"
+                                  value={member.currentYear || 1}
+                                  onChange={(e) => updateFamilyMember(member.id, 'currentYear', parseInt(e.target.value) || 1)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                  min="1"
+                                  max="10"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  {language === 'ru' ? 'Форма обучения' : 'Окуу формасы'} <span className="text-red-500">*</span>
+                                </label>
+                                <select
+                                  value={member.isFullTime ? 'fulltime' : 'parttime'}
+                                  onChange={(e) => updateFamilyMember(member.id, 'isFullTime', e.target.value === 'fulltime')}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                >
+                                  <option value="fulltime">{language === 'ru' ? 'Очное' : 'Күндүзгү'}</option>
+                                  <option value="parttime">{language === 'ru' ? 'Заочное' : 'Сырттан'}</option>
+                                </select>
+                              </div>
+
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  {language === 'ru' ? 'Источник финансирования' : 'Каржылоо булагы'} <span className="text-red-500">*</span>
+                                </label>
+                                <select
+                                  value={member.fundingSource || ''}
+                                  onChange={(e) => updateFamilyMember(member.id, 'fundingSource', e.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                >
+                                  <option value="">{language === 'ru' ? 'Выберите источник' : 'Булагы тандаңыз'}</option>
+                                  {fundingSourceList.map(source => (
+                                    <option key={source.id} value={source.id}>
+                                      {source.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  {language === 'ru' ? 'Размер стипендии (сом/мес)' : 'Стипендиянын өлчөмү (сом/ай)'}
+                                </label>
+                                <input
+                                  type="number"
+                                  value={member.scholarshipAmount || 0}
+                                  onChange={(e) => updateFamilyMember(member.id, 'scholarshipAmount', parseFloat(e.target.value) || 0)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                  placeholder="0"
+                                  min="0"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  {language === 'ru' ? 'Плата за обучение (сом/год)' : 'Окуу акысы (сом/жыл)'}
+                                </label>
+                                <input
+                                  type="number"
+                                  value={member.tuitionFeeYearly || 0}
+                                  onChange={(e) => {
+                                    const yearlyFee = parseFloat(e.target.value) || 0;
+                                    updateFamilyMember(member.id, 'tuitionFeeYearly', yearlyFee);
+                                    updateFamilyMember(member.id, 'tuitionFeeMonthly', yearlyFee / 12);
+                                  }}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                  placeholder="0"
+                                  min="0"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  {language === 'ru' ? 'Плата за обучение (сом/мес, авто)' : 'Окуу акысы (сом/ай, авто)'}
+                                </label>
+                                <input
+                                  type="number"
+                                  value={member.tuitionFeeMonthly || 0}
+                                  readOnly
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                                  placeholder="0"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {language === 'ru' ? 'Рассчитывается автоматически' : 'Автоматтык эсептелет'}
+                                </p>
+                              </div>
+                            </>
+                          )}
+
                           {/* Родство */}
                       <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -3771,10 +4100,210 @@ export default function NewApplication() {
                   </div>
                 </div>
 
-                {/* Раздел 5: Специальные компенсации */}
+                {/* Раздел 5: Банковские вклады и сбережения (Раздел VII) */}
                 <div className="border border-gray-200 rounded-lg p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    {language === 'ru' ? '5. Специальные компенсации' : '5. Атайын компенсациялар'}
+                    {language === 'ru' ? '5. Банковские вклады и сбережения' : '5. Банк депозиттери жана акча топтоолору'}
+                  </h3>
+                  
+                  <div className="space-y-4">
+                    {bankDeposits.map((deposit, index) => (
+                      <div key={deposit.id} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex justify-between items-center mb-3">
+                          <h5 className="font-medium text-gray-800">
+                            {language === 'ru' ? `Вклад ${index + 1}` : `Депозит ${index + 1}`}
+                          </h5>
+                          {bankDeposits.length > 1 && (
+                            <button
+                              onClick={() => removeBankDeposit(deposit.id)}
+                              className="text-red-600 hover:text-red-800 p-1"
+                            >
+                              <i className="ri-delete-bin-line"></i>
+                            </button>
+                          )}
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Банк' : 'Банк'} <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              value={deposit.bankCode}
+                              onChange={(e) => updateBankDeposit(deposit.id, 'bankCode', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                            >
+                              <option value="">{language === 'ru' ? 'Выберите банк' : 'Банкты тандаңыз'}</option>
+                              {bankList.map(bank => (
+                                <option key={bank.id} value={bank.id}>
+                                  {bank.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Тип вклада' : 'Депозиттин түрү'} <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              value={deposit.depositType}
+                              onChange={(e) => updateBankDeposit(deposit.id, 'depositType', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                            >
+                              {bankDepositTypeList.map(type => (
+                                <option key={type.id} value={type.id}>
+                                  {type.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Номер счета' : 'Эсептин номуру'} <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={deposit.accountNumber}
+                              onChange={(e) => updateBankDeposit(deposit.id, 'accountNumber', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                              placeholder={language === 'ru' ? 'Введите номер счета' : 'Эсептин номурун киргизиңиз'}
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Сумма вклада' : 'Депозиттин суммасы'} <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="number"
+                              value={deposit.depositAmount}
+                              onChange={(e) => updateBankDeposit(deposit.id, 'depositAmount', parseFloat(e.target.value) || 0)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                              placeholder="0"
+                              min="0"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Процентная ставка (% годовых)' : 'Проценттик ставка (% жылдык)'} <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="number"
+                              value={deposit.interestRate}
+                              onChange={(e) => updateBankDeposit(deposit.id, 'interestRate', parseFloat(e.target.value) || 0)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                              placeholder="0"
+                              min="0"
+                              step="0.01"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Ежемесячные проценты (авто)' : 'Ай сайын процентер (авто)'}
+                            </label>
+                            <input
+                              type="number"
+                              value={deposit.monthlyInterest}
+                              readOnly
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                              placeholder="0"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              {language === 'ru' ? 'Рассчитывается автоматически' : 'Автоматтык эсептелет'}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Дата открытия' : 'Ачуу күнү'} <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="date"
+                              value={deposit.openingDate}
+                              onChange={(e) => updateBankDeposit(deposit.id, 'openingDate', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'Дата погашения' : 'Төлөө күнү'}
+                            </label>
+                            <input
+                              type="date"
+                              value={deposit.maturityDate || ''}
+                              onChange={(e) => updateBankDeposit(deposit.id, 'maturityDate', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Кому принадлежит вклад */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'ПИН владельца' : 'Ээсинин ПИНи'} <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={deposit.ownerPin || ''}
+                              onChange={(e) => updateBankDeposit(deposit.id, 'ownerPin', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                              placeholder={language === 'ru' ? 'Введите ПИН владельца' : 'Ээсинин ПИНин киргизиңиз'}
+                              maxLength={14}
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {language === 'ru' ? 'ФИО владельца' : 'Ээсинин ФИОсу'} <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={deposit.ownerFullName || ''}
+                              onChange={(e) => updateBankDeposit(deposit.id, 'ownerFullName', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                              placeholder={language === 'ru' ? 'Введите ФИО владельца' : 'Ээсинин ФИОсун киргизиңиз'}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    <button
+                      onClick={addBankDeposit}
+                      className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 inline-flex items-center justify-center"
+                    >
+                      <i className="ri-add-line mr-2"></i>
+                      {language === 'ru' ? 'Добавить вклад' : 'Депозит кошуу'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Раздел 6: Предпринимательская деятельность (Раздел IV) */}
+                <div className="border border-gray-200 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    {language === 'ru' ? '6. Предпринимательская деятельность' : '6. Ишкердик ишмердүүлүк'}
+                  </h3>
+                  
+                  <div className="text-center text-gray-500 py-8">
+                    <i className="ri-building-line text-4xl mb-2"></i>
+                    <p>{language === 'ru' ? 'Раздел в разработке' : 'Бөлүм иштелип жатат'}</p>
+                  </div>
+                </div>
+
+                {/* Раздел 7: Специальные компенсации */}
+                <div className="border border-gray-200 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    {language === 'ru' ? '7. Специальные компенсации' : '7. Атайын компенсациялар'}
                   </h3>
                   
                   <div className="space-y-4">

@@ -898,3 +898,324 @@ export const mockInspectionStats = {
   averageDuration: 2.5,
   successRate: 80
 };
+
+// Мокап данные для 8 категорий доходов
+export const mockIncomeData = {
+  // I. Основной доход семьи
+  primaryIncome: [
+    {
+      id: 1,
+      type: 'salary',
+      amount: 25000,
+      source: 'ООО "Торговый дом"',
+      period: 'Январь 2025',
+      recipientPin: '12345678901234',
+      recipientFullName: 'Айжан Абдуллаева',
+      periodicity: 'M',
+      isRegular: true
+    },
+    {
+      id: 2,
+      type: 'salary',
+      amount: 30000,
+      source: 'АО "Кыргызтелеком"',
+      period: 'Январь 2025',
+      recipientPin: '12345678901235',
+      recipientFullName: 'Талант Абдуллаев',
+      periodicity: 'M',
+      isRegular: true
+    },
+    {
+      id: 3,
+      type: 'pension',
+      amount: 12000,
+      source: 'Социальный фонд КР',
+      period: 'Январь 2025',
+      recipientPin: '12345678901236',
+      recipientFullName: 'Айгуль Абдуллаева',
+      periodicity: 'M',
+      isRegular: true
+    },
+    {
+      id: 4,
+      type: 'alimony',
+      amount: 8000,
+      source: 'Алименты на ребенка',
+      period: 'Январь 2025',
+      recipientPin: '12345678901234',
+      recipientFullName: 'Айжан Абдуллаева',
+      periodicity: 'M',
+      isRegular: true
+    }
+  ],
+
+  // II. Обучение (студенты, учащиеся)
+  educationIncome: [
+    {
+      id: 1,
+      familyMemberId: 3,
+      institutionName: 'Кыргызский национальный университет',
+      institutionType: 'UNIVERSITY',
+      startDate: '2020-09-01',
+      endDate: '2024-06-30',
+      currentYear: 4,
+      isFullTime: true,
+      fundingSource: 'GOVERNMENT',
+      scholarshipAmount: 3000,
+      tuitionFeeYearly: 0,
+      tuitionFeeMonthly: 0,
+      additionalExpenses: 2000,
+      isActive: true
+    },
+    {
+      id: 2,
+      familyMemberId: 4,
+      institutionName: 'Кыргызский государственный университет строительства',
+      institutionType: 'UNIVERSITY',
+      startDate: '2022-09-01',
+      endDate: '2026-06-30',
+      currentYear: 2,
+      isFullTime: true,
+      fundingSource: 'PARENTS',
+      scholarshipAmount: 0,
+      tuitionFeeYearly: 60000,
+      tuitionFeeMonthly: 5000,
+      additionalExpenses: 1500,
+      isActive: true
+    }
+  ],
+
+  // III. Иные доходы семьи
+  otherIncome: [
+    {
+      id: 1,
+      type: 'family_help',
+      amount: 5000,
+      source: 'Помощь от родителей',
+      period: 'Январь 2025',
+      recipientPin: '12345678901234',
+      recipientFullName: 'Айжан Абдуллаева',
+      periodicity: 'M',
+      isRegular: true
+    },
+    {
+      id: 2,
+      type: 'dividends',
+      amount: 1200,
+      source: 'Дивиденды по акциям',
+      period: 'Январь 2025',
+      recipientPin: '12345678901235',
+      recipientFullName: 'Талант Абдуллаев',
+      periodicity: 'M',
+      isRegular: true
+    },
+    {
+      id: 3,
+      type: 'social_benefit',
+      amount: 2000,
+      source: 'Социальное пособие',
+      period: 'Январь 2025',
+      recipientPin: '12345678901234',
+      recipientFullName: 'Айжан Абдуллаева',
+      periodicity: 'M',
+      isRegular: true
+    },
+    {
+      id: 4,
+      type: 'compensation',
+      amount: 15000,
+      source: 'Компенсация за ущерб',
+      period: 'Январь 2025',
+      recipientPin: '12345678901234',
+      recipientFullName: 'Айжан Абдуллаева',
+      periodicity: 'O',
+      isRegular: false
+    }
+  ],
+
+  // IV. Предпринимательство
+  entrepreneurship: [
+    {
+      id: 1,
+      businessType: 'INDIVIDUAL',
+      businessName: 'ИП "Абдуллаева"',
+      registrationNumber: 'ИП-123456',
+      patentNumber: '',
+      licenseNumber: 'ЛИЦ-789012',
+      businessAddress: 'г. Бишкек, ул. Чуй 123',
+      declaredIncome: 45000,
+      normativeIncome: 50000,
+      taxAmount: 4500,
+      periodFrom: '2024-01-01',
+      periodTo: '2024-12-31',
+      isActive: true,
+      ownerPin: '12345678901234',
+      ownerFullName: 'Айжан Абдуллаева'
+    },
+    {
+      id: 2,
+      businessType: 'TRADE',
+      businessName: 'Магазин "Продукты"',
+      registrationNumber: '',
+      patentNumber: 'ПАТ-456789',
+      licenseNumber: '',
+      businessAddress: 'г. Бишкек, ул. Московская 45',
+      declaredIncome: 25000,
+      normativeIncome: 30000,
+      taxAmount: 2500,
+      periodFrom: '2024-01-01',
+      periodTo: '2024-12-31',
+      isActive: true,
+      ownerPin: '12345678901235',
+      ownerFullName: 'Талант Абдуллаев'
+    }
+  ],
+
+  // V. Земельные участки
+  landPlots: [
+    {
+      id: 1,
+      type: 'irrigated',
+      area: 0.5,
+      location: 'Чуйская область, с. Кант',
+      ownershipType: 'OWNED',
+      usage: 'Огород',
+      normativeIncome: 15000,
+      actualIncome: 12000,
+      isActive: true,
+      ownerPin: '12345678901234',
+      ownerFullName: 'Айжан Абдуллаева'
+    },
+    {
+      id: 2,
+      type: 'rain_fed',
+      area: 1.2,
+      location: 'Чуйская область, с. Кант',
+      ownershipType: 'RENTED',
+      usage: 'Пастбище',
+      normativeIncome: 8000,
+      actualIncome: 6000,
+      isActive: true,
+      ownerPin: '12345678901235',
+      ownerFullName: 'Талант Абдуллаев'
+    }
+  ],
+
+  // VI. Подсобное хозяйство (животные, птица, пчёлы)
+  livestock: {
+    cows: 2,
+    heifers: 1,
+    bulls: 0,
+    horses: 1,
+    sheep: 5,
+    goats: 3,
+    pigs: 0,
+    poultry: 15,
+    other: 0,
+    bees: 2,
+    // Детальная информация
+    details: [
+      {
+        id: 1,
+        type: 'cow',
+        count: 2,
+        age: '3-5 лет',
+        productivity: 'молочные',
+        monthlyIncome: 8000,
+        ownerPin: '12345678901234',
+        ownerFullName: 'Айжан Абдуллаева'
+      },
+      {
+        id: 2,
+        type: 'sheep',
+        count: 5,
+        age: '1-3 года',
+        productivity: 'мясные',
+        monthlyIncome: 3000,
+        ownerPin: '12345678901235',
+        ownerFullName: 'Талант Абдуллаев'
+      },
+      {
+        id: 3,
+        type: 'poultry',
+        count: 15,
+        age: '6-12 месяцев',
+        productivity: 'яичные',
+        monthlyIncome: 2000,
+        ownerPin: '12345678901234',
+        ownerFullName: 'Айжан Абдуллаева'
+      },
+      {
+        id: 4,
+        type: 'bees',
+        count: 2,
+        age: '2-3 года',
+        productivity: 'мед',
+        monthlyIncome: 1500,
+        ownerPin: '12345678901235',
+        ownerFullName: 'Талант Абдуллаев'
+      }
+    ]
+  },
+
+  // VII. Банковские вклады и сбережения
+  bankDeposits: [
+    {
+      id: 1,
+      bankCode: 'DEMIR',
+      depositType: 'SAVINGS',
+      accountNumber: '1234567890123456',
+      depositAmount: 500000,
+      interestRate: 12,
+      monthlyInterest: 5000,
+      openingDate: '2023-01-15',
+      maturityDate: '2025-01-15',
+      isActive: true,
+      ownerPin: '12345678901234',
+      ownerFullName: 'Айжан Абдуллаева'
+    },
+    {
+      id: 2,
+      bankCode: 'OPTIMA',
+      depositType: 'TERM',
+      accountNumber: '9876543210987654',
+      depositAmount: 300000,
+      interestRate: 15,
+      monthlyInterest: 3750,
+      openingDate: '2024-06-01',
+      maturityDate: '2025-06-01',
+      isActive: true,
+      ownerPin: '12345678901235',
+      ownerFullName: 'Талант Абдуллаев'
+    },
+    {
+      id: 3,
+      bankCode: 'BAI_TUSHUM',
+      depositType: 'CURRENT',
+      accountNumber: '5555444433332222',
+      depositAmount: 100000,
+      interestRate: 8,
+      monthlyInterest: 667,
+      openingDate: '2024-03-10',
+      maturityDate: null,
+      isActive: true,
+      ownerPin: '12345678901234',
+      ownerFullName: 'Айжан Абдуллаева'
+    }
+  ],
+
+  // VIII. Совокупный доход и расчет ССДС
+  totalIncomeCalculation: {
+    totalFamilyIncome: 125000,
+    familyMembers: 4,
+    childrenUnder16: 2,
+    studentsUnder21: 1,
+    perCapitaIncome: 31250,
+    gmdThreshold: 6000,
+    isEligible: false,
+    benefitAmount: 0,
+    regionalCoefficient: 1.0,
+    borderBonus: 0,
+    totalMonthlyBenefit: 0
+  }
+};

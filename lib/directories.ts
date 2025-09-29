@@ -254,6 +254,42 @@ export const financialAssetsList: DirectoryItem[] = [
   { id: 'other_securities', name: 'Прочие ценные бумаги', code: 'OTHER_SECURITIES' }
 ];
 
+// 19.2. Типы банковских вкладов
+export const bankDepositTypeList: DirectoryItem[] = [
+  { id: 'savings', name: 'Сберегательный вклад', code: 'SAVINGS' },
+  { id: 'term', name: 'Срочный вклад', code: 'TERM' },
+  { id: 'current', name: 'Текущий счет', code: 'CURRENT' },
+  { id: 'investment', name: 'Инвестиционный вклад', code: 'INVESTMENT' }
+];
+
+// 19.3. Типы учебных заведений
+export const institutionTypeList: DirectoryItem[] = [
+  { id: 'university', name: 'Университет', code: 'UNIVERSITY' },
+  { id: 'college', name: 'Колледж', code: 'COLLEGE' },
+  { id: 'technical', name: 'Техникум', code: 'TECHNICAL' },
+  { id: 'vocational', name: 'Профессионально-техническое училище', code: 'VOCATIONAL' },
+  { id: 'school', name: 'Школа', code: 'SCHOOL' }
+];
+
+// 19.4. Источники финансирования обучения
+export const fundingSourceList: DirectoryItem[] = [
+  { id: 'government', name: 'Государственное финансирование', code: 'GOVERNMENT' },
+  { id: 'parents', name: 'Родители', code: 'PARENTS' },
+  { id: 'grant', name: 'Грант', code: 'GRANT' },
+  { id: 'loan', name: 'Образовательный кредит', code: 'LOAN' },
+  { id: 'other', name: 'Другое', code: 'OTHER' }
+];
+
+// 19.5. Типы предпринимательской деятельности
+export const businessTypeList: DirectoryItem[] = [
+  { id: 'individual', name: 'Индивидуальное предпринимательство', code: 'INDIVIDUAL' },
+  { id: 'patent', name: 'Патентная деятельность', code: 'PATENT' },
+  { id: 'trade', name: 'Торговая деятельность', code: 'TRADE' },
+  { id: 'service', name: 'Сфера услуг', code: 'SERVICE' },
+  { id: 'farming', name: 'Фермерское хозяйство', code: 'FARMING' },
+  { id: 'other', name: 'Другое', code: 'OTHER' }
+];
+
 // 20. Банки
 export const bankList: DirectoryItem[] = [
   { id: 'halyk_bank', name: 'АО "Народный Банк Казахстана"', code: 'HALYK_BANK' },

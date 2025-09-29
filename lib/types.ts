@@ -274,6 +274,70 @@ export interface SpecialCompensation {
   updatedAt: string;
 }
 
+// 14.2. Банковские вклады и сбережения (Раздел VII)
+export interface BankDeposit {
+  id: number;
+  applicationId: number;
+  bankCode: string; // код банка
+  depositType: 'SAVINGS' | 'TERM' | 'CURRENT' | 'INVESTMENT'; // тип вклада
+  accountNumber: string; // номер счета
+  depositAmount: number; // сумма вклада
+  interestRate: number; // процентная ставка (% годовых)
+  monthlyInterest: number; // ежемесячные проценты (рассчитывается автоматически)
+  openingDate: string; // дата открытия
+  maturityDate?: string; // дата погашения
+  isActive: boolean; // активен ли вклад
+  // Поля владельца
+  ownerPin?: string;
+  ownerFullName?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// 14.3. Детальные данные об обучении студентов (Раздел II)
+export interface StudentEducationDetails {
+  id: number;
+  familyMemberId: number;
+  applicationId: number;
+  institutionName: string; // название учебного заведения
+  institutionType: 'UNIVERSITY' | 'COLLEGE' | 'TECHNICAL' | 'VOCATIONAL' | 'SCHOOL'; // тип учебного заведения
+  startDate: string; // дата поступления
+  endDate?: string; // дата окончания (если известно)
+  currentYear: number; // текущий курс/год обучения
+  isFullTime: boolean; // очное обучение
+  fundingSource: 'GOVERNMENT' | 'PARENTS' | 'GRANT' | 'LOAN' | 'OTHER'; // источник финансирования
+  scholarshipAmount: number; // размер стипендии (ежемесячно)
+  tuitionFeeYearly: number; // плата за обучение в год
+  tuitionFeeMonthly: number; // плата за обучение в месяц (рассчитывается автоматически)
+  additionalExpenses: number; // дополнительные расходы (учебники, проживание и т.д.)
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// 14.4. Предпринимательская деятельность (Раздел IV)
+export interface Entrepreneurship {
+  id: number;
+  applicationId: number;
+  businessType: 'INDIVIDUAL' | 'PATENT' | 'TRADE' | 'SERVICE' | 'FARMING' | 'OTHER'; // тип деятельности
+  businessName?: string; // название бизнеса
+  registrationNumber?: string; // регистрационный номер ИП
+  patentNumber?: string; // номер патента
+  licenseNumber?: string; // номер лицензии
+  businessAddress?: string; // адрес ведения деятельности
+  declaredIncome: number; // задекларированный доход
+  normativeIncome: number; // нормативный доход (если нет декларации)
+  taxAmount: number; // сумма уплаченных налогов
+  periodFrom: string; // период деятельности с
+  periodTo?: string; // период деятельности по
+  isActive: boolean;
+  // Поля владельца
+  ownerPin?: string;
+  ownerFullName?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // 15. Показатели домохозяйства
 export interface HouseholdMetrics {
   id: number;
